@@ -1,0 +1,36 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Agent Skills",
+  "colors": {
+    "primary": "#7f7f7f",
+    "light": "#bfbfbf",
+    "dark": "#404040"
+  },
+  "favicon": "/favicon.svg",
+  "navigation": {
+    "pages": [
+      "home",
+      "what-are-skills",
+      "specification",
+      "integrate-skills"
+    ]
+  },
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "mcp",
+      "cursor",
+      "vscode"
+    ]
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/agentskills/agentskills"
+    }
+  }
+}
