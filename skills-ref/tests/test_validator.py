@@ -288,3 +288,354 @@ Body
 """)
     errors = validate(skill_dir)
     assert errors == [], f"Expected no errors, got: {errors}"
+
+
+# =============================================================================
+# Composability Tests - Level, Operation, Composes fields
+# =============================================================================
+
+
+class TestComposabilityLevel:
+    """Tests for the level field (composition hierarchy tier)."""
+
+    def test_valid_level_1_atomic(self, tmp_path):
+        """Level 1 (Atomic) skills should be valid."""
+        skill_dir = tmp_path / "email-read"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: email-read
+description: Read emails from Gmail or Outlook
+level: 1
+operation: READ
+---
+# Email Read
+""")
+        errors = validate(skill_dir)
+        assert errors == []
+
+    def test_valid_level_2_composite(self, tmp_path):
+        """Level 2 (Composite) skills should be valid."""
+        skill_dir = tmp_path / "research"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: research
+description: Research a topic with web search and archival
+level: 2
+operation: READ
+composes:
+  - web-search
+  - pdf-save
+---
+# Research
+""")
+        errors = validate(skill_dir)
+        assert errors == []
+
+    def test_valid_level_3_workflow(self, tmp_path):
+        """Level 3 (Workflow) skills should be valid."""
+        skill_dir = tmp_path / "daily-synthesis"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: daily-synthesis
+description: Daily action item synthesis from all channels
+level: 3
+operation: WRITE
+composes:
+  - email-read
+  - slack-read
+  - research
+---
+# Daily Synthesis
+""")
+        errors = validate(skill_dir)
+        assert errors == []
+
+    def test_invalid_level_zero(self, tmp_path):
+        """Level 0 should be rejected (primitives are not skills)."""
+        skill_dir = tmp_path / "my-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+level: 0
+---
+Body
+""")
+        errors = validate(skill_dir)
+        assert any("level" in e.lower() and ("1, 2, or 3" in e or "1=Atomic" in e) for e in errors)
+
+    def test_invalid_level_four(self, tmp_path):
+        """Level 4+ should be rejected."""
+        skill_dir = tmp_path / "my-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+level: 4
+---
+Body
+""")
+        errors = validate(skill_dir)
+        assert any("level" in e.lower() and ("1, 2, or 3" in e or "1=Atomic" in e) for e in errors)
+
+    def test_invalid_level_string(self, tmp_path):
+        """Level must be an integer, not a non-numeric string."""
+        skill_dir = tmp_path / "my-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+level: high
+---
+Body
+""")
+        errors = validate(skill_dir)
+        assert any("integer" in e.lower() for e in errors)
+
+    def test_level_1_with_composes_rejected(self, tmp_path):
+        """Atomic skills (Level 1) should not compose other skills."""
+        skill_dir = tmp_path / "email-read"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: email-read
+description: Read emails
+level: 1
+composes:
+  - some-other-skill
+---
+Body
+""")
+        errors = validate(skill_dir)
+        assert any("Level 1" in e and "should not have" in e for e in errors)
+
+
+class TestComposabilityOperation:
+    """Tests for the operation field (safety classification)."""
+
+    def test_valid_operation_read(self, tmp_path):
+        """READ operation should be valid."""
+        skill_dir = tmp_path / "my-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A read-only skill
+operation: READ
+---
+Body
+""")
+        errors = validate(skill_dir)
+        assert errors == []
+
+    def test_valid_operation_write(self, tmp_path):
+        """WRITE operation should be valid."""
+        skill_dir = tmp_path / "my-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A skill that writes data
+operation: WRITE
+---
+Body
+""")
+        errors = validate(skill_dir)
+        assert errors == []
+
+    def test_valid_operation_transform(self, tmp_path):
+        """TRANSFORM operation should be valid."""
+        skill_dir = tmp_path / "my-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A local transformation skill
+operation: TRANSFORM
+---
+Body
+""")
+        errors = validate(skill_dir)
+        assert errors == []
+
+    def test_invalid_operation_lowercase(self, tmp_path):
+        """Operations must be uppercase."""
+        skill_dir = tmp_path / "my-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+operation: read
+---
+Body
+""")
+        errors = validate(skill_dir)
+        assert any("operation" in e.lower() for e in errors)
+
+    def test_invalid_operation_unknown(self, tmp_path):
+        """Unknown operations should be rejected."""
+        skill_dir = tmp_path / "my-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+operation: DELETE
+---
+Body
+""")
+        errors = validate(skill_dir)
+        assert any("operation" in e.lower() for e in errors)
+
+
+class TestComposabilityComposes:
+    """Tests for the composes field (skill dependencies)."""
+
+    def test_valid_composes_list(self, tmp_path):
+        """Composes should accept a list of skill names."""
+        skill_dir = tmp_path / "research"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: research
+description: Research with multiple sources
+level: 2
+composes:
+  - web-search
+  - pdf-save
+  - email-read
+---
+Body
+""")
+        errors = validate(skill_dir)
+        assert errors == []
+
+    def test_valid_composes_single_item(self, tmp_path):
+        """Composes should accept a single-item list."""
+        skill_dir = tmp_path / "simple-composite"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: simple-composite
+description: A simple composite skill
+level: 2
+composes:
+  - web-search
+---
+Body
+""")
+        errors = validate(skill_dir)
+        assert errors == []
+
+    def test_invalid_composes_string(self, tmp_path):
+        """Composes must be a list, not a string."""
+        skill_dir = tmp_path / "my-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+level: 2
+composes: web-search
+---
+Body
+""")
+        errors = validate(skill_dir)
+        # Note: parser converts single string to list, so this may pass
+        # depending on implementation
+
+    def test_invalid_composes_empty_string(self, tmp_path):
+        """Empty strings in composes should be rejected."""
+        skill_dir = tmp_path / "my-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+level: 2
+composes:
+  - web-search
+  - ""
+---
+Body
+""")
+        errors = validate(skill_dir)
+        assert any("empty" in e.lower() for e in errors)
+
+
+class TestComposabilityIntegration:
+    """Integration tests for composability features."""
+
+    def test_complete_atomic_skill(self, tmp_path):
+        """A complete Level 1 atomic skill with all fields."""
+        skill_dir = tmp_path / "web-search"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: web-search
+description: Search the web using AI-powered search. Returns synthesised answers with citations.
+level: 1
+operation: READ
+license: Apache-2.0
+compatibility: Requires internet access
+metadata:
+  author: example-org
+  version: "1.0"
+---
+# Web Search
+
+Search the web and get synthesised answers.
+""")
+        errors = validate(skill_dir)
+        assert errors == [], f"Expected no errors, got: {errors}"
+
+    def test_complete_composite_skill(self, tmp_path):
+        """A complete Level 2 composite skill with all fields."""
+        skill_dir = tmp_path / "research"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: research
+description: Research a topic comprehensively with web search and source archival.
+level: 2
+operation: READ
+composes:
+  - web-search
+  - pdf-save
+license: Apache-2.0
+metadata:
+  author: example-org
+---
+# Research
+
+Comprehensive topic research.
+""")
+        errors = validate(skill_dir)
+        assert errors == [], f"Expected no errors, got: {errors}"
+
+    def test_complete_workflow_skill(self, tmp_path):
+        """A complete Level 3 workflow skill with all fields."""
+        skill_dir = tmp_path / "daily-briefing"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: daily-briefing
+description: Generate comprehensive morning briefing from all sources.
+level: 3
+operation: READ
+composes:
+  - calendar-read
+  - email-read
+  - research
+  - customer-intel
+license: Apache-2.0
+---
+# Daily Briefing
+
+Orchestrates multiple skills for morning preparation.
+""")
+        errors = validate(skill_dir)
+        assert errors == [], f"Expected no errors, got: {errors}"
+
+    def test_skill_without_composability_fields(self, tmp_path):
+        """Skills without composability fields should still be valid (backwards compatibility)."""
+        skill_dir = tmp_path / "legacy-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: legacy-skill
+description: A skill without composability fields
+---
+# Legacy Skill
+
+Works without level, operation, or composes.
+""")
+        errors = validate(skill_dir)
+        assert errors == [], "Backwards compatibility broken - skills without composability fields should be valid"

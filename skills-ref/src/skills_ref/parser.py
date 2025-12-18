@@ -107,6 +107,14 @@ def read_properties(skill_dir: Path) -> SkillProperties:
     if composes is not None and not isinstance(composes, list):
         composes = [composes] if composes else None
 
+    # Handle level field - coerce to int if it's a valid integer string
+    level = metadata.get("level")
+    if level is not None:
+        try:
+            level = int(level)
+        except (ValueError, TypeError):
+            pass  # Let validator catch invalid levels
+
     return SkillProperties(
         name=name.strip(),
         description=description.strip(),
@@ -115,7 +123,7 @@ def read_properties(skill_dir: Path) -> SkillProperties:
         allowed_tools=metadata.get("allowed-tools"),
         metadata=metadata.get("metadata"),
         # Composability fields
-        level=metadata.get("level"),
+        level=level,
         operation=metadata.get("operation"),
         composes=composes,
     )

@@ -91,6 +91,43 @@ Level 0: Primitives       Raw scripts, APIs, or tools
 
 When a team declares that `research` composes `web-search` + `pdf-save`, there is no ambiguity about which tools will be invoked. The LLM selects `research`, and the composition is deterministic.
 
+### Visual: Composition Graph
+
+The following diagram shows how a Level 3 workflow composes Level 2 composites, which in turn compose Level 1 atomics:
+
+```
+                         ┌─────────────────────────────────────┐
+                         │         daily-briefing              │
+                         │            (Level 3)                │
+                         │         operation: READ             │
+                         └──────────────┬──────────────────────┘
+                                        │
+              ┌─────────────┬───────────┼───────────┬─────────────┐
+              │             │           │           │             │
+              ▼             ▼           ▼           ▼             ▼
+        ┌──────────┐  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐
+        │ calendar │  │  email   │ │ research │ │ customer │ │  slack   │
+        │  -read   │  │  -read   │ │ (Lvl 2)  │ │  -intel  │ │  -read   │
+        │ (Lvl 1)  │  │ (Lvl 1)  │ │          │ │ (Lvl 2)  │ │ (Lvl 1)  │
+        └──────────┘  └──────────┘ └────┬─────┘ └────┬─────┘ └──────────┘
+                                        │            │
+                                   ┌────┴────┐  ┌────┴────────┐
+                                   │         │  │      │      │
+                                   ▼         ▼  ▼      ▼      ▼
+                              ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐
+                              │  web   │ │  pdf   │ │hubspot │ │  email │
+                              │-search │ │ -save  │ │ -read  │ │ -read  │
+                              │(Lvl 1) │ │(Lvl 1) │ │(Lvl 1) │ │(Lvl 1) │
+                              └────────┘ └────────┘ └────────┘ └────────┘
+
+Legend:
+  Level 3 = Workflow (orchestration + decision logic)
+  Level 2 = Composite (combines atomics)
+  Level 1 = Atomic (single operation)
+```
+
+**Key insight:** The LLM only needs to decide "use daily-briefing" - all downstream composition is deterministic.
+
 ### Benefits of This Architecture
 
 | Benefit | Description |

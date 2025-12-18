@@ -1,19 +1,32 @@
 """Reference library for Agent Skills."""
 
 from .errors import ParseError, SkillError, ValidationError
-from .models import SkillProperties
+from .graph import CompositionGraph, GraphAnalysis, SkillNode, validate_composition
+from .models import SkillLevel, SkillOperation, SkillProperties
 from .parser import find_skill_md, read_properties
 from .prompt import to_prompt
 from .validator import validate
 
 __all__ = [
+    # Errors
     "SkillError",
     "ParseError",
     "ValidationError",
+    # Models
     "SkillProperties",
+    "SkillLevel",
+    "SkillOperation",
+    # Graph (composability)
+    "CompositionGraph",
+    "GraphAnalysis",
+    "SkillNode",
+    "validate_composition",
+    # Parser
     "find_skill_md",
-    "validate",
     "read_properties",
+    # Validator
+    "validate",
+    # Prompt generation
     "to_prompt",
 ]
 

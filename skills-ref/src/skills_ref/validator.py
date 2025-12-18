@@ -133,6 +133,14 @@ def _validate_level(level) -> list[str]:
     """
     errors = []
 
+    # Try to coerce string to int (strictyaml returns strings)
+    if isinstance(level, str):
+        try:
+            level = int(level)
+        except ValueError:
+            errors.append(f"Field 'level' must be an integer, got string '{level}'")
+            return errors
+
     if not isinstance(level, int):
         errors.append(f"Field 'level' must be an integer, got {type(level).__name__}")
         return errors
@@ -226,14 +234,20 @@ def validate_metadata(metadata: dict, skill_dir: Optional[Path] = None) -> list[
 
     # Validate composability fields
     level = metadata.get("level")
+    level_int = None  # Coerced level for use in composes validation
     if level is not None:
         errors.extend(_validate_level(level))
+        # Coerce level for use in composes validation
+        try:
+            level_int = int(level) if isinstance(level, str) else level
+        except (ValueError, TypeError):
+            level_int = None
 
     if "operation" in metadata:
         errors.extend(_validate_operation(metadata["operation"]))
 
     if "composes" in metadata:
-        errors.extend(_validate_composes(metadata["composes"], level=level))
+        errors.extend(_validate_composes(metadata["composes"], level=level_int))
 
     return errors
 
