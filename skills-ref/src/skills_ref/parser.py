@@ -102,6 +102,11 @@ def read_properties(skill_dir: Path) -> SkillProperties:
     if not isinstance(description, str) or not description.strip():
         raise ValidationError("Field 'description' must be a non-empty string")
 
+    # Handle composes field - ensure it's a list
+    composes = metadata.get("composes")
+    if composes is not None and not isinstance(composes, list):
+        composes = [composes] if composes else None
+
     return SkillProperties(
         name=name.strip(),
         description=description.strip(),
@@ -109,4 +114,8 @@ def read_properties(skill_dir: Path) -> SkillProperties:
         compatibility=metadata.get("compatibility"),
         allowed_tools=metadata.get("allowed-tools"),
         metadata=metadata.get("metadata"),
+        # Composability fields
+        level=metadata.get("level"),
+        operation=metadata.get("operation"),
+        composes=composes,
     )
