@@ -80,8 +80,42 @@ class TestCompositionGraph:
         assert analysis.is_valid
         assert len(analysis.cycles) == 0
 
+    def test_self_recursion_allowed(self):
+        """Self-recursion (skill composing itself) should be ALLOWED.
+
+        Recursion is a fundamental pattern in functional programming that enables:
+        - Divide-and-conquer algorithms
+        - Tree/graph traversal
+        - Dynamic parallelisation of sub-agents
+        - Minimal code for maximum expressiveness
+        """
+        graph = CompositionGraph()
+        graph.nodes["recursive-search"] = SkillNode(
+            name="recursive-search",
+            level=2,
+            composes=["recursive-search", "web-search"],
+        )
+        graph.nodes["web-search"] = SkillNode(name="web-search", level=1)
+        graph.edges["recursive-search"] = ["recursive-search", "web-search"]
+        graph.edges["web-search"] = []
+
+        cycles = graph.detect_cycles()
+        # Self-recursion should NOT be flagged as a cycle
+        assert len(cycles) == 0, "Self-recursion should be allowed"
+
+    def test_pure_self_recursion_allowed(self):
+        """A skill that ONLY composes itself should be allowed."""
+        graph = CompositionGraph()
+        graph.nodes["self-recursive"] = SkillNode(
+            name="self-recursive", composes=["self-recursive"]
+        )
+        graph.edges["self-recursive"] = ["self-recursive"]
+
+        cycles = graph.detect_cycles()
+        assert len(cycles) == 0, "Pure self-recursion should be allowed"
+
     def test_detect_simple_cycle(self):
-        """Test detection of A -> B -> A cycle."""
+        """Test detection of A -> B -> A cycle (different skills)."""
         graph = CompositionGraph()
         graph.nodes["a"] = SkillNode(name="a", composes=["b"])
         graph.nodes["b"] = SkillNode(name="b", composes=["a"])

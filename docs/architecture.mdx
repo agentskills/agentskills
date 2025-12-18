@@ -504,8 +504,44 @@ The `_` prefix directories are recommended conventions, not requirements.
 When `composes` is specified:
 
 1. All listed skills must exist
-2. A skill cannot compose itself (no cycles)
-3. Level N skills should only compose Level < N skills (recommended)
+2. **Circular dependencies between different skills are prohibited** (e.g., A → B → A)
+3. **Self-recursion is explicitly allowed** - a skill may compose itself
+4. Level N skills should only compose Level < N skills (recommended)
+
+### Why Self-Recursion is Allowed
+
+Self-recursion - where a skill includes itself in its `composes` list - is a deliberate and powerful capability that follows established functional programming principles:
+
+| Benefit | Description |
+|---------|-------------|
+| **Divide-and-conquer** | Complex problems decompose into smaller instances of the same problem |
+| **Minimal code** | Recursive definitions express sophisticated algorithms concisely, reducing context consumption |
+| **Dynamic parallelisation** | Each recursive invocation can spawn independent sub-agents, enabling natural parallelism |
+| **Tail-call patterns** | Recursive skills can implement iterative processes efficiently |
+
+**Example: Recursive Research Skill**
+
+```yaml
+---
+name: deep-research
+description: Recursively research a topic, following citations to build comprehensive understanding.
+level: 2
+operation: READ
+composes:
+  - deep-research    # Self-recursion for following citation chains
+  - web-search
+  - pdf-save
+---
+```
+
+This skill can research a topic, discover relevant citations, and recursively research those citations - all with a single skill definition. The recursion depth is controlled at runtime, not compile-time.
+
+**Contrast with Circular Dependencies**
+
+Circular dependencies between *different* skills (A → B → A) are prohibited because they:
+- Create ambiguous execution order
+- Prevent static analysis of the composition graph
+- Indicate a design flaw (skills should compose downward, not laterally)
 
 ### Operation Propagation
 
