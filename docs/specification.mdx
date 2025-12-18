@@ -216,3 +216,13 @@ scripts/extract.py
 ```
 
 Keep file references one level deep from `SKILL.md`. Avoid deeply nested reference chains.
+
+## Validation
+
+Use the [skills-ref](https://github.com/agentskills/agentskills/tree/main/skills-ref) reference library to validate your skills:
+
+```bash
+skills-ref validate ./my-skill
+```
+
+This checks that your `SKILL.md` frontmatter is valid and follows all naming conventions.
