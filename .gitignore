@@ -4,3 +4,4 @@
 # IDEs
 .idea/
 .vscode/
+.venv
