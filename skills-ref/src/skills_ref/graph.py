@@ -203,12 +203,18 @@ class CompositionGraph:
 
         Best practice: Level N skills should only compose Level < N skills.
         This returns warnings, not errors.
+
+        Note: Self-recursion is excluded from this check because it's
+        a valid pattern (see detect_cycles for rationale).
         """
         warnings = []
         for name, node in self.nodes.items():
             if node.level is None:
                 continue
             for dep in node.composes:
+                # Skip self-recursion - it's allowed
+                if dep == name:
+                    continue
                 dep_node = self.nodes.get(dep)
                 if dep_node and dep_node.level is not None:
                     if dep_node.level >= node.level:

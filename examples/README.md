@@ -36,8 +36,10 @@ examples/
 │       └── SKILL.md            # Save URL as PDF
 │
 ├── _composite/                  # Level 2: Combined operations
-│   └── research/
-│       └── SKILL.md            # web-search + pdf-save
+│   ├── research/
+│   │   └── SKILL.md            # web-search + pdf-save
+│   └── deep-research/
+│       └── SKILL.md            # RECURSIVE: follows citation chains
 │
 └── _workflows/                  # Level 3: Complex orchestration
     └── daily-briefing/
@@ -142,6 +144,26 @@ Update `web-search` once, and:
 - `research` automatically benefits
 - `daily-briefing` automatically benefits
 - Any other consumer automatically benefits
+
+### 6. Recursion
+
+The `deep-research` example demonstrates **self-recursion** - a skill that composes itself:
+
+```yaml
+name: deep-research
+composes:
+  - deep-research    # Self-recursion!
+  - web-search
+  - pdf-save
+```
+
+This enables:
+- **Divide-and-conquer**: Each citation becomes a sub-problem
+- **Dynamic parallelisation**: Sub-agents can run concurrently
+- **Minimal code**: One definition handles arbitrary depth
+- **Context efficiency**: No need for `research-depth-1`, `research-depth-2`, etc.
+
+See `_composite/deep-research/SKILL.md` for the full example
 
 ## Try It Out
 
