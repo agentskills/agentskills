@@ -1,12 +1,11 @@
 ---
 name: deep-research
-description: Recursively research a topic by following citation chains. Spawns sub-agents to explore related topics in parallel, building comprehensive understanding with minimal code.
-level: 2
+description: Workflow that recursively researches a topic by following citation chains. Spawns sub-agents to explore related topics in parallel, building comprehensive understanding through orchestrated recursion.
+level: 3
 operation: READ
 composes:
   - deep-research
-  - web-search
-  - pdf-save
+  - research
 license: Apache-2.0
 ---
 
@@ -28,30 +27,30 @@ This skill demonstrates **self-recursion** - a powerful pattern where a skill co
 ## Composition Graph
 
 ```
-deep-research (Level 2, READ)
+deep-research (Level 3, READ)
 ├── deep-research     # Self-recursion for citation chains
-├── web-search        # Initial search and citation discovery
-└── pdf-save          # Archive sources at each level
+└── research          # Level 2 composite (web-search + pdf-save)
 ```
+
+This follows the MECE principle: at each level, there's only one skill for a given capability. `deep-research` orchestrates recursion, while `research` handles the actual search-and-save operation.
 
 ## How It Works
 
 ```
-1. SEARCH
-   └── Use web-search to find initial answer + citations
+1. RESEARCH
+   └── Use research skill to search and optionally archive sources
 
 2. FOR EACH citation (up to max_depth):
    └── RECURSE: Invoke deep-research on the citation topic
        └── This spawns a sub-agent that performs steps 1-3
        └── Sub-agents can run in parallel
 
-3. ARCHIVE (if save_sources = true)
-   └── Use pdf-save to preserve sources at each level
-
-4. SYNTHESISE
+3. SYNTHESISE
    └── Combine findings from all recursion levels
    └── Flag contradictions between sources
 ```
+
+Note: `research` internally handles both web-search and pdf-save, so `deep-research` only needs to orchestrate the recursion.
 
 ## Inputs
 
@@ -81,15 +80,15 @@ Deep research "how do transformer attention mechanisms handle long-range depende
 
 ```
 deep-research("transformer attention long-range dependencies")
-├── web-search → finds papers on sparse attention, linear attention
+├── research → finds papers on sparse attention, linear attention
 ├── deep-research("sparse attention mechanisms")      # Recursion depth 1
-│   ├── web-search → finds Longformer, BigBird papers
+│   ├── research → finds Longformer, BigBird papers
 │   ├── deep-research("Longformer architecture")      # Recursion depth 2
-│   │   └── web-search → specific implementation details
-│   └── pdf-save → archive sparse attention sources
+│   │   └── research → specific implementation details
+│   └── [research handles archiving internally]
 ├── deep-research("linear attention complexity")      # Recursion depth 1
-│   ├── web-search → finds Performer, Linear Transformer
-│   └── pdf-save → archive linear attention sources
+│   ├── research → finds Performer, Linear Transformer
+│   └── [research handles archiving internally]
 └── SYNTHESISE all findings
 ```
 
@@ -124,5 +123,6 @@ This natural parallelism emerges from the recursive structure without explicit t
 
 - Recursion depth is bounded by `max_depth` to prevent infinite loops
 - Each level inherits the same parameters unless overridden
-- The skill is READ-only because pdf-save writes locally, not to external systems
+- The skill is READ-only because research (and its pdf-save dependency) writes locally, not to external systems
 - Contradictions between sources are automatically flagged for human review
+- This is a Level 3 workflow because recursion is a form of orchestration (deciding when to recurse, when to stop)
