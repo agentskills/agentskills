@@ -1,0 +1,532 @@
+---
+title: "Architecture"
+description: "Composable skills architecture for building complex behaviours from simpler ones."
+---
+
+# Composable Skills Architecture
+
+This document defines the **composability extension** to the Agent Skills format, enabling atomic skills to be combined into higher-order workflows - like higher-order functions in functional programming.
+
+## The Problem: Non-Deterministic Tool Selection in Multi-Team Environments
+
+As organisations rapidly develop MCP servers and agent skills, a critical problem emerges that threatens the reliability of AI agent systems.
+
+### Why Flat Skills Fail at Scale
+
+When multiple developers create skills independently - particularly across different teams or MCP servers - they inevitably build overlapping functionality with subtly different implementations. Without a formal composition hierarchy, these skills violate **MECE principles** (Mutually Exclusive, Collectively Exhaustive):
+
+| Problem | Consequence |
+|---------|-------------|
+| **Overlapping skills** | Multiple skills can handle the same request, but with different approaches and assumptions |
+| **Non-deterministic selection** | LLMs may choose different tools for identical prompts across runs |
+| **Cascading inconsistency** | A skill chosen on Monday may not be chosen on Tuesday, even for the same task |
+| **Unpredictable permutations** | With N overlapping skills, there are N! possible execution paths the agent might take |
+
+**The result:** Agent systems that appear to "have a mind of their own" - executing tasks differently each time, making them unsuitable for applications requiring real-world reliability.
+
+### What Trustworthy Agents Require
+
+Production-grade agent systems must be:
+
+- **Predictable**: The same input should produce the same tool selection
+- **Deterministic**: Execution paths should be reproducible and auditable
+- **Reliable**: Behaviour that worked yesterday should work identically tomorrow
+- **Trustworthy**: Users must be confident the agent will "just do the right thing"
+
+Flat skill definitions cannot guarantee these properties because they provide no mechanism for:
+- Defining canonical implementations of common operations
+- Expressing skill dependencies and composition relationships
+- Ensuring teams build on shared primitives rather than duplicating logic
+- Preventing overlapping skill definitions that confuse tool selection
+
+### The Fast-Moving Team Problem
+
+This problem is particularly acute in fast-moving organisations where:
+- Multiple teams develop MCP servers in parallel
+- Skills are added rapidly without cross-team coordination
+- Different developers have different assumptions about how tasks should be performed
+- There is no single source of truth for "how we do X"
+
+The lack of composition primitives means teams cannot formally declare "our `research` skill uses the canonical `web-search` skill" - instead, each team builds their own search implementation, creating the overlap that causes non-determinism.
+
+### The Context Window Problem
+
+Compounding these challenges is a fundamental constraint: **LLMs have finite context windows, yet we are experiencing an explosion of available tools**.
+
+When an agent must reason about dozens of flat, potentially overlapping skills:
+
+| Challenge | Impact |
+|-----------|--------|
+| **Context saturation** | Tool definitions consume budget that could be used for actual reasoning |
+| **Ambiguous selection** | Similar descriptions force the LLM to make arbitrary choices |
+| **Combinatorial complexity** | Reasoning difficulty grows exponentially with tool count |
+| **Inconsistent mental models** | The LLM cannot form clear abstractions when tools overlap |
+
+Composable skills provide an elegant solution: **small, contained, unambiguous primitives** that the LLM can reason about clearly. Instead of choosing between 50 overlapping tools with subtle differences, the agent selects from a curated set of atomic operations with single responsibilities.
+
+The composition layer then handles orchestration deterministically - no LLM reasoning required for "which sub-tool should I use?" because the `composes` field has already declared the answer.
+
+## The Solution: Composable Skills
+
+Composable skills introduce a **hierarchical architecture** that enforces MECE principles through explicit composition:
+
+```
+Level 3: Workflows        Complex multi-step processes with decision logic
+    ↑ composes
+Level 2: Composites       Combined operations for common patterns
+    ↑ composes
+Level 1: Atomics          Single-purpose operations (READ or WRITE)
+    ↑ wraps
+Level 0: Primitives       Raw scripts, APIs, or tools
+```
+
+### How Composition Solves Non-Determinism
+
+| Principle | Implementation |
+|-----------|----------------|
+| **Single responsibility** | Level 1 atomics do ONE thing - no overlap possible |
+| **Explicit dependencies** | `composes` field declares exactly which skills are used |
+| **Canonical paths** | Higher-level skills compose lower-level ones, not alternatives |
+| **Auditable structure** | Dependency graph is visible, verifiable, and enforceable |
+
+When a team declares that `research` composes `web-search` + `pdf-save`, there is no ambiguity about which tools will be invoked. The LLM selects `research`, and the composition is deterministic.
+
+### Benefits of This Architecture
+
+| Benefit | Description |
+|---------|-------------|
+| **Predictability** | Composition graph determines execution path - no surprises |
+| **Determinism** | Same skill selection yields same tool invocations every time |
+| **Simpler LLM reasoning** | Small, unambiguous atomics are easier to reason about than many overlapping tools |
+| **Context efficiency** | Fewer tool definitions in context; composition replaces enumeration |
+| **Team coordination** | Shared atomics prevent duplicate implementations across teams |
+| **Reusability** | Write atomic skills once, compose everywhere |
+| **Testability** | Each level can be tested independently; failures are isolated |
+| **Safety** | Clear READ/WRITE separation at every level; safety propagates upward |
+| **Discoverability** | Structured hierarchy is easy to navigate and understand |
+| **Maintainability** | Changes isolated to appropriate level; update once, benefit everywhere |
+| **Extensibility** | New skills slot into existing levels without restructuring |
+| **Transparency** | `composes` field makes dependencies explicit and auditable |
+
+### The Functional Programming Analogy
+
+Think of composable skills like higher-order functions:
+
+```python
+# Level 1: Atomic functions
+def read_email(query): ...
+def search_web(query): ...
+def save_pdf(url, path): ...
+
+# Level 2: Composite function
+def research(topic):
+    results = search_web(topic)
+    for url in results.citations:
+        save_pdf(url, f"sources/{url.slug}.pdf")
+    return results
+
+# Level 3: Workflow function
+def daily_synthesis():
+    emails = read_email("flagged:true")
+    for item in classify(emails):
+        if item.needs_research:
+            research(item.topic)
+        create_task(item)
+```
+
+The same principles apply to skills:
+- **Pure functions** → Atomic skills with single responsibility
+- **Function composition** → Composite skills combining atomics
+- **Pipelines** → Workflow skills orchestrating composites
+
+---
+
+## Skill Levels
+
+### Level 0: Primitives
+
+The foundation layer. Primitives are **not skills themselves** - they're the raw scripts, APIs, or tools that skills wrap.
+
+**Examples:**
+- Python scripts (`extract_pdf.py`)
+- Shell commands (`git`, `curl`)
+- API endpoints (Gmail API, Slack API)
+- MCP tools
+
+Primitives have no `SKILL.md`. Skills at Level 1 wrap them.
+
+### Level 1: Atomic Skills
+
+Single-purpose operations. Each atomic skill does **ONE thing** and classifies as either READ or WRITE.
+
+**Characteristics:**
+- Does exactly one operation
+- Has clear inputs and outputs
+- Either READ-only (safe) or WRITE (requires confirmation)
+- Wraps one or more primitives
+
+**Example frontmatter:**
+```yaml
+---
+name: email-read
+description: Search and fetch emails from Gmail or Outlook. Use when user needs to find or read emails.
+level: 1
+operation: READ
+---
+```
+
+**Common atomic skills:**
+
+| Skill | Operation | Purpose |
+|-------|-----------|---------|
+| `email-read` | READ | Search/fetch emails |
+| `email-draft` | WRITE | Create email drafts |
+| `web-search` | READ | Search the web |
+| `pdf-save` | WRITE | Save URL as PDF |
+| `calendar-read` | READ | Query calendar events |
+| `calendar-write` | WRITE | Create/modify events |
+
+### Level 2: Composite Skills
+
+Combined operations that orchestrate multiple atomic skills into cohesive workflows.
+
+**Characteristics:**
+- Composes 2+ atomic skills
+- Has a clear, single purpose
+- May include transformation logic
+- Safety level = most restrictive of components
+
+**Example frontmatter:**
+```yaml
+---
+name: research
+description: Research a topic with web search and source verification. Use for comprehensive topic research.
+level: 2
+operation: READ  # All composed skills are READ-only
+composes:
+  - web-search
+  - web-fetch
+---
+```
+
+**Common composite skills:**
+
+| Skill | Composes | Purpose |
+|-------|----------|---------|
+| `research` | web-search + web-fetch | Topic research with sources |
+| `evidence-collector` | web-fetch + pdf-save | Archive web pages as PDFs |
+| `customer-intel` | hubspot-read + slack-read + email-read | Aggregate customer data |
+| `meeting-capture` | transcript-read + note-write | Meeting notes from transcripts |
+
+### Level 3: Workflow Skills
+
+Complex multi-step workflows with decision logic, branching, and multiple outputs.
+
+**Characteristics:**
+- Composes multiple Level 2 skills
+- Contains decision points and branching
+- Produces multiple outputs or side effects
+- May run over extended time periods
+
+**Example frontmatter:**
+```yaml
+---
+name: daily-synthesis
+description: Extract and track action items from all communication channels. Run daily for task tracking.
+level: 3
+operation: WRITE  # Creates issues/tasks
+composes:
+  - email-read
+  - slack-read
+  - transcript-read
+  - linear-write
+---
+```
+
+---
+
+## New Frontmatter Fields
+
+The composability extension adds these optional fields to the SKILL.md frontmatter:
+
+### `level` (optional)
+
+Integer 1-3 indicating the skill's tier in the composition hierarchy.
+
+| Value | Meaning |
+|-------|---------|
+| `1` | Atomic - single operation |
+| `2` | Composite - combines atomics |
+| `3` | Workflow - complex orchestration |
+
+If omitted, the skill is treated as a standalone (traditional) skill.
+
+### `operation` (optional)
+
+The safety classification of the skill.
+
+| Value | Meaning | Confirmation |
+|-------|---------|--------------|
+| `READ` | Only reads data, no side effects | Never required |
+| `WRITE` | Creates, modifies, or deletes data | Recommended |
+| `TRANSFORM` | Local-only transformation | Never required |
+
+For composite skills, operation should be the **most restrictive** of its components:
+- If any component is WRITE → skill is WRITE
+- If all components are READ → skill is READ
+
+### `composes` (optional)
+
+List of skill names this skill uses. Creates an explicit dependency graph.
+
+```yaml
+composes:
+  - email-read
+  - slack-read
+  - hubspot-read
+```
+
+**Benefits of explicit composition:**
+- **Auditable**: See exactly what a skill does
+- **Testable**: Verify all dependencies are available
+- **Upgradeable**: Know what's affected when changing a skill
+
+### `primitives` (optional, Level 1 only)
+
+For atomic skills, lists the underlying scripts or tools wrapped:
+
+```yaml
+primitives:
+  gmail: scripts/gmail/search_emails.py
+  outlook: scripts/outlook/get_emails.py
+```
+
+---
+
+## Example: Building a Research Workflow
+
+### Step 1: Atomic Skills (Level 1)
+
+**web-search/SKILL.md:**
+```yaml
+---
+name: web-search
+description: Search the web using Perplexity AI. Returns synthesised answers with citations.
+level: 1
+operation: READ
+primitives:
+  perplexity: scripts/perplexity_search.py
+---
+
+# Web Search
+
+Search the web and get an AI-synthesised answer with source citations.
+
+## Usage
+...
+```
+
+**pdf-save/SKILL.md:**
+```yaml
+---
+name: pdf-save
+description: Save a webpage as a PDF file with metadata.
+level: 1
+operation: WRITE
+primitives:
+  default: scripts/save_webpage_pdf.py
+---
+
+# PDF Save
+
+Save any URL as a PDF document.
+
+## Usage
+...
+```
+
+### Step 2: Composite Skill (Level 2)
+
+**research/SKILL.md:**
+```yaml
+---
+name: research
+description: Research a topic comprehensively with web search and optional source archival.
+level: 2
+operation: READ  # pdf-save only used optionally
+composes:
+  - web-search
+  - pdf-save
+---
+
+# Research
+
+Comprehensive topic research with source verification.
+
+## Workflow
+
+1. Use **web-search** to get initial answer and citations
+2. Optionally fetch full content from top citations
+3. If `save_sources=true`, use **pdf-save** to archive each citation
+
+## Inputs
+
+- `query`: The research question
+- `depth`: quick | standard | thorough
+- `save_sources`: boolean (default: false)
+
+## Outputs
+
+- `summary`: Synthesised answer
+- `sources`: List of citations with key points
+- `saved_pdfs`: Paths to archived PDFs (if save_sources)
+```
+
+### Step 3: Workflow Skill (Level 3)
+
+**daily-briefing/SKILL.md:**
+```yaml
+---
+name: daily-briefing
+description: Generate comprehensive morning briefing from all sources. Run at start of day.
+level: 3
+operation: READ
+composes:
+  - email-read
+  - calendar-read
+  - research
+  - customer-intel
+---
+
+# Daily Briefing
+
+Generate a comprehensive morning briefing.
+
+## Workflow
+
+1. **Fetch calendar** → Today's meetings using calendar-read
+2. **For each meeting with external attendees:**
+   - Run **customer-intel** for their company
+   - Run **research** for any agenda topics
+3. **Check email** → Flagged/urgent items using email-read
+4. **Generate briefing** → Structured summary with action items
+
+## Decision Points
+
+- Skip customer-intel for internal-only meetings
+- Increase research depth for client presentations
+- Flag urgent emails that need immediate response
+```
+
+---
+
+## Directory Structure
+
+Recommended organisation for composable skills:
+
+```
+skills/
+├── _primitives/          # Level 0: Script references (optional)
+│   ├── email.yaml
+│   ├── web.yaml
+│   └── ...
+│
+├── _atomic/              # Level 1: Atomic skills
+│   ├── email-read/
+│   │   └── SKILL.md
+│   ├── email-draft/
+│   │   └── SKILL.md
+│   ├── web-search/
+│   │   └── SKILL.md
+│   └── ...
+│
+├── _composite/           # Level 2: Composite skills
+│   ├── research/
+│   │   └── SKILL.md
+│   ├── customer-intel/
+│   │   └── SKILL.md
+│   └── ...
+│
+├── _workflows/           # Level 3: Workflow skills
+│   ├── daily-synthesis/
+│   │   └── SKILL.md
+│   └── ...
+│
+└── [standalone]/         # Traditional skills (no level)
+    └── SKILL.md
+```
+
+The `_` prefix directories are recommended conventions, not requirements.
+
+---
+
+## Validation Rules
+
+### Composition Validation
+
+When `composes` is specified:
+
+1. All listed skills must exist
+2. A skill cannot compose itself (no cycles)
+3. Level N skills should only compose Level < N skills (recommended)
+
+### Operation Propagation
+
+For composite skills:
+- If `operation` is not specified, infer from components
+- If ANY component is WRITE → skill is WRITE
+- If ALL components are READ → skill is READ
+- TRANSFORM < READ < WRITE (safety ordering)
+
+### Level Validation
+
+If `level` is specified:
+- Level 1: `composes` should be empty or omitted
+- Level 2-3: `composes` should list at least one skill (recommended)
+
+---
+
+## Migration Path
+
+Existing skills don't need to change. The new fields are all optional:
+
+1. **No changes required**: Skills without `level`/`composes`/`operation` work as before
+2. **Gradual adoption**: Add fields as you refactor skills
+3. **Backwards compatible**: Clients that don't understand new fields ignore them
+
+---
+
+## Implementation Notes
+
+### For Skill Authors
+
+1. **Start atomic**: Build Level 1 skills for your core operations
+2. **Compose gradually**: Create Level 2 skills as patterns emerge
+3. **Document workflows**: Level 3 skills need clear decision logic
+4. **Explicit is better**: Always specify `composes` for clarity
+
+### For Client Implementers
+
+1. **Parse new fields**: Add `level`, `operation`, `composes` to your model
+2. **Validate composition**: Check that composed skills exist
+3. **Propagate safety**: Compute effective `operation` from components
+4. **Show dependencies**: Consider displaying the composition graph
+
+### For Discovery Systems
+
+The composition graph enables new features:
+- "Skills like X" → find skills at same level
+- "Skills using X" → find composites that include a skill
+- "Safe alternatives" → find READ-only versions
+
+---
+
+## References
+
+- [Agent Skills Specification](specification.mdx) - Base format
+- [Functional Programming Concepts](https://en.wikipedia.org/wiki/Higher-order_function) - Theoretical background
+- [life-core Skills](https://github.com/edu-ap/life-core/.claude/skills) - Reference implementation
+
+---
+
+*This architecture extension is backwards-compatible with Agent Skills v1.0*
