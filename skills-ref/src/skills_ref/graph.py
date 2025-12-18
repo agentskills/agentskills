@@ -131,6 +131,19 @@ class CompositionGraph:
     def detect_cycles(self) -> list[CycleError]:
         """Detect circular dependencies in the composition graph.
 
+        IMPORTANT: Self-recursion is explicitly ALLOWED. A skill that composes
+        itself (e.g., `recursive-search` composing `recursive-search`) is a
+        valid and powerful pattern that enables:
+
+        - Divide-and-conquer algorithms with minimal code
+        - Recursive tree/graph traversal
+        - Dynamic parallelisation of sub-agents
+        - Tail-call optimisation patterns
+
+        This follows functional programming principles where recursion is a
+        fundamental control structure. Only cycles involving DIFFERENT skills
+        are flagged as errors (e.g., A → B → A).
+
         Uses depth-first search with three states:
         - unvisited: not yet processed
         - visiting: currently in the DFS stack (cycle if revisited)
@@ -148,14 +161,20 @@ class CompositionGraph:
                 # Found a cycle - extract the cycle portion of the path
                 cycle_start = path.index(node)
                 cycle = path[cycle_start:] + [node]
-                cycles.append(CycleError(cycle=cycle))
+                # Only report if cycle involves multiple distinct skills
+                # Self-recursion (single skill) is allowed
+                if len(set(cycle)) > 1:
+                    cycles.append(CycleError(cycle=cycle))
                 return
 
             visiting.add(node)
             path.append(node)
 
             for dep in self.edges.get(node, []):
-                if dep in self.nodes:  # Only follow edges to known nodes
+                # Skip self-references - recursion is allowed
+                if dep == node:
+                    continue
+                if dep in self.nodes:
                     dfs(dep, path.copy())
 
             visiting.remove(node)
