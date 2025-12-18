@@ -7,6 +7,7 @@ from pathlib import Path
 import click
 
 from .errors import SkillError
+from .graph import CompositionGraph, validate_composition
 from .parser import read_properties
 from .prompt import to_prompt
 from .validator import validate
@@ -99,6 +100,126 @@ def to_prompt_cmd(skill_paths: tuple[Path, ...]):
     except SkillError as e:
         click.echo(f"Error: {e}", err=True)
         sys.exit(1)
+
+
+@main.command("graph")
+@click.argument(
+    "skill_paths", type=click.Path(exists=True, path_type=Path), nargs=-1, required=True
+)
+@click.option(
+    "--format",
+    "-f",
+    type=click.Choice(["ascii", "mermaid", "json"]),
+    default="ascii",
+    help="Output format for the graph.",
+)
+@click.option(
+    "--validate/--no-validate",
+    default=True,
+    help="Check for circular dependencies and missing skills.",
+)
+def graph_cmd(skill_paths: tuple[Path, ...], format: str, validate: bool):
+    """Visualize the composition graph of skills.
+
+    Accepts one or more skill directories or root directories containing skills.
+    Shows how skills compose each other and detects circular dependencies.
+
+    Output formats:
+        ascii:   ASCII tree representation (default)
+        mermaid: Mermaid diagram syntax for documentation
+        json:    JSON representation of nodes and edges
+
+    Examples:
+        skills-ref graph ./skills/_atomic ./skills/_composite
+        skills-ref graph --format=mermaid ./skills
+        skills-ref graph --no-validate ./skills
+
+    Exit codes:
+        0: Success (and valid if --validate)
+        1: Errors found (cycles or missing dependencies)
+    """
+    graph = CompositionGraph()
+
+    # Add all skills from provided paths
+    for skill_path in skill_paths:
+        if _is_skill_md_file(skill_path):
+            graph.add_skill(skill_path.parent)
+        elif skill_path.is_dir():
+            # Check if it's a skill directory or a root containing skills
+            from .parser import find_skill_md
+
+            if find_skill_md(skill_path):
+                graph.add_skill(skill_path)
+            else:
+                graph.add_skills_from_directory(skill_path)
+
+    if not graph.nodes:
+        click.echo("No skills found in the provided paths.", err=True)
+        sys.exit(1)
+
+    # Perform validation if requested
+    if validate:
+        analysis = graph.analyze()
+
+        if analysis.cycles:
+            click.echo("Circular dependencies detected:", err=True)
+            for cycle in analysis.cycles:
+                click.echo(f"  - {cycle}", err=True)
+
+        if analysis.missing_dependencies:
+            click.echo("Missing dependencies:", err=True)
+            for skill, missing in analysis.missing_dependencies.items():
+                for dep in missing:
+                    click.echo(f"  - '{skill}' requires unknown skill '{dep}'", err=True)
+
+        if analysis.level_violations:
+            click.echo("Level hierarchy warnings:", err=True)
+            for warning in analysis.level_violations:
+                click.echo(f"  - {warning}", err=True)
+
+        if not analysis.is_valid:
+            click.echo("", err=True)
+            click.echo(
+                f"Graph has {len(analysis.cycles)} cycle(s) and "
+                f"{sum(len(m) for m in analysis.missing_dependencies.values())} "
+                f"missing dependency reference(s).",
+                err=True,
+            )
+
+    # Output the graph
+    click.echo("")
+    if format == "ascii":
+        click.echo(graph.to_ascii())
+    elif format == "mermaid":
+        click.echo(graph.to_mermaid())
+    elif format == "json":
+        analysis = graph.analyze()
+        output = {
+            "nodes": {
+                name: {
+                    "level": node.level,
+                    "operation": node.operation,
+                    "composes": node.composes,
+                    "path": str(node.path) if node.path else None,
+                }
+                for name, node in analysis.nodes.items()
+            },
+            "edges": dict(analysis.edges),
+            "statistics": {
+                "total_skills": len(analysis.nodes),
+                "roots": analysis.get_roots(),
+                "leaves": analysis.get_leaves(),
+                "cycles": len(analysis.cycles),
+                "missing_deps": sum(len(m) for m in analysis.missing_dependencies.values()),
+            },
+        }
+        click.echo(json.dumps(output, indent=2))
+
+    # Exit with error if validation failed
+    if validate:
+        analysis = graph.analyze()
+        if not analysis.is_valid:
+            sys.exit(1)
 
 
 if __name__ == "__main__":
