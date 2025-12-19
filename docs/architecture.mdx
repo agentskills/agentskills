@@ -845,8 +845,21 @@ The composition graph enables new features:
 
 ---
 
-## References
+## Theoretical Foundation
 
+This architecture applies principles from **functional programming-based hardware synthesis** to LLM agent orchestration. The key insight: the same abstractions that enable safe parallel hardware compilation enable safe parallel agent execution.
+
+| FP → Hardware | Composable Skills → LLM |
+|---------------|-------------------------|
+| Higher-order functions as parameters | L3 workflows compose L2/L1 skills |
+| Latency-insensitive interfaces | Typed inputs/outputs enable composition |
+| Robust type-checking ensures no race conditions | `skills-ref typecheck` ensures composition validity |
+| Composable RTL modules | Skills with typed schemas |
+| Distributed memories, isolated state | Sub-agents with isolated context |
+
+For detailed background, see:
+
+- [Compiling Higher Order Functional Programs to Composable Digital Hardware](https://doi.org/10.1109/FCCM.2014.69) - IEEE FCCM 2014
 - [Agent Skills Specification](specification.mdx) - Base format
 - [Functional Programming Concepts](https://en.wikipedia.org/wiki/Higher-order_function) - Theoretical background
 - [life-core Skills](https://github.com/edu-ap/life-core/.claude/skills) - Reference implementation
