@@ -5,8 +5,9 @@ A comprehensive example demonstrating the full power of composable skills archit
 ## The Problem
 
 ```
-User: "Plan a beach vacation from San Francisco, budget $2,000,
-       available March 15-22 or April 5-12"
+User: "Plan a beach or ski vacation from San Francisco, budget $2,000,
+       available March 15-22 or April 5-12, good food,
+       < 8hr flight or 5hr drive"
 ```
 
 This requires:

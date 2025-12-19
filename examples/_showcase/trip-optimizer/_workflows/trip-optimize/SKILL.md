@@ -26,7 +26,7 @@ Example User Input:
 ├── Budget: $2,000
 ├── Dates available: March 15-22 OR April 5-12
 ├── Departure: San Francisco (SFO)
-├── Preferences: Beach, good food, < 8hr flight
+├── Preferences: Beach OR ski, good food, < 8hr flight OR 5hr drive
 └── Constraints: No visa required (US passport)
 
 Optimization Objectives:
