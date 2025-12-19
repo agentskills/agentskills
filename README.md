@@ -47,6 +47,16 @@ When an agent must choose between dozens of flat, potentially overlapping skills
 
 Composable skills address this by providing **small, contained, unambiguous primitives** that the LLM can reason about clearly. Instead of choosing between 50 overlapping tools, the agent selects from a curated set of atomic operations - and composition handles the rest deterministically.
 
+### Industry Recognition
+
+These challenges are well-documented:
+
+- **a16z**: "MCP lacks a built-in workflow concept" for multi-step tasks ([Deep Dive into MCP](https://a16z.com/a-deep-dive-into-mcp-and-the-future-of-ai-tooling/))
+- **Simon Willison**: "Anthropic outline the proposal... but provide no code" ([Code Execution with MCP](https://simonwillison.net/2025/Nov/4/code-execution-with-mcp/))
+- **Barry Zhang** (Anthropic): "Reduce unnecessary non-determinism... using more code components" ([Making Peace with LLM Non-determinism](https://barryzhang.substack.com/p/making-peace-with-llm-non-determinism))
+
+This architecture provides those "code components" at the **composition layer**.
+
 ## The Solution: Composable Skills
 
 Composable skills introduce a **hierarchical architecture** that enforces MECE principles through explicit composition:
@@ -171,6 +181,13 @@ skills/
 ## Backwards Compatibility
 
 The composability extension is fully backwards-compatible. Skills without `level`, `operation`, or `composes` fields continue to work unchanged. Teams can adopt composability incrementally.
+
+## References
+
+- [Compiling Higher Order Functional Programs to Composable Digital Hardware](https://doi.org/10.1109/FCCM.2014.69) - Theoretical foundation (FCCM 2014)
+- [A Deep Dive into MCP and the Future of AI Tooling](https://a16z.com/a-deep-dive-into-mcp-and-the-future-of-ai-tooling/) - a16z
+- [Making Peace with LLM Non-determinism](https://barryzhang.substack.com/p/making-peace-with-llm-non-determinism) - Barry Zhang (Anthropic)
+- [Microsoft MCP Gateway](https://github.com/microsoft/mcp-gateway) - Gateway pattern reference
 
 ## About
 

@@ -820,6 +820,75 @@ Existing skills don't need to change. The new fields are all optional:
 
 ---
 
+## Industry Validation
+
+The problems this architecture addresses are well-documented in the industry:
+
+| Challenge | Industry Recognition | Source |
+|-----------|---------------------|--------|
+| **"MCP lacks a built-in workflow concept"** for multi-step tasks | a16z | [Deep Dive into MCP](https://a16z.com/a-deep-dive-into-mcp-and-the-future-of-ai-tooling/) |
+| **Tool selection unsolved**: "Does everyone need to implement their own RAG for tools?" | a16z | [Deep Dive into MCP](https://a16z.com/a-deep-dive-into-mcp-and-the-future-of-ai-tooling/) |
+| **No reference implementation**: "Anthropic outline the proposal... but provide no code" | Simon Willison | [Code Execution with MCP](https://simonwillison.net/2025/Nov/4/code-execution-with-mcp/) |
+| **Debugging**: "Each MCP client has its own quirks, traces missing or hard to find" | a16z | [Deep Dive into MCP](https://a16z.com/a-deep-dive-into-mcp-and-the-future-of-ai-tooling/) |
+
+Static type checking at composition time catches errors **before** code generation, reducing the debugging burden.
+
+### The Non-Determinism Choice
+
+If we accept that skills *must* be non-deterministic, we're making an **arbitrary philosophical choice** that limits what agents can reliably accomplish. Barry Zhang (Anthropic, co-creator of Agent Skills) wrote in [Making Peace with LLM Non-determinism](https://barryzhang.substack.com/p/making-peace-with-llm-non-determinism):
+
+> *"Reduce unnecessary non-determinism... Some examples are seeding, greedy sampling, and **using more code components**."*
+
+This architecture provides the "code components" Barry recommends, but at the **composition layer**.
+
+---
+
+## Gateway MCP Pattern
+
+This architecture isn't just about client-side tool calling. The **gateway MCP pattern** is increasingly common in production:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         HOST / CLIENT                            │
+│  ┌─────────┐                                                    │
+│  │   LLM   │  ◄── Needs typed skill contracts for reasoning     │
+│  └────┬────┘                                                    │
+│       │                                                         │
+│       ▼                                                         │
+│  ┌─────────────────┐                                            │
+│  │  Gateway MCP    │  ◄── Aggregates tools, routes requests     │
+│  │  (Proxy/Router) │      Needs composition graph for routing   │
+│  └────┬───────────┬┘                                            │
+│       │           │                                             │
+│       ▼           ▼                                             │
+│  ┌─────────┐ ┌─────────┐                                        │
+│  │ MCP     │ │ MCP     │  ◄── May contain LLMs processing       │
+│  │ Server A│ │ Server B│      requests internally               │
+│  └─────────┘ └─────────┘                                        │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Why Gateways Need Typed Composition
+
+| Gateway Challenge | How Typed Skills Help | Source |
+|-------------------|----------------------|--------|
+| Request routing by tool namespace | `composes` field declares explicit dependencies | [Solo.io](https://www.solo.io/blog/why-do-we-need-a-new-gateway-for-ai-agents) |
+| Aggregating tool lists from downstream servers | `level` field enables hierarchical filtering | [Gravitee](https://www.gravitee.io/blog/mcp-api-gateway-explained-protocols-caching-and-remote-server-integration) |
+| Policy enforcement per tool category | `operation` (READ/WRITE) enables safety policies | [Traefik](https://doc.traefik.io/traefik-hub/mcp-gateway/guides/mcp-gateway-best-practices) |
+| Deterministic routing under load | Composition graph = explicit execution path | [Microsoft MCP Gateway](https://github.com/microsoft/mcp-gateway) |
+
+### Composability at Every Layer
+
+Skill composability applies at **every layer** of the stack:
+
+- **Client-side**: User's agent selecting skills
+- **Gateway**: Routing and aggregating across MCP servers ([mcp-proxy](https://github.com/TBXark/mcp-proxy), [pluggedin-mcp-proxy](https://github.com/VeriTeknik/pluggedin-mcp-proxy))
+- **Server-side**: Internal LLM reasoning within each MCP server
+
+A typed composition graph is a "mental model" LLMs can use at ALL these layers, not just a runtime constraint.
+
+---
+
 ## Implementation Notes
 
 ### For Skill Authors
