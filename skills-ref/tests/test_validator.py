@@ -1,6 +1,7 @@
 """Tests for validator module."""
 
-from skills_ref.validator import validate
+from skills_ref.models import FieldSchema, SkillProperties
+from skills_ref.validator import typecheck_composition, validate
 
 
 def test_valid_skill(tmp_path):
@@ -639,3 +640,325 @@ Works without level, operation, or composes.
 """)
         errors = validate(skill_dir)
         assert errors == [], "Backwards compatibility broken - skills without composability fields should be valid"
+
+
+# =============================================================================
+# Type Checking Tests - Input/Output Schema Validation
+# =============================================================================
+
+
+class TestFieldSchemaValidation:
+    """Tests for individual field schema validation."""
+
+    def test_valid_input_schema(self, tmp_path):
+        """Valid input schemas should be accepted."""
+        skill_dir = tmp_path / "typed-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: typed-skill
+description: A skill with typed inputs
+level: 1
+operation: READ
+inputs:
+  - name: query
+    type: string
+    required: true
+    description: Search query
+  - name: limit
+    type: integer
+    required: false
+    default: 10
+---
+# Typed Skill
+""")
+        errors = validate(skill_dir)
+        assert errors == []
+
+    def test_valid_output_schema(self, tmp_path):
+        """Valid output schemas should be accepted."""
+        skill_dir = tmp_path / "typed-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: typed-skill
+description: A skill with typed outputs
+level: 1
+operation: READ
+outputs:
+  - name: results
+    type: string[]
+    description: List of results
+  - name: count
+    type: integer
+---
+# Typed Skill
+""")
+        errors = validate(skill_dir)
+        assert errors == []
+
+    def test_valid_epistemic_requirements(self, tmp_path):
+        """Epistemic requirements (requires_source, requires_rationale) should be accepted."""
+        skill_dir = tmp_path / "rigorous-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: rigorous-skill
+description: A skill requiring sources and rationale
+level: 1
+operation: READ
+outputs:
+  - name: answer
+    type: string
+    requires_source: true
+    requires_rationale: true
+    min_length: 50
+  - name: sources
+    type: string[]
+    min_items: 2
+---
+# Rigorous Skill
+""")
+        errors = validate(skill_dir)
+        assert errors == []
+
+    def test_valid_range_constraint(self, tmp_path):
+        """Range constraints should be accepted."""
+        skill_dir = tmp_path / "bounded-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: bounded-skill
+description: A skill with range constraints
+level: 1
+operation: READ
+outputs:
+  - name: confidence
+    type: number
+    range:
+      - 0
+      - 1
+  - name: score
+    type: integer
+    range:
+      - 0
+      - 100
+---
+# Bounded Skill
+""")
+        errors = validate(skill_dir)
+        assert errors == []
+
+    def test_invalid_range_min_greater_than_max(self, tmp_path):
+        """Range with min > max should be rejected."""
+        skill_dir = tmp_path / "bad-range"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: bad-range
+description: A skill with invalid range
+level: 1
+operation: READ
+outputs:
+  - name: score
+    type: number
+    range:
+      - 100
+      - 0
+---
+# Bad Range
+""")
+        errors = validate(skill_dir)
+        assert any("min" in e and "max" in e for e in errors)
+
+    def test_field_missing_name(self, tmp_path):
+        """Fields without name should be rejected."""
+        skill_dir = tmp_path / "unnamed-field"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: unnamed-field
+description: A skill with unnamed field
+level: 1
+operation: READ
+inputs:
+  - type: string
+---
+# Unnamed Field
+""")
+        errors = validate(skill_dir)
+        assert any("name" in e.lower() for e in errors)
+
+
+class TestTypeChecking:
+    """Tests for composition type checking."""
+
+    def test_compatible_types_exact_match(self):
+        """Exact type matches should pass."""
+        parent = SkillProperties(
+            name="parent",
+            description="Parent skill",
+            composes=["child"],
+            inputs=[FieldSchema(name="query", type="string")],
+        )
+        child = SkillProperties(
+            name="child",
+            description="Child skill",
+            inputs=[FieldSchema(name="query", type="string")],
+        )
+        errors = typecheck_composition(parent, {"child": child})
+        assert errors == []
+
+    def test_compatible_types_integer_to_number(self):
+        """Integer widening to number should pass."""
+        parent = SkillProperties(
+            name="parent",
+            description="Parent skill",
+            composes=["child"],
+            inputs=[FieldSchema(name="count", type="integer")],
+        )
+        child = SkillProperties(
+            name="child",
+            description="Child skill",
+            inputs=[FieldSchema(name="count", type="number")],
+        )
+        errors = typecheck_composition(parent, {"child": child})
+        assert errors == []
+
+    def test_compatible_types_datetime_to_date(self):
+        """Datetime satisfying date should pass."""
+        parent = SkillProperties(
+            name="parent",
+            description="Parent skill",
+            composes=["child"],
+            inputs=[FieldSchema(name="when", type="datetime")],
+        )
+        child = SkillProperties(
+            name="child",
+            description="Child skill",
+            inputs=[FieldSchema(name="when", type="date")],
+        )
+        errors = typecheck_composition(parent, {"child": child})
+        assert errors == []
+
+    def test_compatible_types_any(self):
+        """Any type should be compatible with everything."""
+        parent = SkillProperties(
+            name="parent",
+            description="Parent skill",
+            composes=["child"],
+            inputs=[FieldSchema(name="data", type="any")],
+        )
+        child = SkillProperties(
+            name="child",
+            description="Child skill",
+            inputs=[FieldSchema(name="data", type="string")],
+        )
+        errors = typecheck_composition(parent, {"child": child})
+        assert errors == []
+
+    def test_incompatible_types_string_to_integer(self):
+        """String to integer should fail."""
+        parent = SkillProperties(
+            name="parent",
+            description="Parent skill",
+            composes=["child"],
+            inputs=[FieldSchema(name="count", type="string")],
+        )
+        child = SkillProperties(
+            name="child",
+            description="Child skill",
+            inputs=[FieldSchema(name="count", type="integer", required=True)],
+        )
+        errors = typecheck_composition(parent, {"child": child})
+        assert any("type mismatch" in e.lower() for e in errors)
+
+    def test_incompatible_types_list_to_scalar(self):
+        """List type to scalar should fail."""
+        parent = SkillProperties(
+            name="parent",
+            description="Parent skill",
+            composes=["child"],
+            inputs=[FieldSchema(name="items", type="string[]")],
+        )
+        child = SkillProperties(
+            name="child",
+            description="Child skill",
+            inputs=[FieldSchema(name="items", type="string", required=True)],
+        )
+        errors = typecheck_composition(parent, {"child": child})
+        assert any("type mismatch" in e.lower() for e in errors)
+
+    def test_missing_composed_skill(self):
+        """Missing composed skill should report error."""
+        parent = SkillProperties(
+            name="parent",
+            description="Parent skill",
+            composes=["nonexistent"],
+        )
+        errors = typecheck_composition(parent, {})
+        assert any("not found" in e.lower() for e in errors)
+
+    def test_output_type_mismatch(self):
+        """Child output not matching parent declared output should fail."""
+        parent = SkillProperties(
+            name="parent",
+            description="Parent skill",
+            composes=["child"],
+            outputs=[FieldSchema(name="result", type="integer")],
+        )
+        child = SkillProperties(
+            name="child",
+            description="Child skill",
+            outputs=[FieldSchema(name="result", type="string")],
+        )
+        errors = typecheck_composition(parent, {"child": child})
+        assert any("type mismatch" in e.lower() for e in errors)
+
+    def test_optional_input_not_checked(self):
+        """Optional inputs should not cause type errors."""
+        parent = SkillProperties(
+            name="parent",
+            description="Parent skill",
+            composes=["child"],
+            inputs=[],  # No matching input
+        )
+        child = SkillProperties(
+            name="child",
+            description="Child skill",
+            inputs=[FieldSchema(name="optional", type="string", required=False)],
+        )
+        errors = typecheck_composition(parent, {"child": child})
+        assert errors == []
+
+    def test_no_composes_no_errors(self):
+        """Skills without composes should have no type errors."""
+        parent = SkillProperties(
+            name="parent",
+            description="Parent skill",
+            composes=None,
+        )
+        errors = typecheck_composition(parent, {})
+        assert errors == []
+
+    def test_complex_composition_chain(self):
+        """Complex composition with multiple skills should work."""
+        workflow = SkillProperties(
+            name="workflow",
+            description="Workflow skill",
+            composes=["composite", "atomic"],
+            inputs=[
+                FieldSchema(name="query", type="string"),
+                FieldSchema(name="limit", type="integer"),
+            ],
+            outputs=[FieldSchema(name="summary", type="string")],
+        )
+        composite = SkillProperties(
+            name="composite",
+            description="Composite skill",
+            inputs=[FieldSchema(name="query", type="string", required=True)],
+            outputs=[FieldSchema(name="summary", type="string")],
+        )
+        atomic = SkillProperties(
+            name="atomic",
+            description="Atomic skill",
+            inputs=[FieldSchema(name="limit", type="integer", required=True)],
+        )
+        errors = typecheck_composition(
+            workflow, {"composite": composite, "atomic": atomic}
+        )
+        assert errors == []

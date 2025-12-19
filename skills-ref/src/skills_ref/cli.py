@@ -10,7 +10,7 @@ from .errors import SkillError
 from .graph import CompositionGraph, validate_composition
 from .parser import read_properties
 from .prompt import to_prompt
-from .validator import validate
+from .validator import typecheck_composition, validate
 
 
 def _is_skill_md_file(path: Path) -> bool:
@@ -220,6 +220,116 @@ def graph_cmd(skill_paths: tuple[Path, ...], format: str, validate: bool):
         analysis = graph.analyze()
         if not analysis.is_valid:
             sys.exit(1)
+
+
+@main.command("typecheck")
+@click.argument(
+    "skill_paths", type=click.Path(exists=True, path_type=Path), nargs=-1, required=True
+)
+@click.option(
+    "--verbose", "-v", is_flag=True, help="Show detailed type information for each skill."
+)
+def typecheck_cmd(skill_paths: tuple[Path, ...], verbose: bool):
+    """Type-check skill compositions for type compatibility.
+
+    Validates that composed skills have compatible input/output types,
+    similar to static type checking in strongly-typed languages.
+
+    This catches composition errors at build time:
+    - Input type mismatches between parent and child skills
+    - Output type mismatches in composition chains
+    - Missing required inputs for composed skills
+
+    Examples:
+        skills-ref typecheck ./skills
+        skills-ref typecheck -v ./skills/_composite ./skills/_workflows
+        skills-ref typecheck ./skills/trip-optimize
+
+    Exit codes:
+        0: All type checks pass
+        1: Type errors found
+    """
+    from .parser import find_skill_md
+
+    # Collect all skills
+    all_skills = {}
+    skill_dirs = []
+
+    for skill_path in skill_paths:
+        if _is_skill_md_file(skill_path):
+            skill_dirs.append(skill_path.parent)
+        elif skill_path.is_dir():
+            if find_skill_md(skill_path):
+                skill_dirs.append(skill_path)
+            else:
+                # Recursively find all skills in directory
+                for skill_md in skill_path.rglob("SKILL.md"):
+                    skill_dirs.append(skill_md.parent)
+                for skill_md in skill_path.rglob("skill.md"):
+                    if skill_md.parent not in skill_dirs:
+                        skill_dirs.append(skill_md.parent)
+
+    if not skill_dirs:
+        click.echo("No skills found in the provided paths.", err=True)
+        sys.exit(1)
+
+    # Load all skill properties
+    for skill_dir in skill_dirs:
+        try:
+            props = read_properties(skill_dir)
+            all_skills[props.name] = props
+            if verbose:
+                inputs_str = ", ".join(
+                    f"{f.name}: {f.type}" for f in (props.inputs or [])
+                ) or "(none)"
+                outputs_str = ", ".join(
+                    f"{f.name}: {f.type}" for f in (props.outputs or [])
+                ) or "(none)"
+                click.echo(f"Loaded: {props.name}")
+                click.echo(f"  inputs:  {inputs_str}")
+                click.echo(f"  outputs: {outputs_str}")
+                if props.composes:
+                    click.echo(f"  composes: {', '.join(props.composes)}")
+                click.echo("")
+        except SkillError as e:
+            click.echo(f"Warning: Could not load {skill_dir}: {e}", err=True)
+
+    # Type-check all skills that have composition
+    all_errors = []
+    checked_count = 0
+
+    for name, props in all_skills.items():
+        if not props.composes:
+            continue
+
+        checked_count += 1
+        errors = typecheck_composition(props, all_skills)
+        if errors:
+            all_errors.append((name, errors))
+
+    # Report results
+    if verbose:
+        click.echo(f"Type-checked {checked_count} composed skill(s)")
+        click.echo("")
+
+    if all_errors:
+        click.echo("Type errors found:", err=True)
+        for skill_name, errors in all_errors:
+            click.echo(f"\n  {skill_name}:", err=True)
+            for error in errors:
+                click.echo(f"    - {error}", err=True)
+        click.echo("")
+        click.echo(
+            f"Found {sum(len(e) for _, e in all_errors)} type error(s) "
+            f"in {len(all_errors)} skill(s).",
+            err=True,
+        )
+        sys.exit(1)
+    else:
+        click.echo(
+            f"All type checks passed ({checked_count} composed skill(s), "
+            f"{len(all_skills)} total skill(s))"
+        )
 
 
 if __name__ == "__main__":

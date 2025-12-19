@@ -23,6 +23,14 @@ ALLOWED_FIELDS = {
     "level",
     "operation",
     "composes",
+    # Type checking fields
+    "inputs",
+    "outputs",
+}
+
+# Built-in primitive types for type checking
+PRIMITIVE_TYPES = {
+    "string", "number", "integer", "boolean", "date", "datetime", "any"
 }
 
 # Valid values for composability fields
@@ -203,6 +211,123 @@ def _validate_composes(composes, level=None) -> list[str]:
     return errors
 
 
+def _validate_field_schema(field: dict, context: str, custom_types: Optional[set] = None) -> list[str]:
+    """Validate a single field schema definition.
+
+    Args:
+        field: Field schema dictionary
+        context: Context string for error messages (e.g., "inputs[0]")
+        custom_types: Optional set of custom type names defined in the skill
+
+    Returns:
+        List of validation error messages
+    """
+    errors = []
+    custom_types = custom_types or set()
+
+    if not isinstance(field, dict):
+        errors.append(f"Field '{context}' must be a mapping")
+        return errors
+
+    # Validate required 'name' field
+    if "name" not in field:
+        errors.append(f"Field '{context}' missing required 'name'")
+    elif not isinstance(field["name"], str) or not field["name"].strip():
+        errors.append(f"Field '{context}.name' must be a non-empty string")
+
+    # Validate 'type' field
+    if "type" in field:
+        field_type = field["type"]
+        if not isinstance(field_type, str):
+            errors.append(f"Field '{context}.type' must be a string")
+        else:
+            # Check if type is a primitive, list, or custom type
+            base_type = field_type.rstrip("[]")  # Handle list types like "string[]"
+            if base_type not in PRIMITIVE_TYPES and base_type not in custom_types:
+                errors.append(
+                    f"Field '{context}.type' unknown type '{field_type}'. "
+                    f"Valid primitives: {sorted(PRIMITIVE_TYPES)}"
+                )
+
+    # Validate epistemic requirements (handle string "true"/"false" from YAML)
+    def _is_bool_like(val):
+        if isinstance(val, bool):
+            return True
+        if isinstance(val, str):
+            return val.lower() in ("true", "false")
+        return False
+
+    if "requires_source" in field and not _is_bool_like(field.get("requires_source")):
+        errors.append(f"Field '{context}.requires_source' must be a boolean")
+
+    if "requires_rationale" in field and not _is_bool_like(field.get("requires_rationale")):
+        errors.append(f"Field '{context}.requires_rationale' must be a boolean")
+
+    # Validate constraints (handle string numbers from YAML)
+    def _to_int(val):
+        if isinstance(val, int):
+            return val
+        if isinstance(val, str):
+            try:
+                return int(val)
+            except ValueError:
+                return None
+        return None
+
+    if "min_length" in field:
+        min_len = _to_int(field["min_length"])
+        if min_len is None or min_len < 0:
+            errors.append(f"Field '{context}.min_length' must be a non-negative integer")
+
+    if "min_items" in field:
+        min_items = _to_int(field["min_items"])
+        if min_items is None or min_items < 0:
+            errors.append(f"Field '{context}.min_items' must be a non-negative integer")
+
+    if "range" in field:
+        range_val = field["range"]
+        if not isinstance(range_val, list) or len(range_val) != 2:
+            errors.append(f"Field '{context}.range' must be a list of [min, max]")
+        else:
+            try:
+                min_val, max_val = float(range_val[0]), float(range_val[1])
+                if min_val > max_val:
+                    errors.append(f"Field '{context}.range' min ({min_val}) > max ({max_val})")
+            except (TypeError, ValueError):
+                errors.append(f"Field '{context}.range' values must be numbers")
+
+    return errors
+
+
+def _validate_inputs_outputs(inputs: list, outputs: list) -> list[str]:
+    """Validate inputs and outputs field schemas.
+
+    Args:
+        inputs: List of input field schemas
+        outputs: List of output field schemas
+
+    Returns:
+        List of validation error messages
+    """
+    errors = []
+
+    if inputs is not None:
+        if not isinstance(inputs, list):
+            errors.append("Field 'inputs' must be a list")
+        else:
+            for i, field in enumerate(inputs):
+                errors.extend(_validate_field_schema(field, f"inputs[{i}]"))
+
+    if outputs is not None:
+        if not isinstance(outputs, list):
+            errors.append("Field 'outputs' must be a list")
+        else:
+            for i, field in enumerate(outputs):
+                errors.extend(_validate_field_schema(field, f"outputs[{i}]"))
+
+    return errors
+
+
 def validate_metadata(metadata: dict, skill_dir: Optional[Path] = None) -> list[str]:
     """Validate parsed skill metadata.
 
@@ -249,6 +374,13 @@ def validate_metadata(metadata: dict, skill_dir: Optional[Path] = None) -> list[
     if "composes" in metadata:
         errors.extend(_validate_composes(metadata["composes"], level=level_int))
 
+    # Validate type checking fields
+    if "inputs" in metadata or "outputs" in metadata:
+        errors.extend(_validate_inputs_outputs(
+            metadata.get("inputs"),
+            metadata.get("outputs")
+        ))
+
     return errors
 
 
@@ -280,3 +412,112 @@ def validate(skill_dir: Path) -> list[str]:
         return [str(e)]
 
     return validate_metadata(metadata, skill_dir)
+
+
+def _types_compatible(output_type: str, input_type: str) -> bool:
+    """Check if an output type is compatible with an input type.
+
+    Args:
+        output_type: Type of the output field
+        input_type: Type of the input field
+
+    Returns:
+        True if types are compatible
+    """
+    # 'any' is compatible with everything
+    if output_type == "any" or input_type == "any":
+        return True
+
+    # Handle list types
+    output_is_list = output_type.endswith("[]")
+    input_is_list = input_type.endswith("[]")
+
+    if output_is_list != input_is_list:
+        return False
+
+    output_base = output_type.rstrip("[]")
+    input_base = input_type.rstrip("[]")
+
+    # Exact match
+    if output_base == input_base:
+        return True
+
+    # Number can satisfy integer (widening)
+    if output_base == "integer" and input_base == "number":
+        return True
+
+    # datetime can satisfy date (has more info)
+    if output_base == "datetime" and input_base == "date":
+        return True
+
+    return False
+
+
+def typecheck_composition(
+    parent_skill: "SkillProperties",
+    child_skills: dict[str, "SkillProperties"],
+) -> list[str]:
+    """Validate type compatibility between a skill and its composed dependencies.
+
+    This implements static analysis similar to strongly-typed languages:
+    - Ensures parent skill's inputs can satisfy child skill's required inputs
+    - Ensures child skill's outputs can satisfy parent's expected types
+
+    Args:
+        parent_skill: The skill being validated (the one with 'composes')
+        child_skills: Dictionary mapping skill names to their SkillProperties
+
+    Returns:
+        List of type error messages. Empty list means types are compatible.
+    """
+    from .models import SkillProperties  # Import here to avoid circular import
+
+    errors = []
+
+    if not parent_skill.composes:
+        return errors
+
+    parent_inputs = {f.name: f for f in (parent_skill.inputs or [])}
+    parent_outputs = {f.name: f for f in (parent_skill.outputs or [])}
+
+    for child_name in parent_skill.composes:
+        if child_name not in child_skills:
+            errors.append(
+                f"Composed skill '{child_name}' not found. "
+                f"Cannot verify type compatibility."
+            )
+            continue
+
+        child = child_skills[child_name]
+        child_inputs = child.inputs or []
+        child_outputs = child.outputs or []
+
+        # Check that required child inputs can be satisfied
+        for child_input in child_inputs:
+            if not child_input.required:
+                continue
+
+            # Check if parent has this input or produces it from another child
+            if child_input.name in parent_inputs:
+                parent_field = parent_inputs[child_input.name]
+                if not _types_compatible(parent_field.type, child_input.type):
+                    errors.append(
+                        f"Type mismatch: '{parent_skill.name}' input "
+                        f"'{child_input.name}' is {parent_field.type}, "
+                        f"but '{child_name}' expects {child_input.type}"
+                    )
+            # Note: We don't error if input is missing - it might come from
+            # another composed skill's output or be provided at runtime
+
+        # Validate that child outputs match parent's expected output types
+        for child_output in child_outputs:
+            if child_output.name in parent_outputs:
+                parent_field = parent_outputs[child_output.name]
+                if not _types_compatible(child_output.type, parent_field.type):
+                    errors.append(
+                        f"Type mismatch: '{child_name}' output "
+                        f"'{child_output.name}' is {child_output.type}, "
+                        f"but '{parent_skill.name}' declares {parent_field.type}"
+                    )
+
+    return errors
