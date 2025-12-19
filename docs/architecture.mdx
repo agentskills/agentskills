@@ -180,6 +180,37 @@ The same principles apply to skills:
 
 ## Skill Levels
 
+### How to Determine the Correct Level
+
+Use this decision flowchart to classify a skill:
+
+```
+Does the skill wrap a primitive directly without calling other skills?
+│
+├── YES → Level 1 (Atomic)
+│
+└── NO → Does the skill contain ANY of these?
+          • Self-recursion (skill composes itself)
+          • Loops (for each item, repeat until condition)
+          • Dynamic skill selection at runtime
+          • Parallel fan-out / fan-in orchestration
+          • State management across invocations
+          │
+          ├── YES → Level 3 (Workflow)
+          │
+          └── NO → Level 2 (Composite)
+```
+
+### Level Criteria Summary
+
+| Criterion | Level 1 (Atomic) | Level 2 (Composite) | Level 3 (Workflow) |
+|-----------|------------------|---------------------|-------------------|
+| **Composition** | None (wraps primitives only) | Composes L1 or L2 skills | Composes any level (L1, L2, or L3) |
+| **Control flow** | Linear, no branching | Simple conditionals | Loops, recursion, dynamic dispatch |
+| **Execution** | Single invocation | Sequential or simple parallel | Complex orchestration patterns |
+| **State** | Stateless | Stateless | May maintain state across invocations |
+| **Decision logic** | None | "If X, also do Y" | "For each X, decide which skill to invoke" |
+
 ### Level 0: Primitives
 
 The foundation layer. Primitives are **not skills themselves** - they're the raw scripts, APIs, or tools that skills wrap.
@@ -257,12 +288,22 @@ composes:
 
 ### Level 3: Workflow Skills
 
-Complex multi-step workflows with decision logic, branching, and multiple outputs.
+Complex orchestration with control flow that goes beyond simple sequential composition.
+
+**A skill is Level 3 if it contains ANY of these patterns:**
+
+| Pattern | Description | Example |
+|---------|-------------|---------|
+| **Self-recursion** | Skill composes itself | `deep-research` follows citation chains recursively |
+| **Loops** | Iterates over a collection | `daily-briefing` processes each meeting |
+| **Dynamic dispatch** | Chooses skills at runtime | Skip customer-intel for internal meetings |
+| **Fan-out/fan-in** | Parallel execution with aggregation | Research multiple topics concurrently |
+| **Cross-invocation state** | Maintains context between calls | Track progress across a multi-day workflow |
 
 **Characteristics:**
-- Composes multiple Level 2 skills
-- Contains decision points and branching
-- Produces multiple outputs or side effects
+- May compose any level (L1, L2, or other L3 workflows)
+- Contains decision points, loops, or recursion
+- Often produces multiple outputs or side effects
 - May run over extended time periods
 
 **Example frontmatter:**
@@ -279,6 +320,34 @@ composes:
   - linear-write
 ---
 ```
+
+### Level 3 Composing Level 3 (Workflow Orchestration)
+
+A Level 3 workflow may compose other Level 3 workflows. This enables **workflow orchestration** - treating complex workflows as reusable units.
+
+**Example: Quarterly Review orchestrating Daily Briefings**
+
+```yaml
+---
+name: quarterly-review
+description: Generate quarterly review by aggregating daily briefings and synthesising trends.
+level: 3
+operation: READ
+composes:
+  - daily-briefing      # L3 workflow - run for each day in quarter
+  - monthly-summary     # L3 workflow - run for each month
+  - research            # L2 composite - for trend analysis
+---
+```
+
+**When to use L3 → L3 composition:**
+- The sub-workflow is a complete, meaningful unit of work
+- You need to run the same workflow multiple times (loop)
+- The sub-workflow has its own decision logic that should be encapsulated
+
+**When NOT to use L3 → L3:**
+- If you're just combining capabilities, use L2 → L2 instead
+- If the "sub-workflow" has no loops/recursion/decisions, it's probably L2
 
 ---
 
@@ -525,16 +594,17 @@ Self-recursion - where a skill includes itself in its `composes` list - is a del
 ---
 name: deep-research
 description: Recursively research a topic, following citations to build comprehensive understanding.
-level: 2
+level: 3                # Level 3 because it uses recursion
 operation: READ
 composes:
-  - deep-research    # Self-recursion for following citation chains
-  - web-search
-  - pdf-save
+  - deep-research       # Self-recursion for following citation chains
+  - research            # Level 2 composite (not atomics directly)
 ---
 ```
 
 This skill can research a topic, discover relevant citations, and recursively research those citations - all with a single skill definition. The recursion depth is controlled at runtime, not compile-time.
+
+Note that `deep-research` composes `research` (Level 2), not the atomics (`web-search`, `pdf-save`) directly. This maintains proper hierarchy and MECE compliance - there's only one "research" capability at each level.
 
 **Contrast with Circular Dependencies**
 
