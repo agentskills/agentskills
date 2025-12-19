@@ -866,4 +866,22 @@ For detailed background, see:
 
 ---
 
+## Acknowledgements
+
+This architecture draws direct inspiration from research on compiling higher-order functional programs to composable digital hardware, conducted at Imperial College London's Circuits and Systems group.
+
+Special thanks to the co-authors of the foundational [FCCM 2014 paper](https://doi.org/10.1109/FCCM.2014.69):
+
+- [@constantinides](https://github.com/constantinides) (George A. Constantinides) - Principal Investigator
+- [@FelixWinterstein](https://github.com/FelixWinterstein) (Felix Winterstein) - K-means on FPGAs, now at Xelera Technologies
+- [@danghica](https://github.com/danghica) (Dan R. Ghica) - Game semantics & programming languages, University of Birmingham
+- David Thomas - Accelerated numerics, Imperial College London
+- Samuel Bayliss - High-level synthesis, now at AMD/Xilinx
+
+The core insight: **type-checking enables safe parallel composition**. This came from hardware synthesis research and applies directly to LLM agent orchestration.
+
+Additional thanks to [@satnam6502](https://github.com/satnam6502) (Satnam Singh), who was a visiting professor at Imperial College London during this period. His pioneering work on [Lava](https://raintown.org/lava/) - a Haskell-embedded DSL for hardware design - demonstrated that functional abstractions could generate efficient, deterministic hardware. This same principle underlies composable skills: **functional composition over imperative orchestration**.
+
+---
+
 *This architecture extension is backwards-compatible with Agent Skills v1.0*

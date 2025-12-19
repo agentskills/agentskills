@@ -88,6 +88,29 @@ composes:             # Explicit dependencies
 ---
 ```
 
+### Static Type System
+
+Skills can define **typed inputs and outputs** with static compatibility checking:
+
+```yaml
+inputs:
+  - name: query
+    type: string
+    required: true
+outputs:
+  - name: answer
+    type: string
+    requires_source: true      # Must cite sources
+    requires_rationale: true   # Must explain reasoning
+  - name: confidence
+    type: number
+    range: [0, 1]
+```
+
+**Epistemic requirements** (`requires_source`, `requires_rationale`, `min_items`) prevent hallucination by enforcing cited, reasoned responses. Run `skills-ref typecheck` to validate compositions at build time.
+
+See [Architecture: Type System](docs/architecture.mdx#type-system) for full documentation.
+
 ### Benefits
 
 | Benefit | Description |
@@ -106,7 +129,8 @@ composes:             # Explicit dependencies
 
 - [Documentation](https://agentskills.io) - Guides and tutorials
 - [Specification](https://agentskills.io/specification) - Format details
-- [Architecture](docs/architecture.mdx) - Composability design rationale
+- [Architecture](docs/architecture.mdx) - Composability design rationale and type system
+- [Trip Optimizer Showcase](examples/_showcase/trip-optimizer/) - Full example with 12 skills across all 3 levels
 - [Example Skills](https://github.com/anthropics/skills) - See what's possible
 
 This repo contains the specification, documentation, and reference SDK.
