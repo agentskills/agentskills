@@ -629,6 +629,187 @@ If `level` is specified:
 
 ---
 
+## Type System
+
+### Why Types Matter for Skills
+
+The composable skills architecture benefits significantly from **static type checking**, similar to strongly-typed languages like Haskell or TypeScript. Types enable:
+
+| Benefit | Description |
+|---------|-------------|
+| **Composition verification** | Catch mismatched inputs/outputs at build time, not runtime |
+| **Hallucination prevention** | Required inputs prevent the model from inventing facts |
+| **Rigorous reasoning** | Output constraints (requires_source, requires_rationale) enforce cited, explained answers |
+| **Self-documenting** | Types serve as machine-readable API documentation |
+| **Better tooling** | IDE support, auto-completion, refactoring assistance |
+
+### Input/Output Schemas
+
+Skills can define typed inputs and outputs in their frontmatter:
+
+```yaml
+---
+name: flight-search
+description: Search for flights between two airports on given dates.
+level: 1
+operation: READ
+inputs:
+  - name: origin
+    type: string
+    required: true
+    description: Origin airport code (e.g., SFO)
+  - name: destination
+    type: string
+    required: true
+    description: Destination airport code
+  - name: dates
+    type: DateRange
+    required: true
+  - name: max_stops
+    type: integer
+    required: false
+    default: 1
+outputs:
+  - name: flights
+    type: Flight[]
+    description: Available flights sorted by price
+  - name: cheapest_price
+    type: number
+    description: Lowest price found
+---
+```
+
+### Primitive Types
+
+The type system supports these built-in primitives:
+
+| Type | Description | Example Values |
+|------|-------------|----------------|
+| `string` | Text value | "SFO", "hello world" |
+| `number` | Floating-point number | 3.14, 99.99 |
+| `integer` | Whole number | 1, 42, -5 |
+| `boolean` | True or false | true, false |
+| `date` | Calendar date | "2024-03-15" |
+| `datetime` | Date with time | "2024-03-15T10:30:00Z" |
+| `any` | Accepts any type | (use sparingly) |
+
+**List types** are denoted with `[]` suffix: `string[]`, `Flight[]`
+
+### Field Schema Properties
+
+Each input or output field can have these properties:
+
+```yaml
+inputs:
+  - name: query           # Required: field name
+    type: string          # Type (primitive or custom)
+    required: true        # Is this field required? (default: true)
+    description: ...      # Human-readable description
+    default: "default"    # Default value if not provided
+```
+
+### Epistemic Requirements (Preventing Hallucination)
+
+Output fields can enforce **epistemic requirements** - constraints that prevent the model from hallucinating or providing unsupported claims:
+
+```yaml
+outputs:
+  - name: answer
+    type: string
+    requires_source: true      # Must cite sources for this claim
+    requires_rationale: true   # Must explain reasoning
+    min_length: 50             # Minimum explanation length
+
+  - name: sources
+    type: string[]
+    min_items: 2               # Must have at least 2 sources
+
+  - name: confidence
+    type: number
+    range:
+      - 0
+      - 1                      # Constrain to [0, 1]
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `requires_source` | boolean | Output must cite supporting sources |
+| `requires_rationale` | boolean | Output must include reasoning |
+| `min_length` | integer | Minimum string length (for rationale) |
+| `min_items` | integer | Minimum list items (for sources) |
+| `range` | [min, max] | Valid range for numbers |
+
+### Static Type Checking
+
+The `skills-ref typecheck` command validates type compatibility across composed skills:
+
+```bash
+# Type-check all skills in a directory
+skills-ref typecheck ./skills
+
+# Verbose output showing all types
+skills-ref typecheck -v ./skills/_composite ./skills/_workflows
+
+# Type-check a specific skill
+skills-ref typecheck ./skills/_workflows/trip-optimize
+```
+
+**What typecheck validates:**
+
+1. **Input compatibility**: Parent skill's inputs can satisfy child skill's required inputs
+2. **Output compatibility**: Child skill's outputs match parent's declared output types
+3. **Type widening**: `integer` → `number` and `datetime` → `date` are allowed
+4. **Missing dependencies**: All composed skills must be found
+
+**Example type error:**
+
+```
+Type errors found:
+
+  trip-optimize:
+    - Type mismatch: 'trip-optimize' input 'budget' is string,
+      but 'route-price' expects number
+    - Composed skill 'unknown-skill' not found.
+      Cannot verify type compatibility.
+
+Found 2 type error(s) in 1 skill(s).
+```
+
+### Type Compatibility Rules
+
+| Output Type | Compatible Input Types |
+|-------------|------------------------|
+| `string` | `string`, `any` |
+| `integer` | `integer`, `number`, `any` |
+| `number` | `number`, `any` |
+| `datetime` | `datetime`, `date`, `any` |
+| `date` | `date`, `any` |
+| `boolean` | `boolean`, `any` |
+| `any` | (any type) |
+| `T[]` | `T[]`, `any[]`, `any` |
+
+### Custom Types (Future)
+
+Future versions will support custom type definitions:
+
+```yaml
+types:
+  - name: Flight
+    fields:
+      airline: string
+      departure: datetime
+      arrival: datetime
+      price: number
+    description: A single flight option
+
+  - name: DateRange
+    fields:
+      start: date
+      end: date
+```
+
+---
+
 ## Migration Path
 
 Existing skills don't need to change. The new fields are all optional:
