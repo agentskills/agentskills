@@ -1,0 +1,42 @@
+# Example workflow: Validate agentskills on pull requests
+# Copy this to your repository's .github/workflows/ directory
+
+name: Validate agentskills
+
+on:
+  pull_request:
+    paths:
+      - '**/SKILL.md'
+      - '**/skill.md'
+  push:
+    branches:
+      - main
+    paths:
+      - '**/SKILL.md'
+      - '**/skill.md'
+
+jobs:
+  validate:
+    name: Validate agentskills
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate agentskills
+        id: validate
+        uses: agentskills/agentskills/.github/actions/validate-skills@main
+        with:
+          paths: '.'
+          fail-on-error: 'true'
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Agentskills Validation Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Count |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Found | ${{ steps.validate.outputs.agentskills-found }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Valid | ${{ steps.validate.outputs.agentskills-valid }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Invalid | ${{ steps.validate.outputs.agentskills-invalid }} |" >> $GITHUB_STEP_SUMMARY

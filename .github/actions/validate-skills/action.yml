@@ -1,0 +1,66 @@
+name: 'Validate agentskills'
+description: 'Validates agentskills directories to ensure SKILL.md files conform to the specification'
+author: 'Chris von Csefalvay @chrisvoncsefalvay <chris@chrisvoncsefalvay.com>'
+
+branding:
+  icon: 'check-circle'
+  color: 'purple'
+
+inputs:
+  paths:
+    description: 'Space-separated paths to search for agentskills (directories containing SKILL.md)'
+    required: false
+    default: '.'
+  fail-on-error:
+    description: 'Fail the action if any validation errors are found'
+    required: false
+    default: 'true'
+
+outputs:
+  agentskills-found:
+    description: 'Number of agentskills directories found'
+    value: ${{ steps.validate.outputs.agentskills-found }}
+  agentskills-valid:
+    description: 'Number of valid agentskills'
+    value: ${{ steps.validate.outputs.agentskills-valid }}
+  agentskills-invalid:
+    description: 'Number of invalid agentskills'
+    value: ${{ steps.validate.outputs.agentskills-invalid }}
+  errors:
+    description: 'JSON array of validation errors'
+    value: ${{ steps.validate.outputs.errors }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+
+    - name: Install skills-ref from action source
+      shell: bash
+      run: |
+        # The action is checked out with the full repo, skills-ref is at repo root
+        SKILLS_REF_PATH="${{ github.action_path }}/../../../skills-ref"
+        if [ -d "$SKILLS_REF_PATH" ]; then
+          echo "Installing skills-ref from action source..."
+          cd "$SKILLS_REF_PATH"
+          uv sync
+        else
+          echo "::error::skills-ref directory not found at $SKILLS_REF_PATH"
+          exit 1
+        fi
+
+    - name: Validate agentskills
+      id: validate
+      shell: bash
+      env:
+        SKILLS_REF_PATH: ${{ github.action_path }}/../../../skills-ref
+      run: |
+        "${{ github.action_path }}/validate.sh" \
+          "${{ inputs.paths }}" \
+          "${{ inputs.fail-on-error }}"
