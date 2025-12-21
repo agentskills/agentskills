@@ -122,6 +122,46 @@ outputs:
 
 See [Architecture: Type System](docs/architecture.mdx#type-system) for full documentation.
 
+### Higher-Order Skills
+
+Skills can be **first-class citizens** - passed as arguments to other skills, composed dynamically, and reasoned about using types. This enables powerful abstractions:
+
+**Combinators** - Combine skills in useful patterns:
+
+```yaml
+# Apply a skill to each item in a list
+- skill: map-skill
+  inputs:
+    items: ${customer_list}
+    processor: enrich-customer-data
+  outputs:
+    results: enriched_customers
+```
+
+**Decorators** - Wrap skills with cross-cutting concerns:
+
+```yaml
+# Retry with exponential backoff and caching
+- skill: with-cache
+  inputs:
+    target:
+      skill: with-retry
+      inputs:
+        target: expensive-api-call
+        max_attempts: 3
+    ttl: 1h
+```
+
+**Meta Skills** - Learn and adapt from execution:
+
+| Meta Skill | Purpose |
+|------------|---------|
+| `explain-execution` | Reverse-engineer what happened from observed I/O |
+| `intent-refiner` | Learn user preferences from accept/reject feedback |
+| `skill-synthesizer` | Generate new skills from descriptions or examples |
+
+See [Architecture: Higher-Order Skills](docs/architecture.mdx#higher-order-skills) for full documentation.
+
 ### Benefits
 
 | Benefit | Description |
@@ -142,6 +182,7 @@ See [Architecture: Type System](docs/architecture.mdx#type-system) for full docu
 - [Specification](https://agentskills.io/specification) - Format details
 - [Architecture](docs/architecture.mdx) - Composability design rationale and type system
 - [Trip Optimizer Showcase](examples/_showcase/trip-optimizer/) - Full example with 12 skills across all 3 levels
+- [Higher-Order Skills](examples/) - Combinators, decorators, and meta-learning examples
 - [Example Skills](https://github.com/anthropics/skills) - See what's possible
 
 This repo contains the specification, documentation, and reference SDK.
@@ -175,8 +216,23 @@ skills/
 ├── _composite/           # Level 2: Composed from atomics
 │   ├── research/
 │   └── customer-intel/
+├── _combinators/         # Higher-order: Combine skills
+│   ├── map-skill/
+│   ├── filter-skill/
+│   ├── try-first/
+│   └── fan-out/
+├── _decorators/          # Higher-order: Wrap skills
+│   ├── with-retry/
+│   ├── with-cache/
+│   └── with-timeout/
+├── _meta/                # Meta: Learn from execution
+│   ├── explain-execution/
+│   ├── intent-refiner/
+│   └── skill-synthesizer/
 └── _workflows/           # Level 3: Complex orchestration
-    └── daily-synthesis/
+    ├── daily-synthesis/
+    ├── resilient-research/
+    └── adaptive-bulk-processor/
 ```
 
 ## Backwards Compatibility

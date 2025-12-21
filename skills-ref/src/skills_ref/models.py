@@ -14,6 +14,38 @@ PRIMITIVE_TYPES = {
     "string", "number", "integer", "boolean", "date", "datetime", "any"
 }
 
+# Built-in generic types (higher-order skills)
+GENERIC_TYPES = {
+    "Skill": 2,  # Skill<Input, Output> - skills as first-class values
+}
+
+
+@dataclass
+class TypeParam:
+    """Type parameter for generic skills.
+
+    Enables skills to be polymorphic, accepting type parameters like:
+    - map-skill<A, B>: Skill<A, B> → Skill<A[], B[]>
+    - with-retry<A, B>: Skill<A, B> → Skill<A, B>
+
+    Attributes:
+        name: Type parameter name (e.g., "A", "B", "T")
+        description: Human-readable description
+        bound: Optional type bound (e.g., "Skill" for higher-kinded types)
+    """
+    name: str
+    description: Optional[str] = None
+    bound: Optional[str] = None
+
+    def to_dict(self) -> dict:
+        """Convert to dictionary, excluding None values."""
+        result = {"name": self.name}
+        if self.description:
+            result["description"] = self.description
+        if self.bound:
+            result["bound"] = self.bound
+        return result
+
 
 @dataclass
 class FieldSchema:
@@ -127,6 +159,7 @@ class SkillProperties:
         level: Composition hierarchy level 1-3 (optional, for composable skills)
         operation: Safety classification READ/WRITE/TRANSFORM (optional)
         composes: List of skill names this skill depends on (optional)
+        type_params: Type parameters for generic/higher-order skills (optional)
         inputs: Input field schemas for type checking (optional)
         outputs: Output field schemas for type checking (optional)
     """
@@ -141,7 +174,8 @@ class SkillProperties:
     level: Optional[int] = None
     operation: Optional[str] = None
     composes: Optional[list[str]] = None
-    # Type checking fields
+    # Type checking fields (including generics)
+    type_params: Optional[list[TypeParam]] = None
     inputs: Optional[list[FieldSchema]] = None
     outputs: Optional[list[FieldSchema]] = None
 
@@ -163,12 +197,26 @@ class SkillProperties:
             result["operation"] = self.operation
         if self.composes:
             result["composes"] = self.composes
-        # Type checking fields
+        # Type checking fields (including generics)
+        if self.type_params:
+            result["type_params"] = [tp.to_dict() for tp in self.type_params]
         if self.inputs:
             result["inputs"] = [f.to_dict() for f in self.inputs]
         if self.outputs:
             result["outputs"] = [f.to_dict() for f in self.outputs]
         return result
+
+    @property
+    def is_generic(self) -> bool:
+        """Check if this skill has type parameters (is a higher-order skill)."""
+        return bool(self.type_params)
+
+    @property
+    def type_param_names(self) -> set[str]:
+        """Get the set of type parameter names for this skill."""
+        if not self.type_params:
+            return set()
+        return {tp.name for tp in self.type_params}
 
     @property
     def is_atomic(self) -> bool:

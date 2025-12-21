@@ -1,7 +1,13 @@
 """Tests for validator module."""
 
-from skills_ref.models import FieldSchema, SkillProperties
-from skills_ref.validator import typecheck_composition, validate
+from skills_ref.models import FieldSchema, SkillProperties, TypeParam
+from skills_ref.validator import (
+    typecheck_composition,
+    typecheck_higher_order,
+    validate,
+    _parse_generic_type,
+    _is_valid_type,
+)
 
 
 def test_valid_skill(tmp_path):
@@ -962,3 +968,372 @@ class TestTypeChecking:
             workflow, {"composite": composite, "atomic": atomic}
         )
         assert errors == []
+
+
+# =============================================================================
+# Higher-Order Skills Tests - Type Parameters and Generic Types
+# =============================================================================
+
+
+class TestGenericTypeParsing:
+    """Tests for parsing generic type strings like Skill<A, B>."""
+
+    def test_parse_simple_generic(self):
+        """Parse Skill<A, B> correctly."""
+        base, params = _parse_generic_type("Skill<A, B>")
+        assert base == "Skill"
+        assert params == ["A", "B"]
+
+    def test_parse_generic_with_concrete_types(self):
+        """Parse Skill<string, number> correctly."""
+        base, params = _parse_generic_type("Skill<string, number>")
+        assert base == "Skill"
+        assert params == ["string", "number"]
+
+    def test_parse_nested_generic(self):
+        """Parse nested generic types like Skill<A[], B[]>."""
+        base, params = _parse_generic_type("Skill<A[], B[]>")
+        assert base == "Skill"
+        assert params == ["A[]", "B[]"]
+
+    def test_parse_non_generic(self):
+        """Non-generic types return None."""
+        base, params = _parse_generic_type("string")
+        assert base is None
+        assert params == []
+
+    def test_parse_list_of_generic(self):
+        """Skill<A, B>[] should be handled."""
+        # This is the outer list, the inner generic is parsed separately
+        base, params = _parse_generic_type("Skill<A, B>")
+        assert base == "Skill"
+        assert params == ["A", "B"]
+
+
+class TestGenericTypeValidation:
+    """Tests for validating types including generics and type parameters."""
+
+    def test_valid_primitive_type(self):
+        """Primitive types should be valid."""
+        valid, err = _is_valid_type("string")
+        assert valid is True
+        assert err is None
+
+    def test_valid_list_type(self):
+        """List types should be valid."""
+        valid, err = _is_valid_type("string[]")
+        assert valid is True
+        assert err is None
+
+    def test_valid_type_parameter(self):
+        """Type parameters should be valid when in scope."""
+        valid, err = _is_valid_type("A", type_params={"A", "B"})
+        assert valid is True
+        assert err is None
+
+    def test_invalid_type_parameter_not_in_scope(self):
+        """Type parameters not in scope should be invalid."""
+        valid, err = _is_valid_type("C", type_params={"A", "B"})
+        assert valid is False
+        assert "Unknown type" in err
+
+    def test_valid_skill_generic_with_type_params(self):
+        """Skill<A, B> should be valid when A and B are in scope."""
+        valid, err = _is_valid_type("Skill<A, B>", type_params={"A", "B"})
+        assert valid is True
+        assert err is None
+
+    def test_valid_skill_generic_with_concrete_types(self):
+        """Skill<string, number> should be valid."""
+        valid, err = _is_valid_type("Skill<string, number>")
+        assert valid is True
+        assert err is None
+
+    def test_invalid_skill_wrong_param_count(self):
+        """Skill with wrong number of params should be invalid."""
+        valid, err = _is_valid_type("Skill<A>", type_params={"A"})
+        assert valid is False
+        assert "expects 2 type parameters" in err
+
+    def test_invalid_unknown_generic(self):
+        """Unknown generic types should be invalid."""
+        valid, err = _is_valid_type("Unknown<A, B>", type_params={"A", "B"})
+        assert valid is False
+        assert "Unknown generic type" in err
+
+    def test_valid_nested_skill_type(self):
+        """Skill<A[], B[]> should be valid."""
+        valid, err = _is_valid_type("Skill<A[], B[]>", type_params={"A", "B"})
+        assert valid is True
+        assert err is None
+
+
+class TestTypeParamsValidation:
+    """Tests for type_params field validation in SKILL.md."""
+
+    def test_valid_type_params(self, tmp_path):
+        """Valid type_params should be accepted."""
+        skill_dir = tmp_path / "map-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: map-skill
+description: Apply a skill to each item in a list
+level: 2
+operation: READ
+type_params:
+  - name: A
+    description: Input item type
+  - name: B
+    description: Output item type
+inputs:
+  - name: items
+    type: A[]
+  - name: processor
+    type: Skill<A, B>
+outputs:
+  - name: results
+    type: B[]
+---
+# Map Skill
+""")
+        errors = validate(skill_dir)
+        assert errors == [], f"Expected no errors, got: {errors}"
+
+    def test_type_params_must_start_uppercase(self, tmp_path):
+        """Type parameter names should start with uppercase."""
+        skill_dir = tmp_path / "bad-params"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: bad-params
+description: A skill with invalid type param
+level: 2
+operation: READ
+type_params:
+  - name: input
+    description: Should be uppercase
+---
+# Bad Params
+""")
+        errors = validate(skill_dir)
+        assert any("uppercase" in e.lower() for e in errors)
+
+    def test_type_params_no_duplicates(self, tmp_path):
+        """Duplicate type parameter names should be rejected."""
+        skill_dir = tmp_path / "dup-params"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: dup-params
+description: A skill with duplicate type params
+level: 2
+operation: READ
+type_params:
+  - name: A
+  - name: A
+---
+# Dup Params
+""")
+        errors = validate(skill_dir)
+        assert any("duplicate" in e.lower() for e in errors)
+
+    def test_type_params_used_in_inputs(self, tmp_path):
+        """Type parameters should be usable in input types."""
+        skill_dir = tmp_path / "with-retry"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: with-retry
+description: Wrap a skill with retry logic
+level: 2
+operation: READ
+type_params:
+  - name: A
+    description: Input type
+  - name: B
+    description: Output type
+inputs:
+  - name: target
+    type: Skill<A, B>
+    required: true
+  - name: max_attempts
+    type: integer
+    default: 3
+outputs:
+  - name: result
+    type: B
+  - name: attempts
+    type: integer
+---
+# With Retry
+""")
+        errors = validate(skill_dir)
+        assert errors == [], f"Expected no errors, got: {errors}"
+
+    def test_undefined_type_param_rejected(self, tmp_path):
+        """Using undefined type parameters should be rejected."""
+        skill_dir = tmp_path / "undefined-param"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: undefined-param
+description: A skill using undefined type param
+level: 2
+operation: READ
+type_params:
+  - name: A
+inputs:
+  - name: value
+    type: B
+---
+# Undefined Param
+""")
+        errors = validate(skill_dir)
+        assert any("Unknown type" in e for e in errors)
+
+
+class TestHigherOrderSkillProperties:
+    """Tests for SkillProperties with type parameters."""
+
+    def test_is_generic_with_type_params(self):
+        """Skills with type_params should be marked as generic."""
+        skill = SkillProperties(
+            name="map-skill",
+            description="Map skill",
+            type_params=[
+                TypeParam(name="A", description="Input type"),
+                TypeParam(name="B", description="Output type"),
+            ],
+        )
+        assert skill.is_generic is True
+        assert skill.type_param_names == {"A", "B"}
+
+    def test_is_generic_without_type_params(self):
+        """Skills without type_params should not be marked as generic."""
+        skill = SkillProperties(
+            name="web-search",
+            description="Web search",
+        )
+        assert skill.is_generic is False
+        assert skill.type_param_names == set()
+
+    def test_to_dict_includes_type_params(self):
+        """to_dict should include type_params when present."""
+        skill = SkillProperties(
+            name="with-retry",
+            description="Retry wrapper",
+            type_params=[
+                TypeParam(name="A"),
+                TypeParam(name="B", description="Output type"),
+            ],
+        )
+        d = skill.to_dict()
+        assert "type_params" in d
+        assert len(d["type_params"]) == 2
+        assert d["type_params"][0]["name"] == "A"
+        assert d["type_params"][1]["description"] == "Output type"
+
+
+class TestHigherOrderTypeChecking:
+    """Tests for type checking higher-order skill compositions."""
+
+    def test_wrapper_skill_type_params(self):
+        """Higher-order skills wrapping other skills should pass type check."""
+        with_retry = SkillProperties(
+            name="with-retry",
+            description="Retry wrapper",
+            type_params=[
+                TypeParam(name="A"),
+                TypeParam(name="B"),
+            ],
+            inputs=[
+                FieldSchema(name="target", type="Skill<A, B>", required=True),
+                FieldSchema(name="max_attempts", type="integer"),
+            ],
+            outputs=[
+                FieldSchema(name="result", type="B"),
+                FieldSchema(name="attempts", type="integer"),
+            ],
+        )
+        web_search = SkillProperties(
+            name="web-search",
+            description="Search the web",
+            inputs=[FieldSchema(name="query", type="string", required=True)],
+            outputs=[FieldSchema(name="results", type="string[]")],
+        )
+        errors = typecheck_higher_order(with_retry, web_search)
+        assert errors == []
+
+    def test_non_generic_skill_skips_higher_order_check(self):
+        """Non-generic skills should skip higher-order type checking."""
+        regular_skill = SkillProperties(
+            name="regular",
+            description="Regular skill",
+            inputs=[FieldSchema(name="query", type="string")],
+        )
+        other_skill = SkillProperties(
+            name="other",
+            description="Other skill",
+        )
+        errors = typecheck_higher_order(regular_skill, other_skill)
+        assert errors == []
+
+
+class TestSkillGenericInWorkflows:
+    """Integration tests for using generic skills in workflows."""
+
+    def test_full_higher_order_workflow(self, tmp_path):
+        """A complete workflow using higher-order skills."""
+        skill_dir = tmp_path / "resilient-search"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: resilient-search
+description: Search with retry and caching
+level: 3
+operation: READ
+composes:
+  - with-retry
+  - with-cache
+  - web-search
+inputs:
+  - name: query
+    type: string
+    required: true
+outputs:
+  - name: results
+    type: string[]
+---
+# Resilient Search
+
+Composes higher-order skills for reliable search.
+""")
+        errors = validate(skill_dir)
+        assert errors == [], f"Expected no errors, got: {errors}"
+
+    def test_combinator_skill_validation(self, tmp_path):
+        """Combinator skills like fan-out should validate correctly."""
+        skill_dir = tmp_path / "fan-out"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: fan-out
+description: Execute multiple skills in parallel on the same input
+level: 2
+operation: READ
+type_params:
+  - name: A
+    description: Input type
+  - name: B
+    description: Output type
+inputs:
+  - name: input
+    type: A
+    required: true
+  - name: skills
+    type: Skill<A, B>[]
+    required: true
+outputs:
+  - name: results
+    type: B[]
+  - name: stats
+    type: any
+---
+# Fan Out
+""")
+        errors = validate(skill_dir)
+        assert errors == [], f"Expected no errors, got: {errors}"

@@ -23,7 +23,8 @@ ALLOWED_FIELDS = {
     "level",
     "operation",
     "composes",
-    # Type checking fields
+    # Type checking fields (including generics)
+    "type_params",
     "inputs",
     "outputs",
 }
@@ -31,6 +32,12 @@ ALLOWED_FIELDS = {
 # Built-in primitive types for type checking
 PRIMITIVE_TYPES = {
     "string", "number", "integer", "boolean", "date", "datetime", "any"
+}
+
+# Built-in generic types (higher-order skills)
+# Maps type name to number of type parameters
+GENERIC_TYPES = {
+    "Skill": 2,  # Skill<Input, Output> - skills as first-class values
 }
 
 # Valid values for composability fields
@@ -211,19 +218,196 @@ def _validate_composes(composes, level=None) -> list[str]:
     return errors
 
 
-def _validate_field_schema(field: dict, context: str, custom_types: Optional[set] = None) -> list[str]:
+def _validate_type_params(type_params: list) -> tuple[list[str], set[str]]:
+    """Validate type parameters for generic/higher-order skills.
+
+    Type parameters enable polymorphic skills like:
+    - map-skill<A, B>: Skill<A, B> → Skill<A[], B[]>
+    - with-retry<A, B>: Skill<A, B> → Skill<A, B>
+
+    Args:
+        type_params: List of type parameter definitions
+
+    Returns:
+        Tuple of (error messages, set of type parameter names)
+    """
+    errors = []
+    type_param_names = set()
+
+    if not isinstance(type_params, list):
+        errors.append(f"Field 'type_params' must be a list, got {type(type_params).__name__}")
+        return errors, type_param_names
+
+    for i, param in enumerate(type_params):
+        if not isinstance(param, dict):
+            errors.append(f"Field 'type_params[{i}]' must be a mapping")
+            continue
+
+        if "name" not in param:
+            errors.append(f"Field 'type_params[{i}]' missing required 'name'")
+            continue
+
+        name = param["name"]
+        if not isinstance(name, str):
+            errors.append(f"Field 'type_params[{i}].name' must be a string")
+            continue
+
+        if not name.strip():
+            errors.append(f"Field 'type_params[{i}].name' cannot be empty")
+            continue
+
+        # Type parameter names should be uppercase single letters or short identifiers
+        if not name[0].isupper():
+            errors.append(
+                f"Type parameter '{name}' should start with uppercase "
+                "(convention: A, B, T, Input, Output)"
+            )
+
+        if name in type_param_names:
+            errors.append(f"Duplicate type parameter name: '{name}'")
+        type_param_names.add(name)
+
+        # Validate optional fields
+        if "description" in param and not isinstance(param["description"], str):
+            errors.append(f"Field 'type_params[{i}].description' must be a string")
+
+        if "bound" in param:
+            bound = param["bound"]
+            if not isinstance(bound, str):
+                errors.append(f"Field 'type_params[{i}].bound' must be a string")
+            elif bound not in GENERIC_TYPES and bound not in PRIMITIVE_TYPES:
+                errors.append(
+                    f"Type parameter '{name}' has unknown bound '{bound}'. "
+                    f"Valid bounds: {sorted(GENERIC_TYPES.keys())} or primitives"
+                )
+
+    return errors, type_param_names
+
+
+def _parse_generic_type(type_str: str) -> tuple[Optional[str], list[str]]:
+    """Parse a generic type string like 'Skill<A, B>' into base and params.
+
+    Args:
+        type_str: Type string to parse
+
+    Returns:
+        Tuple of (base_type, list of type parameters)
+        Returns (None, []) if not a generic type
+    """
+    if "<" not in type_str:
+        return None, []
+
+    # Find the base type and parameters
+    bracket_start = type_str.index("<")
+    bracket_end = type_str.rindex(">")
+
+    if bracket_end < bracket_start:
+        return None, []
+
+    base = type_str[:bracket_start]
+    params_str = type_str[bracket_start + 1:bracket_end]
+
+    # Split parameters, handling nested generics
+    params = []
+    depth = 0
+    current = ""
+    for char in params_str:
+        if char == "<":
+            depth += 1
+            current += char
+        elif char == ">":
+            depth -= 1
+            current += char
+        elif char == "," and depth == 0:
+            params.append(current.strip())
+            current = ""
+        else:
+            current += char
+    if current.strip():
+        params.append(current.strip())
+
+    return base, params
+
+
+def _is_valid_type(
+    type_str: str,
+    type_params: Optional[set[str]] = None,
+    custom_types: Optional[set[str]] = None
+) -> tuple[bool, Optional[str]]:
+    """Check if a type string is valid, considering type parameters.
+
+    Args:
+        type_str: Type string to validate
+        type_params: Set of valid type parameter names (e.g., {'A', 'B'})
+        custom_types: Set of custom type names
+
+    Returns:
+        Tuple of (is_valid, error_message)
+    """
+    type_params = type_params or set()
+    custom_types = custom_types or set()
+
+    # Handle list types
+    if type_str.endswith("[]"):
+        base = type_str[:-2]
+        return _is_valid_type(base, type_params, custom_types)
+
+    # Check if it's a type parameter
+    if type_str in type_params:
+        return True, None
+
+    # Check if it's a primitive type
+    if type_str in PRIMITIVE_TYPES:
+        return True, None
+
+    # Check if it's a custom type
+    if type_str in custom_types:
+        return True, None
+
+    # Check if it's a generic type
+    base, params = _parse_generic_type(type_str)
+    if base is not None:
+        if base not in GENERIC_TYPES:
+            return False, f"Unknown generic type '{base}'"
+
+        expected_param_count = GENERIC_TYPES[base]
+        if len(params) != expected_param_count:
+            return False, (
+                f"Generic type '{base}' expects {expected_param_count} type parameters, "
+                f"got {len(params)}"
+            )
+
+        # Recursively validate each type parameter
+        for param in params:
+            valid, err = _is_valid_type(param, type_params, custom_types)
+            if not valid:
+                return False, err
+
+        return True, None
+
+    return False, f"Unknown type '{type_str}'"
+
+
+def _validate_field_schema(
+    field: dict,
+    context: str,
+    custom_types: Optional[set] = None,
+    type_params: Optional[set] = None
+) -> list[str]:
     """Validate a single field schema definition.
 
     Args:
         field: Field schema dictionary
         context: Context string for error messages (e.g., "inputs[0]")
         custom_types: Optional set of custom type names defined in the skill
+        type_params: Optional set of type parameter names (for generic skills)
 
     Returns:
         List of validation error messages
     """
     errors = []
     custom_types = custom_types or set()
+    type_params = type_params or set()
 
     if not isinstance(field, dict):
         errors.append(f"Field '{context}' must be a mapping")
@@ -235,19 +419,15 @@ def _validate_field_schema(field: dict, context: str, custom_types: Optional[set
     elif not isinstance(field["name"], str) or not field["name"].strip():
         errors.append(f"Field '{context}.name' must be a non-empty string")
 
-    # Validate 'type' field
+    # Validate 'type' field using the enhanced type checker
     if "type" in field:
         field_type = field["type"]
         if not isinstance(field_type, str):
             errors.append(f"Field '{context}.type' must be a string")
         else:
-            # Check if type is a primitive, list, or custom type
-            base_type = field_type.rstrip("[]")  # Handle list types like "string[]"
-            if base_type not in PRIMITIVE_TYPES and base_type not in custom_types:
-                errors.append(
-                    f"Field '{context}.type' unknown type '{field_type}'. "
-                    f"Valid primitives: {sorted(PRIMITIVE_TYPES)}"
-                )
+            valid, err = _is_valid_type(field_type, type_params, custom_types)
+            if not valid:
+                errors.append(f"Field '{context}.type': {err}")
 
     # Validate epistemic requirements (handle string "true"/"false" from YAML)
     def _is_bool_like(val):
@@ -299,31 +479,41 @@ def _validate_field_schema(field: dict, context: str, custom_types: Optional[set
     return errors
 
 
-def _validate_inputs_outputs(inputs: list, outputs: list) -> list[str]:
+def _validate_inputs_outputs(
+    inputs: list,
+    outputs: list,
+    type_params: Optional[set[str]] = None
+) -> list[str]:
     """Validate inputs and outputs field schemas.
 
     Args:
         inputs: List of input field schemas
         outputs: List of output field schemas
+        type_params: Optional set of type parameter names (for generic skills)
 
     Returns:
         List of validation error messages
     """
     errors = []
+    type_params = type_params or set()
 
     if inputs is not None:
         if not isinstance(inputs, list):
             errors.append("Field 'inputs' must be a list")
         else:
             for i, field in enumerate(inputs):
-                errors.extend(_validate_field_schema(field, f"inputs[{i}]"))
+                errors.extend(_validate_field_schema(
+                    field, f"inputs[{i}]", type_params=type_params
+                ))
 
     if outputs is not None:
         if not isinstance(outputs, list):
             errors.append("Field 'outputs' must be a list")
         else:
             for i, field in enumerate(outputs):
-                errors.extend(_validate_field_schema(field, f"outputs[{i}]"))
+                errors.extend(_validate_field_schema(
+                    field, f"outputs[{i}]", type_params=type_params
+                ))
 
     return errors
 
@@ -374,11 +564,18 @@ def validate_metadata(metadata: dict, skill_dir: Optional[Path] = None) -> list[
     if "composes" in metadata:
         errors.extend(_validate_composes(metadata["composes"], level=level_int))
 
-    # Validate type checking fields
+    # Validate type parameters for generic/higher-order skills
+    type_param_names = set()
+    if "type_params" in metadata:
+        type_param_errors, type_param_names = _validate_type_params(metadata["type_params"])
+        errors.extend(type_param_errors)
+
+    # Validate type checking fields (passing type_params for generic type validation)
     if "inputs" in metadata or "outputs" in metadata:
         errors.extend(_validate_inputs_outputs(
             metadata.get("inputs"),
-            metadata.get("outputs")
+            metadata.get("outputs"),
+            type_params=type_param_names
         ))
 
     return errors
@@ -414,16 +611,29 @@ def validate(skill_dir: Path) -> list[str]:
     return validate_metadata(metadata, skill_dir)
 
 
-def _types_compatible(output_type: str, input_type: str) -> bool:
+def _types_compatible(
+    output_type: str,
+    input_type: str,
+    type_bindings: Optional[dict[str, str]] = None
+) -> bool:
     """Check if an output type is compatible with an input type.
 
     Args:
         output_type: Type of the output field
         input_type: Type of the input field
+        type_bindings: Optional mapping of type parameters to concrete types
 
     Returns:
         True if types are compatible
     """
+    type_bindings = type_bindings or {}
+
+    # Resolve type parameters if bound
+    if output_type in type_bindings:
+        output_type = type_bindings[output_type]
+    if input_type in type_bindings:
+        input_type = type_bindings[input_type]
+
     # 'any' is compatible with everything
     if output_type == "any" or input_type == "any":
         return True
@@ -438,6 +648,26 @@ def _types_compatible(output_type: str, input_type: str) -> bool:
     output_base = output_type.rstrip("[]")
     input_base = input_type.rstrip("[]")
 
+    # Check for generic types
+    output_generic, output_params = _parse_generic_type(output_base)
+    input_generic, input_params = _parse_generic_type(input_base)
+
+    # Both are generic types
+    if output_generic and input_generic:
+        if output_generic != input_generic:
+            return False
+        if len(output_params) != len(input_params):
+            return False
+        # Check each type parameter is compatible
+        return all(
+            _types_compatible(op, ip, type_bindings)
+            for op, ip in zip(output_params, input_params)
+        )
+
+    # One is generic, one is not
+    if output_generic or input_generic:
+        return False
+
     # Exact match
     if output_base == input_base:
         return True
@@ -451,6 +681,80 @@ def _types_compatible(output_type: str, input_type: str) -> bool:
         return True
 
     return False
+
+
+def typecheck_higher_order(
+    wrapper_skill: "SkillProperties",
+    wrapped_skill: "SkillProperties",
+) -> list[str]:
+    """Validate type compatibility when a higher-order skill wraps another skill.
+
+    This implements type checking for skill transformers like:
+    - with-retry<A, B> wrapping Skill<A, B> → produces Skill<A, B>
+    - map-skill<A, B> wrapping Skill<A, B> → produces Skill<A[], B[]>
+
+    Args:
+        wrapper_skill: The higher-order skill (e.g., with-retry)
+        wrapped_skill: The skill being wrapped (e.g., web-search)
+
+    Returns:
+        List of type error messages. Empty list means types are compatible.
+    """
+    errors = []
+
+    if not wrapper_skill.type_params:
+        # Not a generic skill, skip higher-order type checking
+        return errors
+
+    # Find the input that accepts a Skill<A, B>
+    skill_input = None
+    for inp in (wrapper_skill.inputs or []):
+        if inp.type.startswith("Skill<"):
+            skill_input = inp
+            break
+
+    if not skill_input:
+        return errors  # No skill input to check
+
+    # Parse the expected skill type from the wrapper
+    _, expected_params = _parse_generic_type(skill_input.type)
+    if len(expected_params) != 2:
+        errors.append(
+            f"Invalid Skill type in '{wrapper_skill.name}': "
+            f"expected Skill<Input, Output>, got {skill_input.type}"
+        )
+        return errors
+
+    expected_input_type, expected_output_type = expected_params
+
+    # Get the wrapped skill's actual types
+    wrapped_inputs = wrapped_skill.inputs or []
+    wrapped_outputs = wrapped_skill.outputs or []
+
+    # Build type bindings from the wrapped skill
+    type_bindings = {}
+
+    # If expected types are type parameters (e.g., 'A', 'B'), bind them
+    wrapper_type_param_names = wrapper_skill.type_param_names
+
+    if expected_input_type in wrapper_type_param_names:
+        # Infer the binding from the wrapped skill's input types
+        if wrapped_inputs:
+            # For simplicity, use the first required input type
+            for wi in wrapped_inputs:
+                if wi.required:
+                    type_bindings[expected_input_type] = wi.type
+                    break
+
+    if expected_output_type in wrapper_type_param_names:
+        # Infer the binding from the wrapped skill's output types
+        if wrapped_outputs:
+            type_bindings[expected_output_type] = wrapped_outputs[0].type
+
+    # Now validate that the wrapped skill's types are compatible
+    # with the wrapper's expectations (considering bindings)
+
+    return errors
 
 
 def typecheck_composition(

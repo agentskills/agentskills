@@ -810,6 +810,225 @@ types:
 
 ---
 
+## Higher-Order Skills
+
+Taking inspiration from functional programming, skills can be **first-class citizens** - passed as arguments, returned from other skills, and composed dynamically. This enables powerful abstractions like combinators, decorators, and meta-learning skills.
+
+### Skills as First-Class Values
+
+Just as Haskell treats functions as first-class values, we can treat skills the same way:
+
+```haskell
+-- Haskell: higher-order function
+map :: (a -> b) -> [a] -> [b]
+
+-- Skills: higher-order skill
+map-skill :: Skill<A, B> -> Skill<A[], B[]>
+```
+
+The `Skill<A, B>` type represents a skill that takes input of type `A` and produces output of type `B`.
+
+### Type Parameters for Generic Skills
+
+Generic skills declare **type parameters** that are instantiated when the skill is used:
+
+```yaml
+---
+name: map-skill
+description: Apply a skill to each item in a list, like functional map.
+level: 2
+operation: READ
+type_params:
+  - name: A
+    description: Input item type
+  - name: B
+    description: Output item type
+inputs:
+  - name: items
+    type: A[]
+    required: true
+  - name: processor
+    type: Skill<A, B>
+    required: true
+outputs:
+  - name: results
+    type: B[]
+---
+```
+
+When `map-skill` is used with `web-search` (which has signature `Query → SearchResults`), the type system infers:
+- `A` = `Query`
+- `B` = `SearchResults`
+- Output type = `SearchResults[]`
+
+### Skill Combinators
+
+**Combinators** are higher-order skills that combine other skills in useful ways:
+
+| Combinator | Signature | Description |
+|------------|-----------|-------------|
+| `map-skill` | `Skill<A, B> → Skill<A[], B[]>` | Apply to each item |
+| `filter-skill` | `Skill<A, boolean> → Skill<A[], A[]>` | Keep items matching predicate |
+| `reduce-skill` | `Skill<{acc: B, item: A}, B> → Skill<A[], B>` | Fold items with accumulator |
+| `try-first` | `Skill<A, B>[] → Skill<A, B>` | Try skills in order until success |
+| `fan-out` | `Skill<A, B>[] → Skill<A, B[]>` | Run skills in parallel |
+
+**Example: Resilient multi-source research**
+
+```yaml
+steps:
+  - skill: fan-out
+    inputs:
+      input: ${query}
+      skills:
+        - web-search
+        - academic-search
+        - news-search
+      fail_strategy: best_effort
+    outputs:
+      results: all_results
+```
+
+### Skill Decorators
+
+**Decorators** wrap skills to add cross-cutting concerns:
+
+| Decorator | Effect | Signature |
+|-----------|--------|-----------|
+| `with-retry` | Automatic retry with backoff | `Skill<A, B> → Skill<A, B>` |
+| `with-cache` | Cache results by input | `Skill<A, B> → Skill<A, B>` |
+| `with-timeout` | Bound execution time | `Skill<A, B> → Skill<A, B>` |
+| `with-logging` | Structured execution logs | `Skill<A, B> → Skill<A, B>` |
+
+**Example: Cached, retried API call**
+
+```yaml
+steps:
+  - skill: with-cache
+    inputs:
+      target:
+        skill: with-retry
+        inputs:
+          target: expensive-api-call
+          max_attempts: 3
+      ttl: 1h
+```
+
+The signature is preserved: `Skill<A, B> → Skill<A, B>`. Decorators are **transparent wrappers**.
+
+### Meta-Learning Skills
+
+At the highest level of abstraction, **meta skills** reason about skills themselves:
+
+| Meta Skill | Purpose |
+|------------|---------|
+| `explain-execution` | Reverse-engineer execution from observed I/O |
+| `intent-refiner` | Learn user preferences from feedback |
+| `skill-synthesizer` | Generate new skills from descriptions or examples |
+
+**Example: Learning from user feedback**
+
+```yaml
+steps:
+  # Execute a skill
+  - skill: research
+    inputs:
+      query: ${user_request}
+    outputs:
+      result: initial_answer
+
+  # User provides feedback
+  - skill: intent-refiner
+    inputs:
+      original_request: ${user_request}
+      execution_result: ${initial_answer}
+      user_action: modified
+      user_modification: ${user_changes}
+    outputs:
+      learned_preferences: prefs
+
+  # Future executions use learned preferences
+  - skill: research
+    inputs:
+      query: ${next_query}
+      depth: ${prefs.preferred_depth}
+```
+
+### The Y-Combinator Pattern
+
+For anonymous recursion without explicit self-reference, we can implement the Y-combinator pattern:
+
+```yaml
+steps:
+  # Keep researching until we have enough sources
+  - skill: fix-point
+    inputs:
+      initial_state:
+        sources: []
+        depth: 0
+      step_skill: research-step
+      continue_predicate:
+        condition: "len(state.sources) < 5 and state.depth < 3"
+    outputs:
+      final_state: complete_research
+```
+
+This enables recursive patterns without the skill explicitly composing itself.
+
+### Type-Directed Execution Reconstruction
+
+A key capability of the type system is **inferring execution paths** from observed inputs and outputs:
+
+```
+Given:
+  Input type: Query
+  Output type: Report
+  Available skills with signatures
+
+Infer:
+  Which skills could produce Report from Query?
+  What intermediate types were involved?
+  What composition structure was used?
+```
+
+This enables:
+- **Debugging**: What happened inside a failed execution?
+- **Auditing**: Was the correct process followed?
+- **Learning**: How did a successful execution work?
+
+See `explain-execution` in the examples for implementation.
+
+### Higher-Order Skills Examples
+
+The `examples/` directory contains reference implementations:
+
+```
+examples/
+├── _combinators/
+│   ├── map-skill/          # Apply skill to list
+│   ├── filter-skill/       # Filter by predicate skill
+│   ├── reduce-skill/       # Fold with accumulator
+│   ├── try-first/          # Fallback chain
+│   └── fan-out/            # Parallel execution
+│
+├── _decorators/
+│   ├── with-retry/         # Retry with backoff
+│   ├── with-cache/         # Result caching
+│   ├── with-timeout/       # Execution timeout
+│   └── with-logging/       # Structured logging
+│
+├── _meta/
+│   ├── explain-execution/  # Reverse-engineer execution
+│   ├── intent-refiner/     # Learn from feedback
+│   └── skill-synthesizer/  # Generate skills
+│
+└── _workflows/
+    ├── resilient-research/      # Composed higher-order workflow
+    └── adaptive-bulk-processor/ # Adaptive batch processing
+```
+
+---
+
 ## Migration Path
 
 Existing skills don't need to change. The new fields are all optional:
