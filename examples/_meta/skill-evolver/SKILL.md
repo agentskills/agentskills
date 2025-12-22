@@ -104,7 +104,85 @@ Present to human:
 - Apply the edit to the skill file
 - Update lesson status to "applied"
 - Record `applied_at` timestamp
+- **Bump version** according to change type (see Versioning below)
+- Add entry to version_history with lesson_id reference
 - Commit with message referencing lesson ID
+
+## Versioning Integration
+
+When applying lessons, skill-evolver automatically handles versioning:
+
+### Change Type Classification
+
+| Change Type | Version Bump | Examples |
+|-------------|-------------|----------|
+| **breaking** | MAJOR | Remove output field, change required input |
+| **feature** | MINOR | Add optional output, add optional input with default |
+| **fix** | PATCH | Fix description typo, clarify constraints |
+
+### Automatic Version Bumping
+
+```yaml
+# Before applying L-research-001
+version: 1.2.0
+
+# After applying (MINOR bump for new output field)
+version: 1.3.0
+version_history:
+  - version: 1.3.0
+    released_at: "2025-12-22"
+    changes:
+      - change_type: feature
+        description: Add source_conflicts output field
+        lesson_id: L-research-001
+```
+
+### Consumer Protection
+
+When a breaking change is proposed:
+1. **Identify consumers**: Find skills that `composes` this skill
+2. **Check constraints**: See if consumers have `requires` constraints
+3. **Generate migration**: Create migration guidance for affected consumers
+4. **Notify**: Include consumer impact in approval prompt
+
+Example breaking change approval:
+
+```
+⚠️  BREAKING CHANGE
+
+This change affects 3 consumers:
+- customer-intel (requires ^1.0.0) - will break
+- daily-briefing (requires >=1.0.0) - will break
+- research-deep (no constraint) - may break
+
+Migration guidance:
+  Replace usage of 'old_output' with 'new_output.value'
+
+[Approve with migration] [Reject] [Make non-breaking]
+```
+
+### Deprecation Flow
+
+For breaking changes, skill-evolver can alternatively:
+1. Mark old version as deprecated with sunset_date
+2. Create new version with the change
+3. Keep both behaviours available during transition
+
+```yaml
+version: 2.0.0
+version_history:
+  - version: 1.5.0
+    released_at: "2025-12-01"
+    deprecated: true
+    sunset_date: "2026-03-01"
+  - version: 2.0.0
+    released_at: "2025-12-22"
+    changes:
+      - change_type: breaking
+        description: Remove legacy output
+        lesson_id: L-research-002
+        migration: Use new_output instead of legacy_output
+```
 
 ## Example Flow
 

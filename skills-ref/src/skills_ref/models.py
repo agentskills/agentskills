@@ -220,6 +220,182 @@ class Lesson:
         )
 
 
+# =============================================================================
+# Versioning System
+# =============================================================================
+
+
+class ChangeType(Enum):
+    """Classification of changes for semantic versioning.
+
+    Used to determine version bump type:
+    - BREAKING: Requires MAJOR version bump (removes outputs, changes required inputs)
+    - FEATURE: Requires MINOR version bump (adds optional outputs/inputs)
+    - FIX: Requires PATCH version bump (bug fixes, doc updates)
+    """
+    BREAKING = "breaking"
+    FEATURE = "feature"
+    FIX = "fix"
+
+
+@dataclass
+class VersionChange:
+    """A single change in a version's changelog.
+
+    Attributes:
+        change_type: Classification (breaking, feature, fix)
+        description: Human-readable description of the change
+        lesson_id: Optional link to the lesson that triggered this change
+        migration: Optional migration guidance for breaking changes
+    """
+    change_type: str
+    description: str
+    lesson_id: Optional[str] = None
+    migration: Optional[str] = None
+
+    def to_dict(self) -> dict:
+        """Convert to dictionary, excluding None values."""
+        result = {
+            "change_type": self.change_type,
+            "description": self.description,
+        }
+        if self.lesson_id:
+            result["lesson_id"] = self.lesson_id
+        if self.migration:
+            result["migration"] = self.migration
+        return result
+
+
+@dataclass
+class VersionEntry:
+    """A version in the skill's version history.
+
+    Follows semantic versioning (MAJOR.MINOR.PATCH):
+    - MAJOR: Breaking changes (consumers must update)
+    - MINOR: Backwards-compatible additions
+    - PATCH: Bug fixes and documentation
+
+    Attributes:
+        version: Semantic version string (e.g., "1.2.0")
+        released_at: ISO date when this version was released
+        changes: List of changes in this version
+        deprecated: Whether this version is deprecated
+        sunset_date: ISO date when this version will be removed (if deprecated)
+    """
+    version: str
+    released_at: str
+    changes: list[VersionChange] = field(default_factory=list)
+    deprecated: bool = False
+    sunset_date: Optional[str] = None
+
+    def to_dict(self) -> dict:
+        """Convert to dictionary, excluding None/default values."""
+        result = {
+            "version": self.version,
+            "released_at": self.released_at,
+        }
+        if self.changes:
+            result["changes"] = [c.to_dict() for c in self.changes]
+        if self.deprecated:
+            result["deprecated"] = True
+        if self.sunset_date:
+            result["sunset_date"] = self.sunset_date
+        return result
+
+    @property
+    def major(self) -> int:
+        """Extract major version number."""
+        parts = self.version.split(".")
+        return int(parts[0]) if parts else 0
+
+    @property
+    def minor(self) -> int:
+        """Extract minor version number."""
+        parts = self.version.split(".")
+        return int(parts[1]) if len(parts) > 1 else 0
+
+    @property
+    def patch(self) -> int:
+        """Extract patch version number."""
+        parts = self.version.split(".")
+        return int(parts[2]) if len(parts) > 2 else 0
+
+    @property
+    def has_breaking_changes(self) -> bool:
+        """Check if this version contains breaking changes."""
+        return any(c.change_type == ChangeType.BREAKING.value for c in self.changes)
+
+
+@dataclass
+class VersionConstraint:
+    """A constraint on skill version compatibility.
+
+    Used by consuming skills to declare version requirements.
+
+    Attributes:
+        skill_name: Name of the required skill
+        constraint: Version constraint (e.g., ">=1.0.0", "^2.0", "~1.2")
+    """
+    skill_name: str
+    constraint: str
+
+    def to_dict(self) -> dict:
+        """Convert to dictionary."""
+        return {
+            "skill_name": self.skill_name,
+            "constraint": self.constraint,
+        }
+
+    def satisfies(self, version: str) -> bool:
+        """Check if a version satisfies this constraint.
+
+        Supports:
+        - Exact: "1.2.3" (must match exactly)
+        - Greater/equal: ">=1.2.0" (must be at least this version)
+        - Caret: "^1.2.0" (compatible with 1.x.x, x >= 2)
+        - Tilde: "~1.2.0" (compatible with 1.2.x)
+
+        Args:
+            version: Version string to check
+
+        Returns:
+            True if version satisfies the constraint
+        """
+        # Parse version into components
+        def parse_version(v: str) -> tuple[int, int, int]:
+            parts = v.replace(">=", "").replace("^", "").replace("~", "").split(".")
+            major = int(parts[0]) if parts else 0
+            minor = int(parts[1]) if len(parts) > 1 else 0
+            patch = int(parts[2]) if len(parts) > 2 else 0
+            return (major, minor, patch)
+
+        actual = parse_version(version)
+        required = parse_version(self.constraint)
+
+        # Exact match
+        if not any(c in self.constraint for c in [">=", "^", "~"]):
+            return actual == required
+
+        # Greater/equal
+        if self.constraint.startswith(">="):
+            return actual >= required
+
+        # Caret: compatible within major version
+        if self.constraint.startswith("^"):
+            if actual[0] != required[0]:
+                return False
+            if actual[0] == 0:
+                # 0.x.y: minor version must match
+                return actual[1] == required[1] and actual[2] >= required[2]
+            return actual >= required
+
+        # Tilde: compatible within minor version
+        if self.constraint.startswith("~"):
+            return actual[0] == required[0] and actual[1] == required[1] and actual[2] >= required[2]
+
+        return False
+
+
 class SkillOperation(Enum):
     """Safety classification for a skill.
 
@@ -252,6 +428,9 @@ class SkillProperties:
         inputs: Input field schemas for type checking (optional)
         outputs: Output field schemas for type checking (optional)
         lessons: Lessons learned from execution (optional, for continuous improvement)
+        version: Current semantic version (e.g., "1.2.0")
+        version_history: List of past versions with changelogs
+        requires: Version constraints for composed skills
     """
 
     name: str
@@ -270,6 +449,10 @@ class SkillProperties:
     outputs: Optional[list[FieldSchema]] = None
     # Continuous improvement fields
     lessons: Optional[list[Lesson]] = None
+    # Versioning fields
+    version: Optional[str] = None
+    version_history: Optional[list[VersionEntry]] = None
+    requires: Optional[list[VersionConstraint]] = None
 
     def to_dict(self) -> dict:
         """Convert to dictionary, excluding None values."""
@@ -299,6 +482,13 @@ class SkillProperties:
         # Continuous improvement fields
         if self.lessons:
             result["lessons"] = [lesson.to_dict() for lesson in self.lessons]
+        # Versioning fields
+        if self.version:
+            result["version"] = self.version
+        if self.version_history:
+            result["version_history"] = [v.to_dict() for v in self.version_history]
+        if self.requires:
+            result["requires"] = [r.to_dict() for r in self.requires]
         return result
 
     @property
@@ -387,3 +577,105 @@ class SkillProperties:
         for lesson in self.lessons:
             stats[lesson.status] = stats.get(lesson.status, 0) + 1
         return stats
+
+    # =========================================================================
+    # Version-related properties
+    # =========================================================================
+
+    @property
+    def is_versioned(self) -> bool:
+        """Check if this skill has explicit versioning."""
+        return self.version is not None
+
+    @property
+    def current_version(self) -> Optional[VersionEntry]:
+        """Get the current version entry from history.
+
+        Returns the version_history entry matching the current version,
+        or None if no match or no history.
+        """
+        if not self.version or not self.version_history:
+            return None
+        for entry in self.version_history:
+            if entry.version == self.version:
+                return entry
+        return None
+
+    @property
+    def is_deprecated(self) -> bool:
+        """Check if the current version is deprecated."""
+        current = self.current_version
+        return current.deprecated if current else False
+
+    @property
+    def latest_version(self) -> Optional[VersionEntry]:
+        """Get the latest version entry from history.
+
+        Returns the version with the highest semver number.
+        """
+        if not self.version_history:
+            return None
+        return max(
+            self.version_history,
+            key=lambda v: (v.major, v.minor, v.patch)
+        )
+
+    @property
+    def breaking_changes_since(self) -> list[VersionEntry]:
+        """Get all versions with breaking changes.
+
+        Useful for migration planning - shows all versions
+        that require consumer updates.
+        """
+        if not self.version_history:
+            return []
+        return [v for v in self.version_history if v.has_breaking_changes]
+
+    def version_satisfies(self, constraint: VersionConstraint) -> bool:
+        """Check if current version satisfies a constraint.
+
+        Args:
+            constraint: Version constraint to check
+
+        Returns:
+            True if current version satisfies the constraint
+        """
+        if not self.version:
+            return False
+        return constraint.satisfies(self.version)
+
+    def check_requires(self, available_skills: dict[str, "SkillProperties"]) -> list[str]:
+        """Check if all version requirements are satisfied.
+
+        Args:
+            available_skills: Dict mapping skill names to their properties
+
+        Returns:
+            List of error messages for unsatisfied requirements
+        """
+        errors = []
+        if not self.requires:
+            return errors
+
+        for req in self.requires:
+            if req.skill_name not in available_skills:
+                errors.append(
+                    f"Required skill '{req.skill_name}' not found"
+                )
+                continue
+
+            skill = available_skills[req.skill_name]
+            if not skill.version:
+                errors.append(
+                    f"Skill '{req.skill_name}' has no version, "
+                    f"but '{self.name}' requires {req.constraint}"
+                )
+                continue
+
+            if not req.satisfies(skill.version):
+                errors.append(
+                    f"Skill '{req.skill_name}' version {skill.version} "
+                    f"does not satisfy requirement {req.constraint}"
+                )
+
+        return errors

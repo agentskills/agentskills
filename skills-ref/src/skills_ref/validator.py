@@ -30,6 +30,10 @@ ALLOWED_FIELDS = {
     "outputs",
     # Continuous improvement fields
     "lessons",
+    # Versioning fields
+    "version",
+    "version_history",
+    "requires",
 }
 
 # Built-in primitive types for type checking
@@ -50,6 +54,11 @@ VALID_OPERATIONS = {"READ", "WRITE", "TRANSFORM"}
 # Valid values for lessons
 VALID_LESSON_STATUSES = {"observed", "proposed", "validated", "applied", "deprecated"}
 LESSON_ID_PATTERN = r"^L-[A-Za-z0-9-]+-\d{3}$"  # L-SKILL-NNN format
+
+# Valid values for versioning
+SEMVER_PATTERN = r"^\d+\.\d+\.\d+$"  # MAJOR.MINOR.PATCH
+VALID_CHANGE_TYPES = {"breaking", "feature", "fix"}
+VERSION_CONSTRAINT_PATTERN = r"^(>=|~|\^)?\d+\.\d+(\.\d+)?$"  # >=1.0.0, ^2.0, ~1.2.0
 
 
 def _validate_name(name: str, skill_dir: Path) -> list[str]:
@@ -373,6 +382,262 @@ def _validate_lessons(lessons: list, skill_name: str) -> list[str]:
             if lesson_id in seen_ids:
                 errors.append(f"Duplicate lesson ID: '{lesson_id}'")
             seen_ids.add(lesson_id)
+
+    return errors
+
+
+def _validate_version(version: str) -> list[str]:
+    """Validate semantic version format.
+
+    Args:
+        version: Version string to validate
+
+    Returns:
+        List of validation error messages
+    """
+    errors = []
+
+    if not isinstance(version, str):
+        errors.append(f"Field 'version' must be a string, got {type(version).__name__}")
+        return errors
+
+    if not re.match(SEMVER_PATTERN, version):
+        errors.append(
+            f"Field 'version' must be in semver format MAJOR.MINOR.PATCH "
+            f"(got '{version}')"
+        )
+
+    return errors
+
+
+def _validate_version_change(change: dict, version: str, index: int) -> list[str]:
+    """Validate a single change entry in version history.
+
+    Args:
+        change: Change dictionary from YAML
+        version: Version string this change belongs to
+        index: Index in the changes list
+
+    Returns:
+        List of validation error messages
+    """
+    errors = []
+    context = f"version_history[{version}].changes[{index}]"
+
+    if not isinstance(change, dict):
+        errors.append(f"Field '{context}' must be a mapping")
+        return errors
+
+    # Required fields
+    if "change_type" not in change:
+        errors.append(f"Field '{context}' missing required 'change_type'")
+    else:
+        change_type = change["change_type"]
+        if not isinstance(change_type, str):
+            errors.append(f"Field '{context}.change_type' must be a string")
+        elif change_type not in VALID_CHANGE_TYPES:
+            errors.append(
+                f"Field '{context}.change_type' must be one of "
+                f"{sorted(VALID_CHANGE_TYPES)}, got '{change_type}'"
+            )
+
+    if "description" not in change:
+        errors.append(f"Field '{context}' missing required 'description'")
+    elif not isinstance(change["description"], str) or not change["description"].strip():
+        errors.append(f"Field '{context}.description' must be a non-empty string")
+
+    # Optional fields
+    if "lesson_id" in change and not isinstance(change["lesson_id"], str):
+        errors.append(f"Field '{context}.lesson_id' must be a string")
+
+    if "migration" in change:
+        migration = change["migration"]
+        if not isinstance(migration, str):
+            errors.append(f"Field '{context}.migration' must be a string")
+        elif change.get("change_type") == "breaking" and not migration.strip():
+            errors.append(
+                f"Field '{context}': breaking changes should have migration guidance"
+            )
+
+    return errors
+
+
+def _validate_version_entry(entry: dict, index: int) -> list[str]:
+    """Validate a single version entry in version history.
+
+    Args:
+        entry: Version entry dictionary from YAML
+        index: Index in the version_history list
+
+    Returns:
+        List of validation error messages
+    """
+    errors = []
+    context = f"version_history[{index}]"
+
+    if not isinstance(entry, dict):
+        errors.append(f"Field '{context}' must be a mapping")
+        return errors
+
+    # Required fields
+    if "version" not in entry:
+        errors.append(f"Field '{context}' missing required 'version'")
+    else:
+        version = entry["version"]
+        if not isinstance(version, str):
+            errors.append(f"Field '{context}.version' must be a string")
+        elif not re.match(SEMVER_PATTERN, version):
+            errors.append(
+                f"Field '{context}.version' must be in semver format "
+                f"(got '{version}')"
+            )
+
+    if "released_at" not in entry:
+        errors.append(f"Field '{context}' missing required 'released_at'")
+    elif not isinstance(entry["released_at"], str):
+        errors.append(f"Field '{context}.released_at' must be a string (ISO date)")
+
+    # Optional changes list
+    version_str = entry.get("version", f"index-{index}")
+    if "changes" in entry:
+        changes = entry["changes"]
+        if not isinstance(changes, list):
+            errors.append(f"Field '{context}.changes' must be a list")
+        else:
+            for i, change in enumerate(changes):
+                errors.extend(_validate_version_change(change, version_str, i))
+
+    # Optional deprecated flag
+    if "deprecated" in entry:
+        deprecated = entry["deprecated"]
+        if not isinstance(deprecated, bool):
+            # Handle string "true"/"false" from YAML
+            if isinstance(deprecated, str):
+                if deprecated.lower() not in ("true", "false"):
+                    errors.append(f"Field '{context}.deprecated' must be a boolean")
+            else:
+                errors.append(f"Field '{context}.deprecated' must be a boolean")
+
+    # Optional sunset_date
+    if "sunset_date" in entry and not isinstance(entry["sunset_date"], str):
+        errors.append(f"Field '{context}.sunset_date' must be a string (ISO date)")
+
+    # Business logic: deprecated versions should have sunset_date
+    deprecated = entry.get("deprecated", False)
+    if deprecated is True or (isinstance(deprecated, str) and deprecated.lower() == "true"):
+        if "sunset_date" not in entry:
+            errors.append(
+                f"Field '{context}': deprecated versions should have 'sunset_date'"
+            )
+
+    return errors
+
+
+def _validate_version_history(version_history: list, current_version: str) -> list[str]:
+    """Validate version history list.
+
+    Args:
+        version_history: List of version entries
+        current_version: The current version string (for consistency check)
+
+    Returns:
+        List of validation error messages
+    """
+    errors = []
+
+    if not isinstance(version_history, list):
+        errors.append(
+            f"Field 'version_history' must be a list, got {type(version_history).__name__}"
+        )
+        return errors
+
+    seen_versions = set()
+    has_current = False
+
+    for i, entry in enumerate(version_history):
+        errors.extend(_validate_version_entry(entry, i))
+
+        # Check for duplicate versions
+        if isinstance(entry, dict) and "version" in entry:
+            version = entry["version"]
+            if version in seen_versions:
+                errors.append(f"Duplicate version in history: '{version}'")
+            seen_versions.add(version)
+
+            if version == current_version:
+                has_current = True
+
+    # Current version should be in history
+    if current_version and not has_current and seen_versions:
+        errors.append(
+            f"Current version '{current_version}' not found in version_history"
+        )
+
+    return errors
+
+
+def _validate_requires_entry(entry: dict, index: int) -> list[str]:
+    """Validate a single requires entry.
+
+    Args:
+        entry: Requires entry dictionary from YAML
+        index: Index in the requires list
+
+    Returns:
+        List of validation error messages
+    """
+    errors = []
+    context = f"requires[{index}]"
+
+    if not isinstance(entry, dict):
+        errors.append(f"Field '{context}' must be a mapping")
+        return errors
+
+    if "skill_name" not in entry:
+        errors.append(f"Field '{context}' missing required 'skill_name'")
+    elif not isinstance(entry["skill_name"], str) or not entry["skill_name"].strip():
+        errors.append(f"Field '{context}.skill_name' must be a non-empty string")
+
+    if "constraint" not in entry:
+        errors.append(f"Field '{context}' missing required 'constraint'")
+    else:
+        constraint = entry["constraint"]
+        if not isinstance(constraint, str):
+            errors.append(f"Field '{context}.constraint' must be a string")
+        elif not re.match(VERSION_CONSTRAINT_PATTERN, constraint):
+            errors.append(
+                f"Field '{context}.constraint' must be a valid version constraint "
+                f"(e.g., '>=1.0.0', '^2.0', '~1.2.0'), got '{constraint}'"
+            )
+
+    return errors
+
+
+def _validate_requires(requires: list) -> list[str]:
+    """Validate version requirements list.
+
+    Args:
+        requires: List of version requirement entries
+
+    Returns:
+        List of validation error messages
+    """
+    errors = []
+
+    if not isinstance(requires, list):
+        errors.append(f"Field 'requires' must be a list, got {type(requires).__name__}")
+        return errors
+
+    seen_skills = set()
+    for i, entry in enumerate(requires):
+        errors.extend(_validate_requires_entry(entry, i))
+
+        # Check for duplicate skill requirements
+        if isinstance(entry, dict) and "skill_name" in entry:
+            skill_name = entry["skill_name"]
+            if skill_name in seen_skills:
+                errors.append(f"Duplicate requirement for skill: '{skill_name}'")
+            seen_skills.add(skill_name)
 
     return errors
 
@@ -741,6 +1006,20 @@ def validate_metadata(metadata: dict, skill_dir: Optional[Path] = None) -> list[
     skill_name = metadata.get("name", "unknown")
     if "lessons" in metadata:
         errors.extend(_validate_lessons(metadata["lessons"], skill_name))
+
+    # Validate versioning fields
+    version = metadata.get("version")
+    if version is not None:
+        errors.extend(_validate_version(version))
+
+    if "version_history" in metadata:
+        errors.extend(_validate_version_history(
+            metadata["version_history"],
+            version  # Pass current version for consistency check
+        ))
+
+    if "requires" in metadata:
+        errors.extend(_validate_requires(metadata["requires"]))
 
     return errors
 

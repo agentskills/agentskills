@@ -1166,6 +1166,121 @@ The human approval gate ensures that automated improvements don't introduce unin
 
 ---
 
+## Versioning: Safe Evolution with Consumer Protection
+
+When lessons are applied and skills evolve, we need a versioning strategy that protects existing consumers. Skills use **semantic versioning** (MAJOR.MINOR.PATCH) with explicit version constraints.
+
+### Version Schema
+
+```yaml
+---
+name: research
+version: 1.3.0
+version_history:
+  - version: 1.0.0
+    released_at: "2025-01-01"
+    changes:
+      - change_type: feature
+        description: Initial release
+  - version: 1.3.0
+    released_at: "2025-12-22"
+    changes:
+      - change_type: feature
+        description: Add source_conflicts output
+        lesson_id: L-research-001
+requires:
+  - skill_name: web-search
+    constraint: ">=1.0.0"
+  - skill_name: pdf-save
+    constraint: "^2.0"
+---
+```
+
+### Semantic Versioning for Skills
+
+| Bump | When | Examples |
+|------|------|----------|
+| **MAJOR** | Breaking changes | Remove output field, change required input, alter behaviour |
+| **MINOR** | Backwards-compatible additions | Add optional output, add optional input with default |
+| **PATCH** | Bug fixes | Fix typos, clarify constraints, improve docs |
+
+### Version Constraints
+
+Consuming skills can declare version requirements using familiar constraint syntax:
+
+| Constraint | Meaning | Example |
+|------------|---------|---------|
+| `1.2.3` | Exact version | Must be exactly 1.2.3 |
+| `>=1.2.0` | Minimum version | 1.2.0 or higher |
+| `^1.2.0` | Compatible within major | 1.x.x where x >= 2 |
+| `~1.2.0` | Compatible within minor | 1.2.x |
+
+### Consumer Protection Flow
+
+When `skill-evolver` proposes a breaking change:
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│                    BREAKING CHANGE PROTECTION                         │
+│                                                                       │
+│  1. Identify consumers                                                │
+│     └── Find all skills with `composes: [this-skill]`                │
+│                                                                       │
+│  2. Check version constraints                                         │
+│     └── Which consumers have `requires` for this skill?              │
+│                                                                       │
+│  3. Assess impact                                                     │
+│     ├── Will break: consumers with ^X.0 or >=X.0 constraints         │
+│     └── May break: consumers without constraints                     │
+│                                                                       │
+│  4. Generate migration guidance                                       │
+│     └── How should consumers update their usage?                     │
+│                                                                       │
+│  5. Present for approval with full impact analysis                   │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+### Deprecation Strategy
+
+Instead of immediate breaking changes, skills can deprecate old versions:
+
+```yaml
+version_history:
+  - version: 1.5.0
+    released_at: "2025-06-01"
+    deprecated: true
+    sunset_date: "2026-01-01"  # 6-month migration window
+  - version: 2.0.0
+    released_at: "2025-12-22"
+    changes:
+      - change_type: breaking
+        description: Remove legacy output
+        migration: Use new_output instead of legacy_output
+```
+
+### Integration with Lessons
+
+Version history links directly to lessons:
+
+| Field | Purpose |
+|-------|---------|
+| `lesson_id` | Links version change to the lesson that motivated it |
+| `migration` | Required for breaking changes, explains how to update |
+
+This creates a complete audit trail: why was this change made, when, and how should consumers adapt.
+
+### Version Validation Rules
+
+| Rule | Enforcement |
+|------|-------------|
+| Format | Must be `MAJOR.MINOR.PATCH` (e.g., 1.2.3) |
+| History consistency | Current version must appear in version_history |
+| No duplicates | Each version can only appear once |
+| Deprecated needs sunset | Deprecated versions must have sunset_date |
+| Breaking needs migration | Breaking changes must have migration guidance |
+
+---
+
 ## Migration Path
 
 Existing skills don't need to change. The new fields are all optional:

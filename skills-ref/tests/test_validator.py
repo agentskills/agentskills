@@ -1826,3 +1826,508 @@ class TestSkillPropertiesLessons:
         assert "lessons" in d
         assert len(d["lessons"]) == 1
         assert d["lessons"][0]["id"] == "L-test-001"
+
+
+# =============================================================================
+# Versioning Tests
+# =============================================================================
+
+
+class TestVersionValidation:
+    """Tests for skill versioning schema."""
+
+    def test_valid_version_minimal(self, tmp_path):
+        """A skill with just version should validate."""
+        skill_dir = tmp_path / "my-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+version: 1.0.0
+---
+# My Skill
+""")
+        errors = validate(skill_dir)
+        assert errors == [], f"Expected no errors, got: {errors}"
+
+    def test_valid_version_with_history(self, tmp_path):
+        """A skill with version and history should validate."""
+        skill_dir = tmp_path / "my-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+version: 1.1.0
+version_history:
+  - version: 1.0.0
+    released_at: "2025-01-01"
+    changes:
+      - change_type: feature
+        description: Initial release
+  - version: 1.1.0
+    released_at: "2025-12-20"
+    changes:
+      - change_type: feature
+        description: Added new output field
+        lesson_id: L-my-skill-001
+---
+# My Skill
+""")
+        errors = validate(skill_dir)
+        assert errors == [], f"Expected no errors, got: {errors}"
+
+    def test_invalid_version_format(self, tmp_path):
+        """Invalid semver format should fail."""
+        skill_dir = tmp_path / "my-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+version: 1.0
+---
+# My Skill
+""")
+        errors = validate(skill_dir)
+        assert any("semver format" in e for e in errors)
+
+    def test_version_not_in_history(self, tmp_path):
+        """Current version not in history should fail."""
+        skill_dir = tmp_path / "my-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+version: 2.0.0
+version_history:
+  - version: 1.0.0
+    released_at: "2025-01-01"
+---
+# My Skill
+""")
+        errors = validate(skill_dir)
+        assert any("not found in version_history" in e for e in errors)
+
+    def test_duplicate_version_in_history(self, tmp_path):
+        """Duplicate versions in history should fail."""
+        skill_dir = tmp_path / "my-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+version: 1.0.0
+version_history:
+  - version: 1.0.0
+    released_at: "2025-01-01"
+  - version: 1.0.0
+    released_at: "2025-01-02"
+---
+# My Skill
+""")
+        errors = validate(skill_dir)
+        assert any("Duplicate version" in e for e in errors)
+
+    def test_deprecated_without_sunset(self, tmp_path):
+        """Deprecated version without sunset_date should fail."""
+        skill_dir = tmp_path / "my-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+version: 2.0.0
+version_history:
+  - version: 1.0.0
+    released_at: "2025-01-01"
+    deprecated: true
+  - version: 2.0.0
+    released_at: "2025-12-20"
+---
+# My Skill
+""")
+        errors = validate(skill_dir)
+        assert any("sunset_date" in e for e in errors)
+
+    def test_deprecated_with_sunset(self, tmp_path):
+        """Deprecated version with sunset_date should validate."""
+        skill_dir = tmp_path / "my-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+version: 2.0.0
+version_history:
+  - version: 1.0.0
+    released_at: "2025-01-01"
+    deprecated: true
+    sunset_date: "2026-01-01"
+  - version: 2.0.0
+    released_at: "2025-12-20"
+---
+# My Skill
+""")
+        errors = validate(skill_dir)
+        assert errors == [], f"Expected no errors, got: {errors}"
+
+    def test_breaking_change_without_migration(self, tmp_path):
+        """Breaking change without migration should warn."""
+        skill_dir = tmp_path / "my-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+version: 2.0.0
+version_history:
+  - version: 2.0.0
+    released_at: "2025-12-20"
+    changes:
+      - change_type: breaking
+        description: Removed legacy output field
+        migration: ""
+---
+# My Skill
+""")
+        errors = validate(skill_dir)
+        assert any("migration guidance" in e for e in errors)
+
+    def test_breaking_change_with_migration(self, tmp_path):
+        """Breaking change with migration should validate."""
+        skill_dir = tmp_path / "my-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+version: 2.0.0
+version_history:
+  - version: 2.0.0
+    released_at: "2025-12-20"
+    changes:
+      - change_type: breaking
+        description: Removed legacy output field
+        migration: Use new_field instead of old_field
+---
+# My Skill
+""")
+        errors = validate(skill_dir)
+        assert errors == [], f"Expected no errors, got: {errors}"
+
+    def test_invalid_change_type(self, tmp_path):
+        """Invalid change_type should fail."""
+        skill_dir = tmp_path / "my-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+version: 1.0.0
+version_history:
+  - version: 1.0.0
+    released_at: "2025-01-01"
+    changes:
+      - change_type: invalid
+        description: Some change
+---
+# My Skill
+""")
+        errors = validate(skill_dir)
+        assert any("must be one of" in e for e in errors)
+
+
+class TestRequiresValidation:
+    """Tests for version requirements validation."""
+
+    def test_valid_requires(self, tmp_path):
+        """Valid requires should validate."""
+        skill_dir = tmp_path / "my-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+version: 1.0.0
+composes:
+  - web-search
+requires:
+  - skill_name: web-search
+    constraint: ">=1.0.0"
+---
+# My Skill
+""")
+        errors = validate(skill_dir)
+        assert errors == [], f"Expected no errors, got: {errors}"
+
+    def test_requires_caret_constraint(self, tmp_path):
+        """Caret constraint should validate."""
+        skill_dir = tmp_path / "my-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+requires:
+  - skill_name: web-search
+    constraint: "^2.0"
+---
+# My Skill
+""")
+        errors = validate(skill_dir)
+        assert errors == [], f"Expected no errors, got: {errors}"
+
+    def test_requires_tilde_constraint(self, tmp_path):
+        """Tilde constraint should validate."""
+        skill_dir = tmp_path / "my-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+requires:
+  - skill_name: pdf-save
+    constraint: "~1.2.0"
+---
+# My Skill
+""")
+        errors = validate(skill_dir)
+        assert errors == [], f"Expected no errors, got: {errors}"
+
+    def test_invalid_constraint_format(self, tmp_path):
+        """Invalid constraint format should fail."""
+        skill_dir = tmp_path / "my-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+requires:
+  - skill_name: web-search
+    constraint: "invalid"
+---
+# My Skill
+""")
+        errors = validate(skill_dir)
+        assert any("valid version constraint" in e for e in errors)
+
+    def test_duplicate_requirement(self, tmp_path):
+        """Duplicate skill requirements should fail."""
+        skill_dir = tmp_path / "my-skill"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+requires:
+  - skill_name: web-search
+    constraint: ">=1.0.0"
+  - skill_name: web-search
+    constraint: ">=2.0.0"
+---
+# My Skill
+""")
+        errors = validate(skill_dir)
+        assert any("Duplicate requirement" in e for e in errors)
+
+
+class TestVersionConstraintModel:
+    """Tests for VersionConstraint model."""
+
+    def test_exact_match(self):
+        """Exact version constraint should work."""
+        from skills_ref.models import VersionConstraint
+
+        constraint = VersionConstraint(skill_name="test", constraint="1.2.3")
+        assert constraint.satisfies("1.2.3") is True
+        assert constraint.satisfies("1.2.4") is False
+        assert constraint.satisfies("1.3.0") is False
+
+    def test_greater_equal(self):
+        """Greater/equal constraint should work."""
+        from skills_ref.models import VersionConstraint
+
+        constraint = VersionConstraint(skill_name="test", constraint=">=1.2.0")
+        assert constraint.satisfies("1.2.0") is True
+        assert constraint.satisfies("1.2.1") is True
+        assert constraint.satisfies("1.3.0") is True
+        assert constraint.satisfies("2.0.0") is True
+        assert constraint.satisfies("1.1.9") is False
+
+    def test_caret_constraint(self):
+        """Caret constraint should allow compatible versions."""
+        from skills_ref.models import VersionConstraint
+
+        constraint = VersionConstraint(skill_name="test", constraint="^1.2.0")
+        assert constraint.satisfies("1.2.0") is True
+        assert constraint.satisfies("1.2.1") is True
+        assert constraint.satisfies("1.9.9") is True
+        assert constraint.satisfies("2.0.0") is False
+        assert constraint.satisfies("1.1.0") is False
+
+    def test_tilde_constraint(self):
+        """Tilde constraint should allow patch updates."""
+        from skills_ref.models import VersionConstraint
+
+        constraint = VersionConstraint(skill_name="test", constraint="~1.2.0")
+        assert constraint.satisfies("1.2.0") is True
+        assert constraint.satisfies("1.2.9") is True
+        assert constraint.satisfies("1.3.0") is False
+        assert constraint.satisfies("2.0.0") is False
+
+
+class TestVersionEntryModel:
+    """Tests for VersionEntry model."""
+
+    def test_version_parts(self):
+        """Version parts should be extracted correctly."""
+        from skills_ref.models import VersionEntry
+
+        entry = VersionEntry(version="1.2.3", released_at="2025-01-01")
+        assert entry.major == 1
+        assert entry.minor == 2
+        assert entry.patch == 3
+
+    def test_has_breaking_changes(self):
+        """has_breaking_changes should detect breaking changes."""
+        from skills_ref.models import VersionEntry, VersionChange
+
+        entry_with_breaking = VersionEntry(
+            version="2.0.0",
+            released_at="2025-01-01",
+            changes=[
+                VersionChange(change_type="breaking", description="Removed field")
+            ]
+        )
+        assert entry_with_breaking.has_breaking_changes is True
+
+        entry_no_breaking = VersionEntry(
+            version="1.1.0",
+            released_at="2025-01-01",
+            changes=[
+                VersionChange(change_type="feature", description="Added field")
+            ]
+        )
+        assert entry_no_breaking.has_breaking_changes is False
+
+
+class TestSkillPropertiesVersioning:
+    """Tests for SkillProperties version-related properties."""
+
+    def test_is_versioned(self):
+        """is_versioned should check for version field."""
+        from skills_ref.models import SkillProperties
+
+        versioned = SkillProperties(name="test", description="Test", version="1.0.0")
+        assert versioned.is_versioned is True
+
+        unversioned = SkillProperties(name="test", description="Test")
+        assert unversioned.is_versioned is False
+
+    def test_current_version(self):
+        """current_version should return matching entry."""
+        from skills_ref.models import SkillProperties, VersionEntry
+
+        skill = SkillProperties(
+            name="test",
+            description="Test",
+            version="1.1.0",
+            version_history=[
+                VersionEntry(version="1.0.0", released_at="2025-01-01"),
+                VersionEntry(version="1.1.0", released_at="2025-06-01"),
+            ]
+        )
+        current = skill.current_version
+        assert current is not None
+        assert current.version == "1.1.0"
+
+    def test_latest_version(self):
+        """latest_version should return highest semver."""
+        from skills_ref.models import SkillProperties, VersionEntry
+
+        skill = SkillProperties(
+            name="test",
+            description="Test",
+            version="1.0.0",
+            version_history=[
+                VersionEntry(version="1.0.0", released_at="2025-01-01"),
+                VersionEntry(version="2.0.0", released_at="2025-06-01"),
+                VersionEntry(version="1.5.0", released_at="2025-03-01"),
+            ]
+        )
+        latest = skill.latest_version
+        assert latest is not None
+        assert latest.version == "2.0.0"
+
+    def test_is_deprecated(self):
+        """is_deprecated should check current version status."""
+        from skills_ref.models import SkillProperties, VersionEntry
+
+        deprecated_skill = SkillProperties(
+            name="test",
+            description="Test",
+            version="1.0.0",
+            version_history=[
+                VersionEntry(version="1.0.0", released_at="2025-01-01", deprecated=True),
+            ]
+        )
+        assert deprecated_skill.is_deprecated is True
+
+        active_skill = SkillProperties(
+            name="test",
+            description="Test",
+            version="1.0.0",
+            version_history=[
+                VersionEntry(version="1.0.0", released_at="2025-01-01"),
+            ]
+        )
+        assert active_skill.is_deprecated is False
+
+    def test_check_requires(self):
+        """check_requires should validate version requirements."""
+        from skills_ref.models import SkillProperties, VersionConstraint
+
+        consumer = SkillProperties(
+            name="consumer",
+            description="Consumes other skills",
+            requires=[
+                VersionConstraint(skill_name="web-search", constraint=">=1.0.0"),
+                VersionConstraint(skill_name="pdf-save", constraint="^2.0.0"),
+            ]
+        )
+
+        available = {
+            "web-search": SkillProperties(name="web-search", description="Search", version="1.5.0"),
+            "pdf-save": SkillProperties(name="pdf-save", description="Save PDFs", version="2.1.0"),
+        }
+
+        errors = consumer.check_requires(available)
+        assert errors == [], f"Expected no errors, got: {errors}"
+
+    def test_check_requires_unsatisfied(self):
+        """check_requires should report unsatisfied requirements."""
+        from skills_ref.models import SkillProperties, VersionConstraint
+
+        consumer = SkillProperties(
+            name="consumer",
+            description="Consumes other skills",
+            requires=[
+                VersionConstraint(skill_name="web-search", constraint=">=2.0.0"),
+            ]
+        )
+
+        available = {
+            "web-search": SkillProperties(name="web-search", description="Search", version="1.5.0"),
+        }
+
+        errors = consumer.check_requires(available)
+        assert len(errors) == 1
+        assert "does not satisfy" in errors[0]
+
+    def test_to_dict_includes_version(self):
+        """to_dict should include versioning fields."""
+        from skills_ref.models import SkillProperties, VersionEntry, VersionConstraint
+
+        skill = SkillProperties(
+            name="test",
+            description="Test",
+            version="1.0.0",
+            version_history=[
+                VersionEntry(version="1.0.0", released_at="2025-01-01")
+            ],
+            requires=[
+                VersionConstraint(skill_name="other", constraint=">=1.0.0")
+            ]
+        )
+        d = skill.to_dict()
+        assert d["version"] == "1.0.0"
+        assert "version_history" in d
+        assert "requires" in d
