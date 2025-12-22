@@ -25,6 +25,7 @@ export const LogoCarousel = () => {
     { name: "Agentman", url: "https://agentman.ai/", lightSrc: "/images/logos/agentman/agentman-wordmark-light.svg", darkSrc: "/images/logos/agentman/agentman-wordmark-dark.svg" },
     { name: "TRAE", url: "https://trae.ai/", lightSrc: "/images/logos/trae/trae-logo-lightmode.svg", darkSrc: "/images/logos/trae/trae-logo-darkmode.svg" },
     { name: "Spring AI", url: "https://docs.spring.io/spring-ai/reference", lightSrc: "/images/logos/spring-ai/spring-ai-logo-light.svg", darkSrc: "/images/logos/spring-ai/spring-ai-logo-dark.svg" },
+    { name: "Command Code", url: "https://commandcode.ai/", lightSrc: "/images/logos/command-code/command-code-logo-for-light.svg", darkSrc: "/images/logos/command-code/command-code-logo-for-dark.svg", width: "175px" },
   ];
 
   /* Shuffle logos on component mount */
