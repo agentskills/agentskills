@@ -1,5 +1,6 @@
 """Skill validation logic."""
 
+import re
 import unicodedata
 from pathlib import Path
 from typing import Optional
@@ -27,6 +28,8 @@ ALLOWED_FIELDS = {
     "type_params",
     "inputs",
     "outputs",
+    # Continuous improvement fields
+    "lessons",
 }
 
 # Built-in primitive types for type checking
@@ -43,6 +46,10 @@ GENERIC_TYPES = {
 # Valid values for composability fields
 VALID_LEVELS = {1, 2, 3}
 VALID_OPERATIONS = {"READ", "WRITE", "TRANSFORM"}
+
+# Valid values for lessons
+VALID_LESSON_STATUSES = {"observed", "proposed", "validated", "applied", "deprecated"}
+LESSON_ID_PATTERN = r"^L-[A-Za-z0-9-]+-\d{3}$"  # L-SKILL-NNN format
 
 
 def _validate_name(name: str, skill_dir: Path) -> list[str]:
@@ -214,6 +221,158 @@ def _validate_composes(composes, level=None) -> list[str]:
             "Level 1 (Atomic) skills should not have 'composes'. "
             "Atomic skills wrap primitives, not other skills."
         )
+
+    return errors
+
+
+def _validate_lesson(lesson: dict, index: int, skill_name: str) -> list[str]:
+    """Validate a single lesson definition.
+
+    Lessons capture patterns discovered during execution that could improve
+    the skill definition. They follow a structured schema for:
+    - Tracking confidence over time
+    - Proposing specific edits
+    - Human approval before crystallising into skill
+
+    Args:
+        lesson: Lesson dictionary from YAML
+        index: Index in the lessons list (for error messages)
+        skill_name: Name of the skill (for ID validation)
+
+    Returns:
+        List of validation error messages
+    """
+    errors = []
+    context = f"lessons[{index}]"
+
+    if not isinstance(lesson, dict):
+        errors.append(f"Field '{context}' must be a mapping")
+        return errors
+
+    # Required fields
+    if "id" not in lesson:
+        errors.append(f"Field '{context}' missing required 'id'")
+    else:
+        lesson_id = lesson["id"]
+        if not isinstance(lesson_id, str):
+            errors.append(f"Field '{context}.id' must be a string")
+        elif not re.match(LESSON_ID_PATTERN, lesson_id):
+            errors.append(
+                f"Field '{context}.id' must match pattern L-SKILL-NNN "
+                f"(got '{lesson_id}')"
+            )
+
+    if "context" not in lesson:
+        errors.append(f"Field '{context}' missing required 'context'")
+    elif not isinstance(lesson["context"], str) or not lesson["context"].strip():
+        errors.append(f"Field '{context}.context' must be a non-empty string")
+
+    if "learned" not in lesson:
+        errors.append(f"Field '{context}' missing required 'learned'")
+    elif not isinstance(lesson["learned"], str) or not lesson["learned"].strip():
+        errors.append(f"Field '{context}.learned' must be a non-empty string")
+
+    # Optional fields with validation
+    if "confidence" in lesson:
+        confidence = lesson["confidence"]
+        # Handle string numbers from YAML
+        if isinstance(confidence, str):
+            try:
+                confidence = float(confidence)
+            except ValueError:
+                errors.append(f"Field '{context}.confidence' must be a number")
+                confidence = None
+        if confidence is not None:
+            if not isinstance(confidence, (int, float)):
+                errors.append(f"Field '{context}.confidence' must be a number")
+            elif not 0.0 <= confidence <= 1.0:
+                errors.append(
+                    f"Field '{context}.confidence' must be between 0.0 and 1.0 "
+                    f"(got {confidence})"
+                )
+
+    if "status" in lesson:
+        status = lesson["status"]
+        if not isinstance(status, str):
+            errors.append(f"Field '{context}.status' must be a string")
+        elif status not in VALID_LESSON_STATUSES:
+            errors.append(
+                f"Field '{context}.status' must be one of "
+                f"{sorted(VALID_LESSON_STATUSES)}, got '{status}'"
+            )
+
+    if "source" in lesson and not isinstance(lesson["source"], str):
+        errors.append(f"Field '{context}.source' must be a string")
+
+    if "proposed_edit" in lesson and not isinstance(lesson["proposed_edit"], str):
+        errors.append(f"Field '{context}.proposed_edit' must be a string")
+
+    if "validated_at" in lesson and not isinstance(lesson["validated_at"], str):
+        errors.append(f"Field '{context}.validated_at' must be a string (ISO date)")
+
+    if "applied_at" in lesson and not isinstance(lesson["applied_at"], str):
+        errors.append(f"Field '{context}.applied_at' must be a string (ISO date)")
+
+    # Business logic validations
+    status = lesson.get("status", "observed")
+    raw_confidence = lesson.get("confidence", 0.5)
+
+    # Coerce confidence to float for business logic checks
+    try:
+        confidence = float(raw_confidence) if raw_confidence is not None else 0.5
+    except (ValueError, TypeError):
+        confidence = None
+
+    # Validated lessons should have high confidence
+    if status == "validated" and confidence is not None and confidence < 0.8:
+        errors.append(
+            f"Field '{context}': validated lessons should have confidence >= 0.8 "
+            f"(got {confidence})"
+        )
+
+    # Applied lessons should have a proposed_edit
+    if status == "applied" and "proposed_edit" not in lesson:
+        errors.append(
+            f"Field '{context}': applied lessons must have 'proposed_edit' "
+            "documenting what was changed"
+        )
+
+    return errors
+
+
+def _validate_lessons(lessons: list, skill_name: str) -> list[str]:
+    """Validate the lessons field for continuous improvement.
+
+    Lessons enable skills to evolve based on execution feedback:
+    1. Observations accumulate during execution
+    2. High-confidence lessons are proposed for review
+    3. Validated lessons can suggest edits
+    4. Applied lessons are crystallised into the skill
+
+    Args:
+        lessons: List of lesson definitions
+        skill_name: Name of the skill (for ID validation)
+
+    Returns:
+        List of validation error messages
+    """
+    errors = []
+
+    if not isinstance(lessons, list):
+        errors.append(f"Field 'lessons' must be a list, got {type(lessons).__name__}")
+        return errors
+
+    seen_ids = set()
+    for i, lesson in enumerate(lessons):
+        lesson_errors = _validate_lesson(lesson, i, skill_name)
+        errors.extend(lesson_errors)
+
+        # Check for duplicate IDs
+        if isinstance(lesson, dict) and "id" in lesson:
+            lesson_id = lesson["id"]
+            if lesson_id in seen_ids:
+                errors.append(f"Duplicate lesson ID: '{lesson_id}'")
+            seen_ids.add(lesson_id)
 
     return errors
 
@@ -577,6 +736,11 @@ def validate_metadata(metadata: dict, skill_dir: Optional[Path] = None) -> list[
             metadata.get("outputs"),
             type_params=type_param_names
         ))
+
+    # Validate lessons for continuous improvement
+    skill_name = metadata.get("name", "unknown")
+    if "lessons" in metadata:
+        errors.extend(_validate_lessons(metadata["lessons"], skill_name))
 
     return errors
 

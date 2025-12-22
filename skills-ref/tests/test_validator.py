@@ -1337,3 +1337,492 @@ outputs:
 """)
         errors = validate(skill_dir)
         assert errors == [], f"Expected no errors, got: {errors}"
+
+
+# =============================================================================
+# Lessons Schema Tests (Continuous Improvement)
+# =============================================================================
+
+
+class TestLessonsValidation:
+    """Tests for the lessons schema that enables continuous improvement."""
+
+    def test_valid_lesson_minimal(self, tmp_path):
+        """A lesson with required fields only should validate."""
+        skill_dir = tmp_path / "research"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: research
+description: Research a topic
+lessons:
+  - id: L-research-001
+    context: "WHEN sources conflict"
+    learned: "Cite all conflicting sources"
+---
+# Research
+""")
+        errors = validate(skill_dir)
+        assert errors == [], f"Expected no errors, got: {errors}"
+
+    def test_valid_lesson_full(self, tmp_path):
+        """A lesson with all fields should validate."""
+        skill_dir = tmp_path / "research"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: research
+description: Research a topic
+lessons:
+  - id: L-research-001
+    context: "WHEN sources conflict on factual claims"
+    learned: "Always cite all conflicting sources, not just one"
+    confidence: 0.95
+    status: validated
+    source: "execution-2025-12-15-001"
+    proposed_edit: "Add source_conflicts output field"
+    validated_at: "2025-12-15"
+---
+# Research
+""")
+        errors = validate(skill_dir)
+        assert errors == [], f"Expected no errors, got: {errors}"
+
+    def test_lesson_missing_id(self, tmp_path):
+        """A lesson without id should fail."""
+        skill_dir = tmp_path / "research"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: research
+description: Research a topic
+lessons:
+  - context: "WHEN sources conflict"
+    learned: "Cite all sources"
+---
+# Research
+""")
+        errors = validate(skill_dir)
+        assert any("missing required 'id'" in e for e in errors)
+
+    def test_lesson_invalid_id_format(self, tmp_path):
+        """A lesson with invalid ID format should fail."""
+        skill_dir = tmp_path / "research"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: research
+description: Research a topic
+lessons:
+  - id: invalid-id
+    context: "WHEN sources conflict"
+    learned: "Cite all sources"
+---
+# Research
+""")
+        errors = validate(skill_dir)
+        assert any("must match pattern L-SKILL-NNN" in e for e in errors)
+
+    def test_lesson_missing_context(self, tmp_path):
+        """A lesson without context should fail."""
+        skill_dir = tmp_path / "research"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: research
+description: Research a topic
+lessons:
+  - id: L-research-001
+    learned: "Cite all sources"
+---
+# Research
+""")
+        errors = validate(skill_dir)
+        assert any("missing required 'context'" in e for e in errors)
+
+    def test_lesson_missing_learned(self, tmp_path):
+        """A lesson without learned should fail."""
+        skill_dir = tmp_path / "research"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: research
+description: Research a topic
+lessons:
+  - id: L-research-001
+    context: "WHEN sources conflict"
+---
+# Research
+""")
+        errors = validate(skill_dir)
+        assert any("missing required 'learned'" in e for e in errors)
+
+    def test_lesson_confidence_out_of_range(self, tmp_path):
+        """A lesson with confidence > 1.0 should fail."""
+        skill_dir = tmp_path / "research"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: research
+description: Research a topic
+lessons:
+  - id: L-research-001
+    context: "WHEN sources conflict"
+    learned: "Cite all sources"
+    confidence: 1.5
+---
+# Research
+""")
+        errors = validate(skill_dir)
+        assert any("between 0.0 and 1.0" in e for e in errors)
+
+    def test_lesson_invalid_status(self, tmp_path):
+        """A lesson with invalid status should fail."""
+        skill_dir = tmp_path / "research"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: research
+description: Research a topic
+lessons:
+  - id: L-research-001
+    context: "WHEN sources conflict"
+    learned: "Cite all sources"
+    status: invalid-status
+---
+# Research
+""")
+        errors = validate(skill_dir)
+        assert any("must be one of" in e for e in errors)
+
+    def test_lesson_validated_low_confidence(self, tmp_path):
+        """A validated lesson with low confidence should fail."""
+        skill_dir = tmp_path / "research"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: research
+description: Research a topic
+lessons:
+  - id: L-research-001
+    context: "WHEN sources conflict"
+    learned: "Cite all sources"
+    confidence: 0.5
+    status: validated
+---
+# Research
+""")
+        errors = validate(skill_dir)
+        assert any("validated lessons should have confidence >= 0.8" in e for e in errors)
+
+    def test_lesson_applied_without_proposed_edit(self, tmp_path):
+        """An applied lesson without proposed_edit should fail."""
+        skill_dir = tmp_path / "research"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: research
+description: Research a topic
+lessons:
+  - id: L-research-001
+    context: "WHEN sources conflict"
+    learned: "Cite all sources"
+    confidence: 0.95
+    status: applied
+---
+# Research
+""")
+        errors = validate(skill_dir)
+        assert any("applied lessons must have 'proposed_edit'" in e for e in errors)
+
+    def test_lesson_applied_with_proposed_edit(self, tmp_path):
+        """An applied lesson with proposed_edit should validate."""
+        skill_dir = tmp_path / "research"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: research
+description: Research a topic
+lessons:
+  - id: L-research-001
+    context: "WHEN sources conflict"
+    learned: "Cite all sources"
+    confidence: 0.95
+    status: applied
+    proposed_edit: "Added source_conflicts field"
+    applied_at: "2025-12-20"
+---
+# Research
+""")
+        errors = validate(skill_dir)
+        assert errors == [], f"Expected no errors, got: {errors}"
+
+    def test_lesson_duplicate_ids(self, tmp_path):
+        """Duplicate lesson IDs should fail."""
+        skill_dir = tmp_path / "research"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: research
+description: Research a topic
+lessons:
+  - id: L-research-001
+    context: "WHEN sources conflict"
+    learned: "Cite all sources"
+  - id: L-research-001
+    context: "WHEN results are uncertain"
+    learned: "Express uncertainty"
+---
+# Research
+""")
+        errors = validate(skill_dir)
+        assert any("Duplicate lesson ID" in e for e in errors)
+
+    def test_multiple_lessons_valid(self, tmp_path):
+        """Multiple valid lessons should validate."""
+        skill_dir = tmp_path / "research"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: research
+description: Research a topic
+lessons:
+  - id: L-research-001
+    context: "WHEN sources conflict"
+    learned: "Cite all conflicting sources"
+    confidence: 0.95
+    status: validated
+  - id: L-research-002
+    context: "WHEN primary sources are unavailable"
+    learned: "Note the limitation explicitly"
+    confidence: 0.85
+    status: proposed
+  - id: L-research-003
+    context: "WHEN dealing with recent events"
+    learned: "Check publication dates carefully"
+    confidence: 0.6
+    status: observed
+---
+# Research
+""")
+        errors = validate(skill_dir)
+        assert errors == [], f"Expected no errors, got: {errors}"
+
+    def test_lessons_not_a_list(self, tmp_path):
+        """Lessons as a non-list should fail."""
+        skill_dir = tmp_path / "research"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text("""---
+name: research
+description: Research a topic
+lessons: "not a list"
+---
+# Research
+""")
+        errors = validate(skill_dir)
+        assert any("must be a list" in e for e in errors)
+
+
+class TestLessonModelProperties:
+    """Tests for Lesson dataclass properties."""
+
+    def test_lesson_is_actionable_true(self):
+        """Lesson with high confidence and proposed/validated status is actionable."""
+        from skills_ref.models import Lesson
+
+        lesson = Lesson(
+            id="L-test-001",
+            context="WHEN x happens",
+            learned="Do y instead",
+            confidence=0.85,
+            status="proposed"
+        )
+        assert lesson.is_actionable is True
+
+        lesson2 = Lesson(
+            id="L-test-002",
+            context="WHEN a happens",
+            learned="Do b instead",
+            confidence=0.9,
+            status="validated"
+        )
+        assert lesson2.is_actionable is True
+
+    def test_lesson_is_actionable_false_low_confidence(self):
+        """Lesson with low confidence is not actionable."""
+        from skills_ref.models import Lesson
+
+        lesson = Lesson(
+            id="L-test-001",
+            context="WHEN x happens",
+            learned="Do y instead",
+            confidence=0.5,
+            status="proposed"
+        )
+        assert lesson.is_actionable is False
+
+    def test_lesson_is_actionable_false_wrong_status(self):
+        """Lesson with observed/applied status is not actionable."""
+        from skills_ref.models import Lesson
+
+        lesson = Lesson(
+            id="L-test-001",
+            context="WHEN x happens",
+            learned="Do y instead",
+            confidence=0.9,
+            status="observed"
+        )
+        assert lesson.is_actionable is False
+
+    def test_lesson_ready_to_apply_true(self):
+        """Validated lesson with high confidence and proposed_edit is ready."""
+        from skills_ref.models import Lesson
+
+        lesson = Lesson(
+            id="L-test-001",
+            context="WHEN x happens",
+            learned="Do y instead",
+            confidence=0.95,
+            status="validated",
+            proposed_edit="Add y field to outputs"
+        )
+        assert lesson.ready_to_apply is True
+
+    def test_lesson_ready_to_apply_false_no_edit(self):
+        """Validated lesson without proposed_edit is not ready."""
+        from skills_ref.models import Lesson
+
+        lesson = Lesson(
+            id="L-test-001",
+            context="WHEN x happens",
+            learned="Do y instead",
+            confidence=0.95,
+            status="validated"
+        )
+        assert lesson.ready_to_apply is False
+
+    def test_lesson_ready_to_apply_false_low_confidence(self):
+        """Lesson with confidence < 0.9 is not ready even if validated."""
+        from skills_ref.models import Lesson
+
+        lesson = Lesson(
+            id="L-test-001",
+            context="WHEN x happens",
+            learned="Do y instead",
+            confidence=0.85,
+            status="validated",
+            proposed_edit="Add y field"
+        )
+        assert lesson.ready_to_apply is False
+
+    def test_lesson_to_dict(self):
+        """Lesson.to_dict() should exclude None values."""
+        from skills_ref.models import Lesson
+
+        lesson = Lesson(
+            id="L-test-001",
+            context="WHEN x",
+            learned="Do y",
+            confidence=0.9,
+            status="validated"
+        )
+        d = lesson.to_dict()
+        assert d["id"] == "L-test-001"
+        assert d["context"] == "WHEN x"
+        assert d["learned"] == "Do y"
+        assert d["confidence"] == 0.9
+        assert d["status"] == "validated"
+        assert "source" not in d
+        assert "proposed_edit" not in d
+
+
+class TestSkillPropertiesLessons:
+    """Tests for SkillProperties lesson-related properties."""
+
+    def test_has_lessons_true(self):
+        """Skill with lessons should return True."""
+        from skills_ref.models import Lesson, SkillProperties
+
+        skill = SkillProperties(
+            name="test",
+            description="Test skill",
+            lessons=[
+                Lesson(
+                    id="L-test-001",
+                    context="WHEN x",
+                    learned="Do y"
+                )
+            ]
+        )
+        assert skill.has_lessons is True
+
+    def test_has_lessons_false(self):
+        """Skill without lessons should return False."""
+        from skills_ref.models import SkillProperties
+
+        skill = SkillProperties(name="test", description="Test skill")
+        assert skill.has_lessons is False
+
+    def test_actionable_lessons(self):
+        """actionable_lessons should return only high-confidence proposed/validated."""
+        from skills_ref.models import Lesson, SkillProperties
+
+        skill = SkillProperties(
+            name="test",
+            description="Test skill",
+            lessons=[
+                Lesson(id="L-test-001", context="x", learned="y",
+                       confidence=0.9, status="proposed"),  # actionable
+                Lesson(id="L-test-002", context="a", learned="b",
+                       confidence=0.5, status="proposed"),  # too low
+                Lesson(id="L-test-003", context="c", learned="d",
+                       confidence=0.95, status="validated"),  # actionable
+                Lesson(id="L-test-004", context="e", learned="f",
+                       confidence=0.95, status="observed"),  # wrong status
+            ]
+        )
+        actionable = skill.actionable_lessons
+        assert len(actionable) == 2
+        assert {l.id for l in actionable} == {"L-test-001", "L-test-003"}
+
+    def test_lessons_ready_to_apply(self):
+        """lessons_ready_to_apply should return only fully ready lessons."""
+        from skills_ref.models import Lesson, SkillProperties
+
+        skill = SkillProperties(
+            name="test",
+            description="Test skill",
+            lessons=[
+                Lesson(id="L-test-001", context="x", learned="y",
+                       confidence=0.95, status="validated",
+                       proposed_edit="Add z"),  # ready
+                Lesson(id="L-test-002", context="a", learned="b",
+                       confidence=0.95, status="validated"),  # no edit
+                Lesson(id="L-test-003", context="c", learned="d",
+                       confidence=0.85, status="validated",
+                       proposed_edit="Add w"),  # too low
+            ]
+        )
+        ready = skill.lessons_ready_to_apply
+        assert len(ready) == 1
+        assert ready[0].id == "L-test-001"
+
+    def test_lesson_stats(self):
+        """lesson_stats should return counts by status."""
+        from skills_ref.models import Lesson, SkillProperties
+
+        skill = SkillProperties(
+            name="test",
+            description="Test skill",
+            lessons=[
+                Lesson(id="L-test-001", context="x", learned="y", status="observed"),
+                Lesson(id="L-test-002", context="a", learned="b", status="observed"),
+                Lesson(id="L-test-003", context="c", learned="d", status="proposed"),
+                Lesson(id="L-test-004", context="e", learned="f", status="validated"),
+            ]
+        )
+        stats = skill.lesson_stats
+        assert stats == {"observed": 2, "proposed": 1, "validated": 1}
+
+    def test_to_dict_includes_lessons(self):
+        """SkillProperties.to_dict() should include lessons."""
+        from skills_ref.models import Lesson, SkillProperties
+
+        skill = SkillProperties(
+            name="test",
+            description="Test skill",
+            lessons=[
+                Lesson(id="L-test-001", context="x", learned="y")
+            ]
+        )
+        d = skill.to_dict()
+        assert "lessons" in d
+        assert len(d["lessons"]) == 1
+        assert d["lessons"][0]["id"] == "L-test-001"

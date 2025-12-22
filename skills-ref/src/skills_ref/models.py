@@ -131,6 +131,95 @@ class SkillLevel(Enum):
     WORKFLOW = 3
 
 
+class LessonStatus(Enum):
+    """Lifecycle status for a lesson.
+
+    Lessons progress through stages as they accumulate evidence:
+    - OBSERVED: Pattern noticed from single execution
+    - PROPOSED: Suggested improvement, awaiting validation
+    - VALIDATED: Confirmed across multiple executions
+    - APPLIED: Lesson has been crystallised into skill definition
+    - DEPRECATED: No longer applicable (context changed)
+    """
+    OBSERVED = "observed"
+    PROPOSED = "proposed"
+    VALIDATED = "validated"
+    APPLIED = "applied"
+    DEPRECATED = "deprecated"
+
+
+@dataclass
+class Lesson:
+    """A lesson learned from skill execution.
+
+    Lessons capture patterns discovered during execution that could improve
+    the skill definition. They follow the EnvZero-inspired schema:
+
+    - **context**: WHEN this lesson applies (trigger condition)
+    - **learned**: WHAT to do differently (the insight)
+    - **proposed_edit**: HOW to change the skill (optional diff suggestion)
+
+    Benefits of structured lessons:
+    1. **Institutional Memory**: Knowledge persists across sessions
+    2. **Continuous Improvement**: Skills evolve from real usage
+    3. **Human-in-the-Loop**: Changes require approval before applying
+    4. **Confidence Tracking**: Only high-confidence lessons get proposed
+
+    Attributes:
+        id: Unique identifier (L-SKILL-NNN format)
+        context: When this lesson applies (trigger condition)
+        learned: The insight or pattern discovered
+        confidence: Confidence score 0.0-1.0 (validated lessons > 0.8)
+        source: Where the lesson was discovered (execution_id, feedback, etc.)
+        status: Lifecycle stage (observed → proposed → validated → applied)
+        proposed_edit: Optional suggested change to the skill definition
+        validated_at: ISO date when lesson reached validated status
+        applied_at: ISO date when lesson was crystallised into skill
+    """
+    id: str
+    context: str
+    learned: str
+    confidence: float = 0.5
+    source: Optional[str] = None
+    status: str = "observed"
+    proposed_edit: Optional[str] = None
+    validated_at: Optional[str] = None
+    applied_at: Optional[str] = None
+
+    def to_dict(self) -> dict:
+        """Convert to dictionary, excluding None values."""
+        result = {
+            "id": self.id,
+            "context": self.context,
+            "learned": self.learned,
+            "confidence": self.confidence,
+            "status": self.status,
+        }
+        if self.source:
+            result["source"] = self.source
+        if self.proposed_edit:
+            result["proposed_edit"] = self.proposed_edit
+        if self.validated_at:
+            result["validated_at"] = self.validated_at
+        if self.applied_at:
+            result["applied_at"] = self.applied_at
+        return result
+
+    @property
+    def is_actionable(self) -> bool:
+        """Check if lesson has enough confidence to propose changes."""
+        return self.confidence >= 0.8 and self.status in ("proposed", "validated")
+
+    @property
+    def ready_to_apply(self) -> bool:
+        """Check if lesson is validated and has a proposed edit."""
+        return (
+            self.status == "validated"
+            and self.confidence >= 0.9
+            and self.proposed_edit is not None
+        )
+
+
 class SkillOperation(Enum):
     """Safety classification for a skill.
 
@@ -162,6 +251,7 @@ class SkillProperties:
         type_params: Type parameters for generic/higher-order skills (optional)
         inputs: Input field schemas for type checking (optional)
         outputs: Output field schemas for type checking (optional)
+        lessons: Lessons learned from execution (optional, for continuous improvement)
     """
 
     name: str
@@ -178,6 +268,8 @@ class SkillProperties:
     type_params: Optional[list[TypeParam]] = None
     inputs: Optional[list[FieldSchema]] = None
     outputs: Optional[list[FieldSchema]] = None
+    # Continuous improvement fields
+    lessons: Optional[list[Lesson]] = None
 
     def to_dict(self) -> dict:
         """Convert to dictionary, excluding None values."""
@@ -204,6 +296,9 @@ class SkillProperties:
             result["inputs"] = [f.to_dict() for f in self.inputs]
         if self.outputs:
             result["outputs"] = [f.to_dict() for f in self.outputs]
+        # Continuous improvement fields
+        if self.lessons:
+            result["lessons"] = [lesson.to_dict() for lesson in self.lessons]
         return result
 
     @property
@@ -242,3 +337,53 @@ class SkillProperties:
     def needs_confirmation(self) -> bool:
         """Check if this skill should require user confirmation."""
         return self.operation == SkillOperation.WRITE.value
+
+    # =========================================================================
+    # Lesson-related properties (continuous improvement)
+    # =========================================================================
+
+    @property
+    def has_lessons(self) -> bool:
+        """Check if this skill has accumulated lessons."""
+        return bool(self.lessons)
+
+    @property
+    def actionable_lessons(self) -> list[Lesson]:
+        """Get lessons with high enough confidence to propose changes.
+
+        Returns lessons where confidence >= 0.8 and status is proposed/validated.
+        These are candidates for the skill-evolver to generate edits.
+        """
+        if not self.lessons:
+            return []
+        return [l for l in self.lessons if l.is_actionable]
+
+    @property
+    def lessons_ready_to_apply(self) -> list[Lesson]:
+        """Get lessons that are validated and ready for human approval.
+
+        Returns lessons where:
+        - status is 'validated'
+        - confidence >= 0.9
+        - proposed_edit is not None
+
+        These lessons have been tested multiple times and have concrete
+        edit suggestions ready for human review.
+        """
+        if not self.lessons:
+            return []
+        return [l for l in self.lessons if l.ready_to_apply]
+
+    @property
+    def lesson_stats(self) -> dict[str, int]:
+        """Get counts of lessons by status.
+
+        Returns:
+            Dict with counts: {observed: N, proposed: N, validated: N, applied: N}
+        """
+        if not self.lessons:
+            return {}
+        stats: dict[str, int] = {}
+        for lesson in self.lessons:
+            stats[lesson.status] = stats.get(lesson.status, 0) + 1
+        return stats

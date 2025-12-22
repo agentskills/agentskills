@@ -1020,12 +1020,149 @@ examples/
 ├── _meta/
 │   ├── explain-execution/  # Reverse-engineer execution
 │   ├── intent-refiner/     # Learn from feedback
-│   └── skill-synthesizer/  # Generate skills
+│   ├── skill-synthesizer/  # Generate skills
+│   └── skill-evolver/      # Propose edits from lessons
 │
 └── _workflows/
     ├── resilient-research/      # Composed higher-order workflow
     └── adaptive-bulk-processor/ # Adaptive batch processing
 ```
+
+---
+
+## Continuous Improvement: The Lessons System
+
+Skills can evolve over time by learning from execution. The **lessons system** enables skills to capture patterns, validate them through repeated use, and eventually crystallise validated lessons into permanent improvements - all with human approval as a gate.
+
+### The Feedback Loop
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    CONTINUOUS IMPROVEMENT LOOP                       │
+│                                                                      │
+│  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐      │
+│  │ Execute  │───►│ Observe  │───►│ Validate │───►│ Propose  │      │
+│  │  Skill   │    │ Pattern  │    │ Lesson   │    │  Edit    │      │
+│  └──────────┘    └──────────┘    └──────────┘    └──────────┘      │
+│       ▲                                               │              │
+│       │          ┌──────────┐    ┌──────────┐        │              │
+│       └──────────│  Apply   │◄───│  Human   │◄───────┘              │
+│                  │  Change  │    │ Approval │                       │
+│                  └──────────┘    └──────────┘                       │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Why Lessons?
+
+| Benefit | Description |
+|---------|-------------|
+| **Institutional memory** | Knowledge persists in the skill definition itself, not external docs |
+| **Continuous improvement** | Skills evolve from real usage patterns |
+| **Human-in-the-loop** | Changes require approval before crystallising |
+| **Confidence tracking** | Only high-confidence lessons get proposed |
+| **Traceable evolution** | Every change links to a lesson ID; git history = audit trail |
+
+### Lesson Schema
+
+Each lesson captures a pattern observed during execution:
+
+```yaml
+lessons:
+  - id: L-research-001                    # Unique ID (L-SKILL-NNN)
+    context: "WHEN sources conflict"       # Trigger condition
+    learned: "Cite all conflicting sources"  # The insight
+    confidence: 0.95                       # 0.0-1.0, validated >= 0.8
+    status: validated                      # observed → proposed → validated → applied
+    source: "execution-2025-12-15"         # Where discovered
+    proposed_edit: "Add conflicts output"  # Suggested change
+    validated_at: "2025-12-15"             # When validated
+```
+
+### Lesson Lifecycle
+
+| Status | Meaning | Confidence | Next Step |
+|--------|---------|------------|-----------|
+| `observed` | Pattern noticed from single execution | Any | Accumulate more evidence |
+| `proposed` | Suggested improvement, awaiting validation | >= 0.5 | Test in more contexts |
+| `validated` | Confirmed across multiple executions | >= 0.8 | Generate proposed edit |
+| `applied` | Lesson crystallised into skill definition | >= 0.9 | Archive with applied_at |
+| `deprecated` | No longer applicable (context changed) | Any | Remove from active consideration |
+
+### Example: Research Skill with Lessons
+
+```yaml
+---
+name: research
+description: Research a topic with web search and source verification.
+level: 2
+operation: READ
+composes:
+  - web-search
+  - web-fetch
+lessons:
+  - id: L-research-001
+    context: "WHEN sources conflict on factual claims"
+    learned: "Always cite all conflicting sources, not just one"
+    confidence: 0.95
+    status: validated
+    source: "User feedback on 2025-12-15"
+    validated_at: "2025-12-15"
+    proposed_edit: |
+      Add 'source_conflicts' output field:
+      - name: source_conflicts
+        type: SourceConflict[]
+        description: "Any conflicting claims between sources"
+
+  - id: L-research-002
+    context: "WHEN primary sources are unavailable"
+    learned: "Explicitly note the limitation in output"
+    confidence: 0.85
+    status: proposed
+    source: "Observed during legal research"
+
+  - id: L-research-003
+    context: "WHEN dealing with recent events"
+    learned: "Check publication dates carefully"
+    confidence: 0.6
+    status: observed
+    source: "Outdated info served for current events query"
+---
+```
+
+### The skill-evolver Meta Skill
+
+The `skill-evolver` meta skill (in `_meta/skill-evolver/`) processes validated lessons:
+
+1. **Analyse lessons** where `ready_to_apply == True` (validated, confidence >= 0.9, has proposed_edit)
+2. **Generate concrete diff** for the skill file
+3. **Assess risk** (scope, reversibility, side effects)
+4. **Present for approval** with clear approve/reject/modify options
+5. **Apply if approved** and update lesson status to "applied"
+
+### Validation Rules for Lessons
+
+The type system enforces lesson integrity:
+
+| Rule | Validation |
+|------|------------|
+| ID format | Must match `L-[A-Za-z0-9-]+-\d{3}` (e.g., L-research-001) |
+| Unique IDs | No duplicate lesson IDs within a skill |
+| Validated confidence | Validated lessons must have confidence >= 0.8 |
+| Applied requires edit | Applied lessons must have `proposed_edit` |
+| Required fields | `id`, `context`, `learned` are all required |
+
+### How Lessons Reduce Micromanagement
+
+This system addresses a key pain point: users currently have to repeat instructions across sessions. With lessons:
+
+| Before (Manual) | After (Lessons) |
+|-----------------|-----------------|
+| "Remember to cite sources" every time | Captured once as L-research-001 |
+| "Don't pick one source when they conflict" | Validated pattern, proposed as skill edit |
+| User corrects output repeatedly | Correction triggers observation → proposal → validation |
+| Knowledge lives in user's head | Knowledge crystallises into skill definition |
+
+The human approval gate ensures that automated improvements don't introduce unintended behaviour, while the confidence tracking ensures that only well-validated patterns become permanent.
 
 ---
 
