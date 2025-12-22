@@ -162,6 +162,86 @@ Skills can be **first-class citizens** - passed as arguments to other skills, co
 
 See [Architecture: Higher-Order Skills](docs/architecture.mdx#higher-order-skills) for full documentation.
 
+### Continuous Improvement: The Lessons System
+
+Skills can **learn from execution** through a structured lessons system that captures patterns, validates them over time, and proposes concrete improvements:
+
+```yaml
+lessons:
+  # APPLIED: This lesson has been crystallised into the skill
+  - id: L-research-001
+    context: "WHEN presenting findings without attribution"
+    learned: "Always include inline citations linking claims to specific sources"
+    confidence: 0.98
+    status: applied
+    source: "User feedback: 'Where did you get this information?'"
+    applied_at: "2025-06-01"
+
+  # VALIDATED: Ready for human approval in next version
+  - id: L-research-004
+    context: "WHEN primary sources are unavailable or paywalled"
+    learned: "Explicitly note the limitation and suggest alternatives"
+    confidence: 0.90
+    status: validated
+    proposed_edit: "Add source_limitations output field"
+```
+
+**Lesson Lifecycle:**
+
+| Status | Confidence | Meaning |
+|--------|------------|---------|
+| `observed` | 0.0-0.6 | Pattern noticed, needs more instances |
+| `proposed` | 0.6-0.8 | Accumulating evidence |
+| `validated` | 0.8-1.0 | Ready for human approval |
+| `applied` | 1.0 | Crystallised into skill definition |
+| `deprecated` | - | No longer applicable |
+
+The `skill-evolver` meta skill closes the feedback loop by proposing minimal, targeted edits from validated lessons - always requiring human approval before changes are applied.
+
+See [Architecture: Continuous Improvement](docs/architecture.mdx#continuous-improvement-the-lessons-system) for full documentation.
+
+### Versioning: Safe Skill Evolution
+
+Skills support **semantic versioning** with consumer protection to enable safe evolution:
+
+```yaml
+version: 1.3.0
+version_history:
+  - version: 1.3.0
+    released_at: "2025-12-22"
+    changes:
+      - change_type: feature
+        description: Add data_freshness indicator
+        lesson_id: L-research-003  # Links to lesson that inspired change
+
+  - version: 1.2.0
+    released_at: "2025-09-15"
+    changes:
+      - change_type: feature
+        description: Add source_conflicts output
+        lesson_id: L-research-002
+
+# Consumer protection via version constraints
+requires:
+  - skill_name: web-search
+    constraint: ">=1.0.0"
+  - skill_name: web-fetch
+    constraint: "^1.0.0"  # Compatible updates only
+```
+
+**Version Constraints** (npm/cargo-style):
+
+| Constraint | Meaning | Example |
+|------------|---------|---------|
+| `>=1.0.0` | At least version 1.0.0 | Accepts 1.0.0, 1.5.0, 2.0.0 |
+| `^1.2.0` | Compatible with 1.2.0 | Accepts 1.2.0, 1.9.0; rejects 2.0.0 |
+| `~1.2.0` | Patch updates only | Accepts 1.2.0, 1.2.5; rejects 1.3.0 |
+| `1.2.0` | Exact version | Only 1.2.0 |
+
+**Breaking changes** automatically identify affected consumers and generate migration guidance before applying.
+
+See [Architecture: Versioning](docs/architecture.mdx#versioning-safe-evolution-with-consumer-protection) for full documentation.
+
 ### Benefits
 
 | Benefit | Description |
@@ -175,6 +255,8 @@ See [Architecture: Higher-Order Skills](docs/architecture.mdx#higher-order-skill
 | **Testability** | Each level can be tested and verified independently |
 | **Safety** | Clear READ/WRITE separation; safety propagates upward |
 | **Transparency** | `composes` field makes dependencies explicit and auditable |
+| **Learning** | Skills improve over time through lessons that crystallise execution patterns |
+| **Safe evolution** | Semantic versioning with consumer protection prevents breaking changes |
 
 ## Getting Started
 
@@ -182,6 +264,7 @@ See [Architecture: Higher-Order Skills](docs/architecture.mdx#higher-order-skill
 - [Specification](https://agentskills.io/specification) - Format details
 - [Architecture](docs/architecture.mdx) - Composability design rationale and type system
 - [Trip Optimizer Showcase](examples/_showcase/trip-optimizer/) - Full example with 12 skills across all 3 levels
+- [Research Skill Example](examples/_composite/research/) - Complete lessons and versioning lifecycle demonstration
 - [Higher-Order Skills](examples/) - Combinators, decorators, and meta-learning examples
 - [Example Skills](https://github.com/anthropics/skills) - See what's possible
 

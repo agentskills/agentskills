@@ -1,136 +1,286 @@
 ---
 name: research
-description: Research a topic comprehensively with web search and optional source archival. Use for in-depth investigation requiring multiple sources and verification.
+description: >
+  Research a topic using web search, source verification, and synthesis.
+  Composes web-search and web-fetch to gather information, then synthesises
+  findings with source attribution. Handles conflicting sources by citing all.
+
+  Use when: User asks to research a topic, find information, or answer
+  factual questions that require current data beyond training cutoff.
+
 level: 2
 operation: READ
 composes:
   - web-search
-  - pdf-save
-license: Apache-2.0
+  - web-fetch
+
+# Version tracking for safe evolution
+version: 1.3.0
+version_history:
+  - version: 1.0.0
+    released_at: "2025-01-15"
+    changes:
+      - change_type: feature
+        description: Initial release with basic web search and synthesis
+
+  - version: 1.1.0
+    released_at: "2025-06-01"
+    changes:
+      - change_type: feature
+        description: Add source attribution to all findings
+        lesson_id: L-research-001
+
+  - version: 1.2.0
+    released_at: "2025-09-15"
+    changes:
+      - change_type: feature
+        description: Add source_conflicts output for transparency
+        lesson_id: L-research-002
+
+  - version: 1.3.0
+    released_at: "2025-12-22"
+    changes:
+      - change_type: feature
+        description: Add data_freshness indicator with publication dates
+        lesson_id: L-research-003
+
+# Version constraints for dependencies
+requires:
+  - skill_name: web-search
+    constraint: ">=1.0.0"
+  - skill_name: web-fetch
+    constraint: "^1.0.0"
+
+# Type-checked inputs and outputs
+inputs:
+  - name: query
+    type: string
+    required: true
+    description: The research question or topic to investigate
+
+  - name: max_sources
+    type: integer
+    required: false
+    description: Maximum number of sources to consult (default 5)
+
+  - name: prefer_primary
+    type: boolean
+    required: false
+    description: Prefer primary sources over aggregators when available
+
+outputs:
+  - name: findings
+    type: string
+    required: true
+    description: Synthesised findings with inline citations
+    requires_rationale: true
+
+  - name: sources
+    type: Source[]
+    required: true
+    description: List of sources consulted with URLs and titles
+
+  - name: source_conflicts
+    type: SourceConflict[]
+    required: false
+    description: Any conflicting claims between sources (added in v1.2.0)
+
+  - name: data_freshness
+    type: DataFreshness
+    required: false
+    description: Indicator of how recent the data is (added in v1.3.0)
+
+  - name: confidence
+    type: number
+    required: true
+    description: Confidence score 0.0-1.0 based on source quality and agreement
+
+# Lessons learned from execution - the heart of continuous improvement
+lessons:
+  # APPLIED: This lesson has been crystallised into the skill (v1.1.0)
+  - id: L-research-001
+    context: "WHEN presenting findings without attribution"
+    learned: "Always include inline citations linking claims to specific sources"
+    confidence: 0.98
+    status: applied
+    source: "User feedback: 'Where did you get this information?'"
+    proposed_edit: "Add source attribution requirement to findings output"
+    validated_at: "2025-05-15"
+    applied_at: "2025-06-01"
+
+  # APPLIED: This lesson has been crystallised into the skill (v1.2.0)
+  - id: L-research-002
+    context: "WHEN sources conflict on factual claims"
+    learned: "Always cite ALL conflicting sources, never pick one silently"
+    confidence: 0.95
+    status: applied
+    source: "User correction after conflicting data was presented as fact"
+    proposed_edit: |
+      Add source_conflicts output field:
+      - name: source_conflicts
+        type: SourceConflict[]
+        description: "Any conflicting claims between sources"
+    validated_at: "2025-08-20"
+    applied_at: "2025-09-15"
+
+  # APPLIED: This lesson has been crystallised into the skill (v1.3.0)
+  - id: L-research-003
+    context: "WHEN dealing with time-sensitive information"
+    learned: "Always check and report publication dates, flag outdated sources"
+    confidence: 0.92
+    status: applied
+    source: "Served outdated COVID statistics from 2021 article"
+    proposed_edit: "Add data_freshness output with publication date analysis"
+    validated_at: "2025-11-10"
+    applied_at: "2025-12-22"
+
+  # VALIDATED: Ready for human approval in next version
+  - id: L-research-004
+    context: "WHEN primary sources are unavailable or paywalled"
+    learned: "Explicitly note the limitation and suggest alternatives"
+    confidence: 0.90
+    status: validated
+    source: "User asked about academic paper but only abstracts were accessible"
+    proposed_edit: |
+      Add source_limitations output field:
+      - name: source_limitations
+        type: string[]
+        description: "Any limitations in source access (paywalls, regions, etc.)"
+    validated_at: "2025-12-20"
+
+  # PROPOSED: Accumulating evidence, needs more validation
+  - id: L-research-005
+    context: "WHEN query is ambiguous or could mean multiple things"
+    learned: "Ask clarifying question before researching, or research all interpretations"
+    confidence: 0.75
+    status: proposed
+    source: "Researched wrong 'Python' (snake vs language)"
+
+  # OBSERVED: Pattern noticed, needs more instances to strengthen
+  - id: L-research-006
+    context: "WHEN sources are from known biased outlets"
+    learned: "Flag potential bias and seek balancing viewpoints"
+    confidence: 0.55
+    status: observed
+    source: "Political topic research cited only one-sided sources"
+
+  # DEPRECATED: No longer applicable after v1.2.0 changes
+  - id: L-research-007
+    context: "WHEN only one source is found"
+    learned: "Warn user about single-source limitation"
+    confidence: 0.80
+    status: deprecated
+    source: "This is now handled by confidence score calculation"
 ---
 
-# Research
+# Research Skill
 
-Comprehensive topic research combining web search with source verification and optional archival.
+A composite skill that performs comprehensive research by combining web search, source fetching, and intelligent synthesis.
 
-## Why This is a Composite Skill
-
-This skill **composes** two atomic skills:
+## How It Works
 
 ```
-research (Level 2)
-├── web-search (Level 1, READ)  → Get synthesised answer with citations
-└── pdf-save (Level 1, WRITE)   → Archive sources (optional)
+┌─────────────────────────────────────────────────────────────────────┐
+│                         RESEARCH WORKFLOW                            │
+│                                                                      │
+│  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐      │
+│  │  Query   │───►│  Search  │───►│  Fetch   │───►│Synthesise│      │
+│  │  Input   │    │   Web    │    │ Sources  │    │ Findings │      │
+│  └──────────┘    └──────────┘    └──────────┘    └──────────┘      │
+│                       │               │               │              │
+│                       ▼               ▼               ▼              │
+│                  [web-search]    [web-fetch]    [attribution]       │
+│                                                 [conflicts]         │
+│                                                 [freshness]         │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
-By composing atomic skills, we get:
-- **Reusability**: Both `web-search` and `pdf-save` can be used independently
-- **Testability**: Each component can be tested in isolation
-- **Flexibility**: Archival step is optional based on `save_sources` parameter
-- **Transparency**: Clear what this skill does by reading its composition
+## Evolution Through Lessons
 
-## When to Use
+This skill demonstrates the full lessons lifecycle:
 
-Use this skill when:
-- Deep investigation of a topic is needed
-- Multiple sources should be cross-referenced
-- Sources need to be preserved for future reference
-- User asks for "research" rather than a quick search
+| Version | Lesson Applied | What Changed |
+|---------|----------------|--------------|
+| 1.0.0 | - | Initial release |
+| 1.1.0 | L-research-001 | Added source attribution |
+| 1.2.0 | L-research-002 | Added conflict detection |
+| 1.3.0 | L-research-003 | Added data freshness |
+| 1.4.0? | L-research-004 | (pending) Source limitations |
 
-## Workflow
+## Lesson Status Summary
 
 ```
-1. SEARCH
-   └── Use web-search to get initial answer + citations
-
-2. VERIFY (if depth >= standard)
-   └── Fetch full content from top citations
-   └── Cross-reference key claims
-
-3. ARCHIVE (if save_sources = true)
-   └── Use pdf-save for each citation
-   └── Generate source index
+Applied (3):    L-research-001, L-research-002, L-research-003
+Validated (1):  L-research-004 (ready for next version)
+Proposed (1):   L-research-005 (needs more validation)
+Observed (1):   L-research-006 (early pattern)
+Deprecated (1): L-research-007 (superseded)
 ```
 
-## Inputs
+## Usage Example
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `query` | string | Yes | - | The research question |
-| `depth` | string | No | `standard` | `quick`, `standard`, or `thorough` |
-| `save_sources` | boolean | No | `false` | Archive citations as PDFs |
-| `output_dir` | string | No | `./sources` | Where to save PDFs |
-
-## Outputs
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `summary` | string | Synthesised research findings |
-| `sources` | list | Citations with key points extracted |
-| `saved_pdfs` | list | Paths to archived PDFs (if save_sources) |
-| `confidence` | string | How well-supported the findings are |
-
-## Depth Levels
-
-| Level | Behaviour |
-|-------|-----------|
-| `quick` | Single web-search, return synthesised answer |
-| `standard` | Fetch top 3 citations, cross-reference claims |
-| `thorough` | Fetch all citations, deep verification, comprehensive report |
-
-## Usage Examples
-
-### Quick Research
-```
-Research "what are the current GDPR requirements for AI training data in the EU"
-```
-
-### Thorough Research with Archival (Legal Case Preparation)
-
-This example shows why composition matters - preparing evidence for legal proceedings requires both comprehensive research AND permanent archival of sources:
-
-```
-Research "case law on software patent infringement for machine learning algorithms in the Unified Patent Court, focusing on decisions from 2023-2024 regarding training data and model weights as patentable subject matter" with thorough depth and save sources to ./case-evidence/patent-precedents/
-```
-
-**What happens under the hood:**
-
-```
-research (Level 2)
-│
-├─→ web-search: Find relevant UPC decisions, legal commentary, and official court records
-│   Returns: 12 citations including EPO guidelines, UPC case database, legal journals
-│
-├─→ [For each citation - thorough mode]
-│   Fetch full content, extract key holdings and rationale
-│   Cross-reference: Flag conflicting interpretations between jurisdictions
-│
-└─→ pdf-save: Archive each source with metadata
-    Saves: 12 PDFs to ./case-evidence/patent-precedents/
-    Each PDF includes: capture timestamp, original URL, evidence reference number
+**Input:**
+```yaml
+query: "What are the current interest rates in the UK?"
+max_sources: 5
+prefer_primary: true
 ```
 
 **Output:**
-```json
-{
-  "summary": "The UPC has addressed ML patent eligibility in 3 key decisions...",
-  "sources": [
-    {
-      "url": "https://www.unified-patent-court.org/en/decisions/2024-001",
-      "key_points": ["Training data not patentable per se", "Model architecture may qualify"],
-      "saved_pdf": "./case-evidence/patent-precedents/upc-2024-001.pdf"
-    }
-  ],
-  "confidence": "high",
-  "conflicts_flagged": ["German vs French interpretation of 'technical effect'"]
-}
+```yaml
+findings: |
+  As of December 2025, the Bank of England base rate is 4.75% [1].
+  This represents a decrease from the peak of 5.25% in August 2023 [2].
+  Some analysts predict further cuts in early 2025 [3].
+
+sources:
+  - url: "https://bankofengland.co.uk/monetary-policy"
+    title: "Bank of England - Monetary Policy"
+    accessed_at: "2025-12-22"
+  - url: "https://ft.com/interest-rates"
+    title: "Financial Times - UK Interest Rate History"
+    accessed_at: "2025-12-22"
+  # ... more sources
+
+source_conflicts:
+  - claim: "Predicted rate for Q1 2025"
+    positions:
+      - source: "[3]"
+        position: "4.5%"
+      - source: "[4]"
+        position: "4.25%"
+    note: "Analyst predictions vary"
+
+data_freshness:
+  oldest_source: "2025-12-15"
+  newest_source: "2025-12-22"
+  freshness_score: 0.95
+  warning: null
+
+confidence: 0.92
 ```
 
-This demonstrates the power of composition: a single Level 2 skill coordinates web-search and pdf-save to produce court-admissible evidence with full provenance.
+## Version Compatibility
 
-## Notes
+Consumers of this skill should declare version requirements:
 
-- Operation is READ because pdf-save writes locally, not to external systems
-- For research that creates Linear issues or sends notifications, use a Level 3 workflow
-- Cross-referencing automatically flags conflicting information between sources
-- Saved PDFs include metadata headers for evidence chain of custody
+```yaml
+# In your skill that uses research:
+composes:
+  - research
+requires:
+  - skill_name: research
+    constraint: "^1.2.0"  # Needs conflict detection
+```
+
+This ensures you get at least v1.2.0 features but accept compatible updates.
+
+## Pending Improvements
+
+**L-research-004** (validated, ready for v1.4.0):
+- Add `source_limitations` output for paywalls, region locks, etc.
+- Awaiting human approval via `skill-evolver`
+
+**L-research-005** (proposed, confidence 0.75):
+- Handle ambiguous queries better
+- Needs more validation instances to reach 0.8 threshold
