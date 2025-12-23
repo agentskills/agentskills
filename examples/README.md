@@ -69,8 +69,24 @@ examples/
     │   └── SKILL.md            # Orchestrates multiple composites
     ├── slack-to-issue/
     │   └── SKILL.md            # Convert Slack messages to GitHub issues
-    └── notion-sheets-sync/
-        └── SKILL.md            # Bidirectional Notion ↔ Sheets sync
+    ├── notion-sheets-sync/
+    │   └── SKILL.md            # Bidirectional Notion ↔ Sheets sync
+    │
+    │   # Real-World Automation Workflows
+    ├── meeting-followup/
+    │   └── SKILL.md            # Post-meeting email with context
+    ├── weekly-digest/
+    │   └── SKILL.md            # Multi-source productivity summary
+    ├── research-brief/
+    │   └── SKILL.md            # Comprehensive topic research
+    ├── lead-enrich/
+    │   └── SKILL.md            # CRM lead enrichment pipeline
+    ├── content-repurpose/
+    │   └── SKILL.md            # Blog → social media content
+    ├── support-triage/
+    │   └── SKILL.md            # Ticket classification and routing
+    └── invoice-process/
+        └── SKILL.md            # Invoice extraction and approval
 ```
 
 ## How Composition Works
@@ -246,6 +262,42 @@ These workflows demonstrate complex orchestration patterns from popular n8n temp
 | `notion-sheets-sync` | WRITE | "Sync Notion database to Google Sheets" |
 
 Level 3 skills have **decision logic, state management, and multi-directional data flow**.
+
+## Real-World Automation Workflows (Level 3)
+
+These workflows demonstrate production-ready patterns with **tool discovery** - they automatically adapt to the user's configured integrations:
+
+| Workflow | Trigger | Key Features |
+|----------|---------|--------------|
+| `meeting-followup` | "Prepare follow-up for meeting with [person]" | Transcript fetch, CRM lookup, contextual email draft |
+| `weekly-digest` | "Give me my weekly summary" | Multi-source aggregation (calendar, email, GitHub, tasks) |
+| `research-brief` | "Research [topic] and prepare a brief" | Deep research with citations, source archival |
+| `lead-enrich` | "Enrich lead [email]" | Company data, news, scoring, CRM update |
+| `content-repurpose` | "Turn this blog post into social content" | Multi-platform generation (Twitter, LinkedIn, newsletter) |
+| `support-triage` | "Triage ticket #[ID]" | Classification, KB search, response drafting |
+| `invoice-process` | "Process this invoice" | OCR extraction, PO matching, approval routing |
+
+### Tool Discovery Pattern
+
+Each workflow declares tool preferences with fallbacks:
+
+```yaml
+tool_discovery:
+  transcript_source:
+    prefer: [fireflies, otter, zoom, teams]
+    fallback: manual-notes-read
+  email_provider:
+    prefer: [gmail, outlook]
+  crm:
+    prefer: [hubspot, salesforce, notion]
+```
+
+The runtime automatically selects the first available tool, enabling:
+- **Zero configuration changes** when switching providers
+- **Graceful degradation** when services are unavailable
+- **User choice** without prompt editing
+
+See [docs/why-composable-skills.md](../docs/why-composable-skills.md) for a detailed comparison with MCP + static prompts.
 
 ## Linux/POSIX Utility Skills
 
