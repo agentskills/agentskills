@@ -37,6 +37,7 @@ input:
         type: array
         items:
           security_id: string
+          quantity: number
           weight: number
           value: number
       total_value: number

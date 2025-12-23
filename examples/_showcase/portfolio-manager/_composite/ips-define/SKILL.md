@@ -16,6 +16,10 @@ description: >
 
 requires_approval: true
 approval_context: "IPS changes affect all portfolio decisions"
+
+composes:
+  - constraint-validate
+  - alert-send
 ```
 
 ## Input Schema
