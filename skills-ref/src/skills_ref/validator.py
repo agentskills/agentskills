@@ -34,6 +34,11 @@ ALLOWED_FIELDS = {
     "version",
     "version_history",
     "requires",
+    # Optional formalism fields (semantic foundations)
+    "formalism",
+    "effects",
+    "ports",
+    "wiring",
 }
 
 # Built-in primitive types for type checking
@@ -59,6 +64,14 @@ LESSON_ID_PATTERN = r"^L-[A-Za-z0-9-]+-\d{3}$"  # L-SKILL-NNN format
 SEMVER_PATTERN = r"^\d+\.\d+\.\d+$"  # MAJOR.MINOR.PATCH
 VALID_CHANGE_TYPES = {"breaking", "feature", "fix"}
 VERSION_CONSTRAINT_PATTERN = r"^(>=|~|\^)?\d+\.\d+(\.\d+)?$"  # >=1.0.0, ^2.0, ~1.2.0
+
+# Valid values for optional formalism (semantic foundations)
+VALID_FORMALISM_LEVELS = {"basic", "typed", "effects", "formal"}
+VALID_EFFECT_TYPES = {
+    "Query", "Mutate", "Fail", "Timeout", "Memo",
+    "Log", "Network", "FileRead", "FileWrite",
+}
+VALID_PORT_DIRECTIONS = {"in", "out"}
 
 
 def _validate_name(name: str, skill_dir: Path) -> list[str]:
@@ -642,6 +655,249 @@ def _validate_requires(requires: list) -> list[str]:
     return errors
 
 
+# =============================================================================
+# Optional Formalism Validation (Semantic Foundations)
+# =============================================================================
+
+
+def _validate_formalism(formalism: str) -> list[str]:
+    """Validate formalism level declaration.
+
+    Args:
+        formalism: Declared formalism level
+
+    Returns:
+        List of validation error messages
+    """
+    errors = []
+
+    if not isinstance(formalism, str):
+        errors.append(f"Field 'formalism' must be a string, got {type(formalism).__name__}")
+        return errors
+
+    if formalism not in VALID_FORMALISM_LEVELS:
+        errors.append(
+            f"Invalid formalism level: '{formalism}'. "
+            f"Valid levels: {sorted(VALID_FORMALISM_LEVELS)}"
+        )
+
+    return errors
+
+
+def _validate_effect(effect: dict, index: int) -> list[str]:
+    """Validate a single effect declaration.
+
+    Args:
+        effect: Effect declaration dictionary
+        index: Position in effects list
+
+    Returns:
+        List of validation error messages
+    """
+    errors = []
+
+    if not isinstance(effect, dict):
+        errors.append(f"Field 'effects[{index}]' must be a mapping")
+        return errors
+
+    # Required: name
+    if "name" not in effect:
+        errors.append(f"Field 'effects[{index}]' missing required 'name'")
+        return errors
+
+    name = effect["name"]
+    if not isinstance(name, str):
+        errors.append(f"Field 'effects[{index}].name' must be a string")
+    elif name not in VALID_EFFECT_TYPES:
+        errors.append(
+            f"Unknown effect type: '{name}'. "
+            f"Valid effects: {sorted(VALID_EFFECT_TYPES)}"
+        )
+
+    # Optional: description
+    if "description" in effect and not isinstance(effect["description"], str):
+        errors.append(f"Field 'effects[{index}].description' must be a string")
+
+    # Optional: handled_by
+    if "handled_by" in effect and not isinstance(effect["handled_by"], str):
+        errors.append(f"Field 'effects[{index}].handled_by' must be a string")
+
+    return errors
+
+
+def _validate_effects(effects: list) -> list[str]:
+    """Validate effects list.
+
+    Args:
+        effects: List of effect declarations
+
+    Returns:
+        List of validation error messages
+    """
+    errors = []
+
+    if not isinstance(effects, list):
+        errors.append(f"Field 'effects' must be a list, got {type(effects).__name__}")
+        return errors
+
+    seen_effects = set()
+    for i, effect in enumerate(effects):
+        errors.extend(_validate_effect(effect, i))
+
+        # Check for duplicates
+        if isinstance(effect, dict) and "name" in effect:
+            name = effect["name"]
+            if name in seen_effects:
+                errors.append(f"Duplicate effect declaration: '{name}'")
+            seen_effects.add(name)
+
+    return errors
+
+
+def _validate_port(port: dict, index: int) -> list[str]:
+    """Validate a single port declaration.
+
+    Args:
+        port: Port declaration dictionary
+        index: Position in ports list
+
+    Returns:
+        List of validation error messages
+    """
+    errors = []
+
+    if not isinstance(port, dict):
+        errors.append(f"Field 'ports[{index}]' must be a mapping")
+        return errors
+
+    # Required: name
+    if "name" not in port:
+        errors.append(f"Field 'ports[{index}]' missing required 'name'")
+    elif not isinstance(port["name"], str):
+        errors.append(f"Field 'ports[{index}].name' must be a string")
+
+    # Required: type
+    if "type" not in port:
+        errors.append(f"Field 'ports[{index}]' missing required 'type'")
+    elif not isinstance(port["type"], str):
+        errors.append(f"Field 'ports[{index}].type' must be a string")
+
+    # Required: direction
+    if "direction" not in port:
+        errors.append(f"Field 'ports[{index}]' missing required 'direction'")
+    elif not isinstance(port["direction"], str):
+        errors.append(f"Field 'ports[{index}].direction' must be a string")
+    elif port["direction"] not in VALID_PORT_DIRECTIONS:
+        errors.append(
+            f"Invalid port direction: '{port['direction']}'. "
+            f"Valid directions: {sorted(VALID_PORT_DIRECTIONS)}"
+        )
+
+    # Optional: field
+    if "field" in port and not isinstance(port["field"], str):
+        errors.append(f"Field 'ports[{index}].field' must be a string")
+
+    return errors
+
+
+def _validate_ports(ports: list) -> list[str]:
+    """Validate ports list.
+
+    Args:
+        ports: List of port declarations
+
+    Returns:
+        List of validation error messages
+    """
+    errors = []
+
+    if not isinstance(ports, list):
+        errors.append(f"Field 'ports' must be a list, got {type(ports).__name__}")
+        return errors
+
+    seen_ports = set()
+    for i, port in enumerate(ports):
+        errors.extend(_validate_port(port, i))
+
+        # Check for duplicate port names
+        if isinstance(port, dict) and "name" in port:
+            name = port["name"]
+            if name in seen_ports:
+                errors.append(f"Duplicate port name: '{name}'")
+            seen_ports.add(name)
+
+    return errors
+
+
+def _validate_wire(wire: dict, index: int, known_skills: set[str]) -> list[str]:
+    """Validate a single wire connection.
+
+    Args:
+        wire: Wire declaration dictionary
+        index: Position in wiring list
+        known_skills: Set of skill names (from composes + "input"/"output")
+
+    Returns:
+        List of validation error messages
+    """
+    errors = []
+
+    if not isinstance(wire, dict):
+        errors.append(f"Field 'wiring[{index}]' must be a mapping")
+        return errors
+
+    required_fields = ["from_skill", "from_port", "to_skill", "to_port"]
+    for field in required_fields:
+        if field not in wire:
+            errors.append(f"Field 'wiring[{index}]' missing required '{field}'")
+        elif not isinstance(wire[field], str):
+            errors.append(f"Field 'wiring[{index}].{field}' must be a string")
+
+    # Validate skill references if we have them
+    if known_skills:
+        if "from_skill" in wire and isinstance(wire["from_skill"], str):
+            if wire["from_skill"] not in known_skills:
+                errors.append(
+                    f"Wire references unknown skill: '{wire['from_skill']}'. "
+                    f"Known skills: {sorted(known_skills)}"
+                )
+        if "to_skill" in wire and isinstance(wire["to_skill"], str):
+            if wire["to_skill"] not in known_skills:
+                errors.append(
+                    f"Wire references unknown skill: '{wire['to_skill']}'. "
+                    f"Known skills: {sorted(known_skills)}"
+                )
+
+    return errors
+
+
+def _validate_wiring(wiring: list, composes: list[str] | None) -> list[str]:
+    """Validate wiring list.
+
+    Args:
+        wiring: List of wire declarations
+        composes: List of composed skill names (for reference validation)
+
+    Returns:
+        List of validation error messages
+    """
+    errors = []
+
+    if not isinstance(wiring, list):
+        errors.append(f"Field 'wiring' must be a list, got {type(wiring).__name__}")
+        return errors
+
+    # Build set of known skill names: composed skills + "input"/"output" pseudo-skills
+    known_skills = {"input", "output"}
+    if composes:
+        known_skills.update(composes)
+
+    for i, wire in enumerate(wiring):
+        errors.extend(_validate_wire(wire, i, known_skills))
+
+    return errors
+
+
 def _validate_type_params(type_params: list) -> tuple[list[str], set[str]]:
     """Validate type parameters for generic/higher-order skills.
 
@@ -1020,6 +1276,20 @@ def validate_metadata(metadata: dict, skill_dir: Optional[Path] = None) -> list[
 
     if "requires" in metadata:
         errors.extend(_validate_requires(metadata["requires"]))
+
+    # Validate optional formalism fields (only if present - all are optional)
+    if "formalism" in metadata:
+        errors.extend(_validate_formalism(metadata["formalism"]))
+
+    if "effects" in metadata:
+        errors.extend(_validate_effects(metadata["effects"]))
+
+    if "ports" in metadata:
+        errors.extend(_validate_ports(metadata["ports"]))
+
+    if "wiring" in metadata:
+        composes = metadata.get("composes")
+        errors.extend(_validate_wiring(metadata["wiring"], composes))
 
     return errors
 

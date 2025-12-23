@@ -2331,3 +2331,499 @@ class TestSkillPropertiesVersioning:
         assert d["version"] == "1.0.0"
         assert "version_history" in d
         assert "requires" in d
+
+
+# =============================================================================
+# Optional Formalism Tests (Semantic Foundations)
+# =============================================================================
+
+
+class TestFormalismValidation:
+    """Tests for optional formalism level validation."""
+
+    def test_valid_formalism_levels(self, skill_dir):
+        """All valid formalism levels should be accepted."""
+        for level in ["basic", "typed", "effects", "formal"]:
+            (skill_dir / "SKILL.md").write_text(f"""---
+name: test-skill
+description: Test
+formalism: {level}
+---
+# Test
+""")
+            errors = validate(skill_dir)
+            assert errors == [], f"formalism: {level} should be valid"
+
+    def test_invalid_formalism_level(self, skill_dir):
+        """Invalid formalism level should error."""
+        (skill_dir / "SKILL.md").write_text("""---
+name: test-skill
+description: Test
+formalism: invalid
+---
+# Test
+""")
+        errors = validate(skill_dir)
+        assert any("Invalid formalism level" in e for e in errors)
+
+    def test_formalism_optional(self, skill_dir):
+        """Formalism field should be optional."""
+        (skill_dir / "SKILL.md").write_text("""---
+name: test-skill
+description: Test
+---
+# Test
+""")
+        errors = validate(skill_dir)
+        assert errors == []
+
+
+class TestEffectsValidation:
+    """Tests for optional effects declaration validation."""
+
+    def test_valid_effects(self, skill_dir):
+        """Valid effects should be accepted."""
+        (skill_dir / "SKILL.md").write_text("""---
+name: test-skill
+description: Test
+effects:
+  - name: Query
+  - name: Fail
+    description: May fail on network errors
+---
+# Test
+""")
+        errors = validate(skill_dir)
+        assert errors == []
+
+    def test_invalid_effect_type(self, skill_dir):
+        """Unknown effect type should error."""
+        (skill_dir / "SKILL.md").write_text("""---
+name: test-skill
+description: Test
+effects:
+  - name: InvalidEffect
+---
+# Test
+""")
+        errors = validate(skill_dir)
+        assert any("Unknown effect type" in e for e in errors)
+
+    def test_effect_missing_name(self, skill_dir):
+        """Effect without name should error."""
+        (skill_dir / "SKILL.md").write_text("""---
+name: test-skill
+description: Test
+effects:
+  - description: No name field
+---
+# Test
+""")
+        errors = validate(skill_dir)
+        assert any("missing required 'name'" in e for e in errors)
+
+    def test_duplicate_effects(self, skill_dir):
+        """Duplicate effect declarations should error."""
+        (skill_dir / "SKILL.md").write_text("""---
+name: test-skill
+description: Test
+effects:
+  - name: Query
+  - name: Query
+---
+# Test
+""")
+        errors = validate(skill_dir)
+        assert any("Duplicate effect" in e for e in errors)
+
+    def test_effects_optional(self, skill_dir):
+        """Effects field should be optional."""
+        (skill_dir / "SKILL.md").write_text("""---
+name: test-skill
+description: Test
+---
+# Test
+""")
+        errors = validate(skill_dir)
+        assert errors == []
+
+    def test_all_effect_types(self, skill_dir):
+        """All defined effect types should be valid."""
+        from skills_ref.validator import VALID_EFFECT_TYPES
+        effects_yaml = "\n".join(f"  - name: {e}" for e in VALID_EFFECT_TYPES)
+        (skill_dir / "SKILL.md").write_text(f"""---
+name: test-skill
+description: Test
+effects:
+{effects_yaml}
+---
+# Test
+""")
+        errors = validate(skill_dir)
+        assert errors == []
+
+
+class TestPortsValidation:
+    """Tests for optional ports declaration validation."""
+
+    def test_valid_ports(self, skill_dir):
+        """Valid ports should be accepted."""
+        (skill_dir / "SKILL.md").write_text("""---
+name: test-skill
+description: Test
+ports:
+  - name: query_in
+    type: string
+    direction: in
+  - name: result_out
+    type: string
+    direction: out
+---
+# Test
+""")
+        errors = validate(skill_dir)
+        assert errors == []
+
+    def test_port_missing_name(self, skill_dir):
+        """Port without name should error."""
+        (skill_dir / "SKILL.md").write_text("""---
+name: test-skill
+description: Test
+ports:
+  - type: string
+    direction: in
+---
+# Test
+""")
+        errors = validate(skill_dir)
+        assert any("missing required 'name'" in e for e in errors)
+
+    def test_port_missing_type(self, skill_dir):
+        """Port without type should error."""
+        (skill_dir / "SKILL.md").write_text("""---
+name: test-skill
+description: Test
+ports:
+  - name: query
+    direction: in
+---
+# Test
+""")
+        errors = validate(skill_dir)
+        assert any("missing required 'type'" in e for e in errors)
+
+    def test_port_missing_direction(self, skill_dir):
+        """Port without direction should error."""
+        (skill_dir / "SKILL.md").write_text("""---
+name: test-skill
+description: Test
+ports:
+  - name: query
+    type: string
+---
+# Test
+""")
+        errors = validate(skill_dir)
+        assert any("missing required 'direction'" in e for e in errors)
+
+    def test_invalid_port_direction(self, skill_dir):
+        """Invalid port direction should error."""
+        (skill_dir / "SKILL.md").write_text("""---
+name: test-skill
+description: Test
+ports:
+  - name: query
+    type: string
+    direction: both
+---
+# Test
+""")
+        errors = validate(skill_dir)
+        assert any("Invalid port direction" in e for e in errors)
+
+    def test_duplicate_port_names(self, skill_dir):
+        """Duplicate port names should error."""
+        (skill_dir / "SKILL.md").write_text("""---
+name: test-skill
+description: Test
+ports:
+  - name: query
+    type: string
+    direction: in
+  - name: query
+    type: string
+    direction: out
+---
+# Test
+""")
+        errors = validate(skill_dir)
+        assert any("Duplicate port name" in e for e in errors)
+
+
+class TestWiringValidation:
+    """Tests for optional wiring (string diagram) validation."""
+
+    def test_valid_wiring(self, skill_dir):
+        """Valid wiring should be accepted."""
+        (skill_dir / "SKILL.md").write_text("""---
+name: test-skill
+description: Test
+composes:
+  - web-search
+  - summarize
+wiring:
+  - from_skill: input
+    from_port: query
+    to_skill: web-search
+    to_port: query
+  - from_skill: web-search
+    from_port: results
+    to_skill: summarize
+    to_port: text
+  - from_skill: summarize
+    from_port: summary
+    to_skill: output
+    to_port: result
+---
+# Test
+""")
+        errors = validate(skill_dir)
+        assert errors == []
+
+    def test_wire_missing_fields(self, skill_dir):
+        """Wire with missing fields should error."""
+        (skill_dir / "SKILL.md").write_text("""---
+name: test-skill
+description: Test
+wiring:
+  - from_skill: input
+    from_port: query
+---
+# Test
+""")
+        errors = validate(skill_dir)
+        assert any("missing required 'to_skill'" in e for e in errors)
+        assert any("missing required 'to_port'" in e for e in errors)
+
+    def test_wire_references_unknown_skill(self, skill_dir):
+        """Wire referencing unknown skill should error."""
+        (skill_dir / "SKILL.md").write_text("""---
+name: test-skill
+description: Test
+composes:
+  - web-search
+wiring:
+  - from_skill: input
+    from_port: query
+    to_skill: unknown-skill
+    to_port: query
+---
+# Test
+""")
+        errors = validate(skill_dir)
+        assert any("Wire references unknown skill" in e for e in errors)
+
+    def test_wiring_with_input_output_pseudo_skills(self, skill_dir):
+        """Wiring can reference 'input' and 'output' pseudo-skills."""
+        (skill_dir / "SKILL.md").write_text("""---
+name: test-skill
+description: Test
+composes:
+  - processor
+wiring:
+  - from_skill: input
+    from_port: data
+    to_skill: processor
+    to_port: in
+  - from_skill: processor
+    from_port: out
+    to_skill: output
+    to_port: result
+---
+# Test
+""")
+        errors = validate(skill_dir)
+        assert errors == []
+
+
+class TestFormalismModelProperties:
+    """Tests for SkillProperties formalism-related properties."""
+
+    def test_declared_formalism_default(self):
+        """declared_formalism defaults to 'basic'."""
+        from skills_ref.models import SkillProperties
+        skill = SkillProperties(name="test", description="Test")
+        assert skill.declared_formalism == "basic"
+
+    def test_declared_formalism_explicit(self):
+        """declared_formalism returns explicit value."""
+        from skills_ref.models import SkillProperties
+        skill = SkillProperties(name="test", description="Test", formalism="typed")
+        assert skill.declared_formalism == "typed"
+
+    def test_inferred_formalism_basic(self):
+        """inferred_formalism is 'basic' with no formalism fields."""
+        from skills_ref.models import SkillProperties
+        skill = SkillProperties(name="test", description="Test")
+        assert skill.inferred_formalism == "basic"
+
+    def test_inferred_formalism_typed(self):
+        """inferred_formalism is 'typed' with inputs/outputs."""
+        from skills_ref.models import SkillProperties, FieldSchema
+        skill = SkillProperties(
+            name="test",
+            description="Test",
+            inputs=[FieldSchema(name="query", type="string")]
+        )
+        assert skill.inferred_formalism == "typed"
+
+    def test_inferred_formalism_effects(self):
+        """inferred_formalism is 'effects' with effects."""
+        from skills_ref.models import SkillProperties, EffectDeclaration
+        skill = SkillProperties(
+            name="test",
+            description="Test",
+            effects=[EffectDeclaration(name="Query")]
+        )
+        assert skill.inferred_formalism == "effects"
+
+    def test_inferred_formalism_formal(self):
+        """inferred_formalism is 'formal' with wiring."""
+        from skills_ref.models import SkillProperties, Wire
+        skill = SkillProperties(
+            name="test",
+            description="Test",
+            wiring=[Wire(from_skill="input", from_port="a", to_skill="output", to_port="b")]
+        )
+        assert skill.inferred_formalism == "formal"
+
+    def test_has_effects(self):
+        """has_effects property."""
+        from skills_ref.models import SkillProperties, EffectDeclaration
+        skill1 = SkillProperties(name="test", description="Test")
+        skill2 = SkillProperties(
+            name="test",
+            description="Test",
+            effects=[EffectDeclaration(name="Query")]
+        )
+        assert not skill1.has_effects
+        assert skill2.has_effects
+
+    def test_effect_names(self):
+        """effect_names returns set of effect names."""
+        from skills_ref.models import SkillProperties, EffectDeclaration
+        skill = SkillProperties(
+            name="test",
+            description="Test",
+            effects=[
+                EffectDeclaration(name="Query"),
+                EffectDeclaration(name="Fail")
+            ]
+        )
+        assert skill.effect_names == {"Query", "Fail"}
+
+    def test_infer_effects_from_operation(self):
+        """infer_effects_from_operation derives effects from operation."""
+        from skills_ref.models import SkillProperties
+        read_skill = SkillProperties(name="test", description="Test", operation="READ")
+        write_skill = SkillProperties(name="test", description="Test", operation="WRITE")
+        transform_skill = SkillProperties(name="test", description="Test", operation="TRANSFORM")
+
+        assert read_skill.infer_effects_from_operation() == {"Query"}
+        assert write_skill.infer_effects_from_operation() == {"Mutate", "Fail"}
+        assert transform_skill.infer_effects_from_operation() == set()
+
+    def test_to_dict_includes_formalism(self):
+        """to_dict includes formalism fields when present."""
+        from skills_ref.models import SkillProperties, EffectDeclaration, Port, Wire
+
+        skill = SkillProperties(
+            name="test",
+            description="Test",
+            formalism="formal",
+            effects=[EffectDeclaration(name="Query")],
+            ports=[Port(name="in", type="string", direction="in")],
+            wiring=[Wire(from_skill="input", from_port="a", to_skill="output", to_port="b")]
+        )
+        d = skill.to_dict()
+        assert d["formalism"] == "formal"
+        assert "effects" in d
+        assert "ports" in d
+        assert "wiring" in d
+
+
+class TestBasicSkillsStillWork:
+    """Regression tests ensuring basic skills work without formalism."""
+
+    def test_minimal_skill_valid(self, skill_dir):
+        """Minimal skill with just name and description is valid."""
+        (skill_dir / "SKILL.md").write_text("""---
+name: test-skill
+description: A simple skill with no formalism
+---
+# Simple Skill
+""")
+        errors = validate(skill_dir)
+        assert errors == []
+
+    def test_composable_skill_without_formalism(self, skill_dir):
+        """Composable skill works without explicit formalism."""
+        (skill_dir / "SKILL.md").write_text("""---
+name: test-skill
+description: Combines atomics
+level: 2
+operation: READ
+composes:
+  - atomic-a
+  - atomic-b
+---
+# Composite
+""")
+        errors = validate(skill_dir)
+        assert errors == []
+
+    def test_typed_skill_without_formalism_declaration(self, skill_dir):
+        """Skill with inputs/outputs works without formalism: typed."""
+        (skill_dir / "SKILL.md").write_text("""---
+name: test-skill
+description: Has inputs and outputs
+inputs:
+  - name: query
+    type: string
+outputs:
+  - name: result
+    type: string
+---
+# Typed
+""")
+        errors = validate(skill_dir)
+        assert errors == []
+
+    def test_full_featured_skill_without_formal_wiring(self, skill_dir):
+        """Skill with all features except wiring is valid."""
+        (skill_dir / "SKILL.md").write_text("""---
+name: test-skill
+description: Full featured skill
+level: 2
+operation: READ
+composes:
+  - web-search
+inputs:
+  - name: query
+    type: string
+outputs:
+  - name: result
+    type: string
+lessons:
+  - id: L-test-skill-001
+    context: WHEN testing
+    learned: Tests are important
+version: 1.0.0
+version_history:
+  - version: 1.0.0
+    released_at: "2025-01-01"
+---
+# Full Featured
+""")
+        errors = validate(skill_dir)
+        assert errors == []

@@ -409,6 +409,136 @@ class SkillOperation(Enum):
     TRANSFORM = "TRANSFORM"
 
 
+# =============================================================================
+# Optional Formalism System (Semantic Foundations)
+# =============================================================================
+
+
+class FormalismLevel(Enum):
+    """Optional formalism level for skills.
+
+    Skills can opt into increasing levels of formal specification:
+    - BASIC: Default - name, description, optional composability
+    - TYPED: Adds typed inputs/outputs for static checking
+    - EFFECTS: Adds effect declarations (finer than READ/WRITE)
+    - FORMAL: Full string-diagrammatic wiring with ports
+
+    Each level is backwards-compatible: a FORMAL skill validates
+    at all lower levels too.
+    """
+    BASIC = "basic"      # No type requirements
+    TYPED = "typed"      # Requires inputs/outputs schemas
+    EFFECTS = "effects"  # Requires effect declarations
+    FORMAL = "formal"    # Requires explicit wiring
+
+
+# Supported algebraic effects (optional, finer-grained than operation)
+EFFECT_TYPES = {
+    "Query",      # Pure read from external source
+    "Mutate",     # State modification
+    "Fail",       # May fail/error
+    "Timeout",    # Time-bounded operation
+    "Memo",       # Memoizable/cacheable
+    "Log",        # Produces log output
+    "Network",    # Network access
+    "FileRead",   # File system read
+    "FileWrite",  # File system write
+}
+
+
+@dataclass
+class EffectDeclaration:
+    """Declaration of an algebraic effect a skill may raise.
+
+    Effects provide finer-grained classification than operation:
+    - A READ skill might raise {Query, Fail, Network}
+    - A WRITE skill might raise {Mutate, Fail, Log}
+
+    Benefits of explicit effects:
+    1. **Effect inference**: Composite effects = union of child effects
+    2. **Handler matching**: Decorators can target specific effects
+    3. **Safety proofs**: Prove workflows handle all raised effects
+
+    Attributes:
+        name: Effect type name (from EFFECT_TYPES)
+        description: Optional context for this effect
+        handled_by: Optional skill that handles this effect
+    """
+    name: str
+    description: Optional[str] = None
+    handled_by: Optional[str] = None
+
+    def to_dict(self) -> dict:
+        """Convert to dictionary, excluding None values."""
+        result = {"name": self.name}
+        if self.description:
+            result["description"] = self.description
+        if self.handled_by:
+            result["handled_by"] = self.handled_by
+        return result
+
+
+@dataclass
+class Port:
+    """A named port for string-diagrammatic wiring.
+
+    Ports make data flow explicit in compositions. Instead of
+    implicit matching by field name, ports declare exactly how
+    skills connect.
+
+    Attributes:
+        name: Port name (unique within skill)
+        type: Type of data flowing through port
+        direction: "in" or "out"
+        field: Optional mapping to input/output field
+    """
+    name: str
+    type: str
+    direction: str  # "in" or "out"
+    field: Optional[str] = None
+
+    def to_dict(self) -> dict:
+        """Convert to dictionary, excluding None values."""
+        result = {
+            "name": self.name,
+            "type": self.type,
+            "direction": self.direction,
+        }
+        if self.field:
+            result["field"] = self.field
+        return result
+
+
+@dataclass
+class Wire:
+    """A connection between ports in a composition.
+
+    Wires make the data flow graph explicit, enabling:
+    - Visual rendering as string diagrams
+    - Static type checking of connections
+    - Deterministic execution order
+
+    Attributes:
+        from_skill: Source skill name (or "input" for workflow input)
+        from_port: Source port name
+        to_skill: Target skill name (or "output" for workflow output)
+        to_port: Target port name
+    """
+    from_skill: str
+    from_port: str
+    to_skill: str
+    to_port: str
+
+    def to_dict(self) -> dict:
+        """Convert to dictionary."""
+        return {
+            "from_skill": self.from_skill,
+            "from_port": self.from_port,
+            "to_skill": self.to_skill,
+            "to_port": self.to_port,
+        }
+
+
 @dataclass
 class SkillProperties:
     """Properties parsed from a skill's SKILL.md frontmatter.
@@ -453,6 +583,11 @@ class SkillProperties:
     version: Optional[str] = None
     version_history: Optional[list[VersionEntry]] = None
     requires: Optional[list[VersionConstraint]] = None
+    # Optional formalism fields (semantic foundations)
+    formalism: Optional[str] = None  # FormalismLevel value
+    effects: Optional[list[EffectDeclaration]] = None
+    ports: Optional[list[Port]] = None
+    wiring: Optional[list[Wire]] = None
 
     def to_dict(self) -> dict:
         """Convert to dictionary, excluding None values."""
@@ -489,6 +624,15 @@ class SkillProperties:
             result["version_history"] = [v.to_dict() for v in self.version_history]
         if self.requires:
             result["requires"] = [r.to_dict() for r in self.requires]
+        # Optional formalism fields
+        if self.formalism:
+            result["formalism"] = self.formalism
+        if self.effects:
+            result["effects"] = [e.to_dict() for e in self.effects]
+        if self.ports:
+            result["ports"] = [p.to_dict() for p in self.ports]
+        if self.wiring:
+            result["wiring"] = [w.to_dict() for w in self.wiring]
         return result
 
     @property
@@ -679,3 +823,74 @@ class SkillProperties:
                 )
 
         return errors
+
+    # =========================================================================
+    # Formalism-related properties (optional semantic foundations)
+    # =========================================================================
+
+    @property
+    def declared_formalism(self) -> str:
+        """Get the declared formalism level, defaulting to 'basic'."""
+        return self.formalism or FormalismLevel.BASIC.value
+
+    @property
+    def inferred_formalism(self) -> str:
+        """Infer the minimum formalism level from present fields.
+
+        Returns the highest level implied by the fields present:
+        - FORMAL if wiring is present
+        - EFFECTS if effects are present
+        - TYPED if inputs/outputs are present
+        - BASIC otherwise
+        """
+        if self.wiring:
+            return FormalismLevel.FORMAL.value
+        if self.effects:
+            return FormalismLevel.EFFECTS.value
+        if self.inputs or self.outputs:
+            return FormalismLevel.TYPED.value
+        return FormalismLevel.BASIC.value
+
+    @property
+    def has_effects(self) -> bool:
+        """Check if this skill has effect declarations."""
+        return bool(self.effects)
+
+    @property
+    def effect_names(self) -> set[str]:
+        """Get the set of effect names raised by this skill."""
+        if not self.effects:
+            return set()
+        return {e.name for e in self.effects}
+
+    @property
+    def has_wiring(self) -> bool:
+        """Check if this skill has explicit wiring (string diagram)."""
+        return bool(self.wiring)
+
+    @property
+    def has_ports(self) -> bool:
+        """Check if this skill has port declarations."""
+        return bool(self.ports)
+
+    def infer_effects_from_operation(self) -> set[str]:
+        """Infer effects from the operation field if no explicit effects.
+
+        Provides a bridge from basic operation classification to effects:
+        - READ → {Query}
+        - WRITE → {Mutate, Fail}
+        - TRANSFORM → {} (pure)
+
+        Returns:
+            Set of inferred effect names
+        """
+        if self.effects:
+            return self.effect_names
+
+        if self.operation == SkillOperation.READ.value:
+            return {"Query"}
+        if self.operation == SkillOperation.WRITE.value:
+            return {"Mutate", "Fail"}
+        if self.operation == SkillOperation.TRANSFORM.value:
+            return set()
+        return set()

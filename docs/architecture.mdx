@@ -1030,6 +1030,123 @@ examples/
 
 ---
 
+## Optional Formalism: Semantic Foundations
+
+The composable skills architecture supports **optional formalism levels** that allow users to adopt increasingly rigorous specifications when beneficial. All features are backwards-compatible: skills without formalism fields continue to work unchanged.
+
+### Formalism Levels
+
+| Level | Field | What it adds | When to use |
+|-------|-------|--------------|-------------|
+| `basic` | (default) | Name, description, composability | Simple skills, getting started |
+| `typed` | `inputs`, `outputs` | Static type checking | When type safety matters |
+| `effects` | `effects` | Algebraic effect declarations | When effect tracking matters |
+| `formal` | `wiring` | Explicit string-diagrammatic connections | When determinism is critical |
+
+**Declare your level explicitly (optional):**
+
+```yaml
+formalism: typed  # Opt into stricter validation
+```
+
+**Or just use the features you need** - the validator infers the appropriate level from fields present.
+
+### Effects: Finer-Grained Safety Classification
+
+The `operation` field (READ/WRITE/TRANSFORM) provides coarse safety classification. For finer control, declare **algebraic effects**:
+
+```yaml
+effects:
+  - name: Query      # Pure read from external source
+  - name: Fail       # May fail on network errors
+    description: Network timeout possible
+  - name: Network    # Requires network access
+```
+
+**Available effect types:**
+
+| Effect | Meaning |
+|--------|---------|
+| `Query` | Pure read from external source |
+| `Mutate` | State modification |
+| `Fail` | May fail/error |
+| `Timeout` | Time-bounded operation |
+| `Memo` | Memoizable/cacheable |
+| `Log` | Produces log output |
+| `Network` | Network access required |
+| `FileRead` | File system read |
+| `FileWrite` | File system write |
+
+**Benefits:**
+1. **Effect inference**: Composite skill effects = union of child effects
+2. **Handler matching**: Decorators like `with-retry` can target specific effects
+3. **Safety proofs**: Prove workflows handle all raised effects
+
+### Ports and Wiring: String Diagrams
+
+For maximum determinism, declare explicit **ports** and **wiring** to specify exactly how data flows between skills:
+
+```yaml
+# Explicit ports (optional)
+ports:
+  - name: query_in
+    type: string
+    direction: in
+  - name: results_out
+    type: string[]
+    direction: out
+
+# Explicit wiring (for formal level)
+composes:
+  - web-search
+  - summarize
+
+wiring:
+  - from_skill: input      # "input" is a pseudo-skill for workflow inputs
+    from_port: query
+    to_skill: web-search
+    to_port: query
+  - from_skill: web-search
+    from_port: results
+    to_skill: summarize
+    to_port: text
+  - from_skill: summarize
+    from_port: summary
+    to_skill: output       # "output" is a pseudo-skill for workflow outputs
+    to_port: result
+```
+
+**Benefits:**
+1. **Determinism by construction**: The wiring diagram *is* the execution plan
+2. **Visual rendering**: Can be rendered as string diagrams
+3. **Static verification**: Type-check connections at build time
+
+### Backwards Compatibility
+
+All formalism features are **opt-in**:
+
+| If you have... | Validation | Formalism level |
+|----------------|------------|-----------------|
+| Just `name`, `description` | Basic | `basic` |
+| `inputs`/`outputs` | Type checking | `typed` |
+| `effects` | Effect validation | `effects` |
+| `wiring` | Full diagram validation | `formal` |
+
+**Existing skills work unchanged.** Teams can adopt formalism incrementally as needs grow.
+
+### Relationship to PL Theory
+
+These features are inspired by programming language semantics research:
+
+- **Effects** → Algebraic effects and handlers (Plotkin & Pretnar)
+- **Wiring** → String diagrams in symmetric monoidal categories
+- **Type checking** → Compositional type systems
+- **Formalism levels** → Gradual typing (Siek & Taha)
+
+For teams that want formal guarantees, the architecture supports them. For teams that want simplicity, the basic level provides it.
+
+---
+
 ## Continuous Improvement: The Lessons System
 
 Skills can evolve over time by learning from execution. The **lessons system** enables skills to capture patterns, validate them through repeated use, and eventually crystallise validated lessons into permanent improvements - all with human approval as a gate.
