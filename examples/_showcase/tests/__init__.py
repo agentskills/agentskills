@@ -1,0 +1,1 @@
+"""Cross-showcase consistency tests."""

@@ -450,3 +450,231 @@ example:
 | EXECUTION | Insufficient funds | Cancel remaining buys |
 | VERIFICATION | Price moved significantly | Accept if within 2% |
 | TRADE_APPROVAL | Timeout | Send reminder, extend 24h |
+
+## Execution Trace Example
+
+The following trace shows a complete rebalance workflow with state transitions,
+human checkpoints, and timing information.
+
+```yaml
+execution_trace:
+  id: "RB-20241220-001"
+  started: "2024-12-20T09:00:00Z"
+  completed: "2024-12-20T10:25:00Z"
+  final_state: COMPLETE
+
+  transitions:
+    - seq: 1
+      timestamp: "2024-12-20T09:00:00Z"
+      from_state: null
+      to_state: MONITORING
+      trigger: workflow_started
+      duration_ms: 0
+      notes: "Workflow initiated by scheduler"
+
+    - seq: 2
+      timestamp: "2024-12-20T09:00:05Z"
+      from_state: MONITORING
+      to_state: DRIFT_DETECTED
+      trigger: threshold_breached
+      duration_ms: 5000
+      skill_used: drift-monitor
+      skill_output:
+        drift_detected: true
+        max_drift_pct: 6.0
+        asset_class: "australian_equities"
+        direction: "overweight"
+
+    - seq: 3
+      timestamp: "2024-12-20T09:00:06Z"
+      from_state: DRIFT_DETECTED
+      to_state: ANALYSIS
+      trigger: proceed_to_analysis
+      duration_ms: 1000
+      notes: "Auto-proceeded (drift > 5% threshold)"
+
+    - seq: 4
+      timestamp: "2024-12-20T09:00:15Z"
+      from_state: ANALYSIS
+      to_state: TRADE_GENERATION
+      trigger: analysis_complete
+      duration_ms: 9000
+      skill_used: portfolio-summarise
+      skill_output:
+        total_value: 500000
+        allocation:
+          australian_equities: 0.46  # Over target of 0.40
+          international_equities: 0.32
+          fixed_income: 0.15
+          cash: 0.07
+
+    - seq: 5
+      timestamp: "2024-12-20T09:00:35Z"
+      from_state: TRADE_GENERATION
+      to_state: TAX_REVIEW
+      trigger: trades_generated
+      duration_ms: 20000
+      skill_used: trade-list-generate
+      skill_output:
+        trade_count: 2
+        trades:
+          - action: SELL
+            security: CBA.AX
+            quantity: 35
+            estimated_value: 4987.50
+          - action: BUY
+            security: VGS.AX
+            quantity: 52
+            estimated_value: 4953.60
+
+    - seq: 6
+      timestamp: "2024-12-20T09:00:45Z"
+      from_state: TAX_REVIEW
+      to_state: TRADE_APPROVAL
+      trigger: tax_reviewed
+      duration_ms: 10000
+      skill_used: tax-impact-estimate
+      skill_output:
+        total_gain: 825
+        tax_liability: 175
+        lot_selection: "hifo"
+        recommendation: "proceed"
+
+    - seq: 7
+      timestamp: "2024-12-20T09:00:45Z"
+      from_state: TRADE_APPROVAL
+      to_state: TRADE_APPROVAL  # Waiting
+      trigger: awaiting_approval
+      duration_ms: 4455000  # 74 minutes
+      human_checkpoint:
+        presented_at: "2024-12-20T09:00:45Z"
+        title: "Rebalance Approval Required"
+        data_shown:
+          - current_allocation
+          - proposed_trades
+          - tax_impact
+          - expected_result
+        reminder_sent: false
+
+    - seq: 8
+      timestamp: "2024-12-20T10:15:00Z"
+      from_state: TRADE_APPROVAL
+      to_state: EXECUTION
+      trigger: approved
+      duration_ms: 0
+      human_checkpoint:
+        decision: "approve"
+        decided_by: "user@example.com"
+        notes: "Approved via mobile app"
+
+    - seq: 9
+      timestamp: "2024-12-20T10:22:00Z"
+      from_state: EXECUTION
+      to_state: VERIFICATION
+      trigger: all_executed
+      duration_ms: 420000  # 7 minutes
+      skill_used: trade-order-execute
+      skill_output:
+        trades_attempted: 2
+        trades_successful: 2
+        execution_details:
+          - order_id: "ORD-001"
+            status: "filled"
+            fill_price: 142.50
+            fill_time: "10:18:32"
+          - order_id: "ORD-002"
+            status: "filled"
+            fill_price: 95.26
+            fill_time: "10:21:45"
+
+    - seq: 10
+      timestamp: "2024-12-20T10:25:00Z"
+      from_state: VERIFICATION
+      to_state: COMPLETE
+      trigger: verified
+      duration_ms: 180000  # 3 minutes
+      skill_used: portfolio-summarise
+      skill_output:
+        new_allocation:
+          australian_equities: 0.40  # Now at target
+          international_equities: 0.38
+          fixed_income: 0.15
+          cash: 0.07
+        drift_from_target: 0.0
+
+  summary:
+    total_states_visited: 10
+    human_checkpoints: 1
+    skills_invoked: 6
+    trades_executed: 2
+    total_duration: "1h 25m"
+    time_in_approval: "1h 14m"
+    time_in_execution: "7m"
+```
+
+### Human Checkpoint Dialog Example
+
+When the workflow reaches `TRADE_APPROVAL`, the following is presented:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                  REBALANCE APPROVAL REQUIRED                │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  Drift Detected: Australian Equities overweight by 6%      │
+│                                                             │
+│  PROPOSED TRADES:                                           │
+│  ┌────────┬──────────┬─────────┬───────────┐               │
+│  │ Action │ Security │   Qty   │   Value   │               │
+│  ├────────┼──────────┼─────────┼───────────┤               │
+│  │  SELL  │  CBA.AX  │    35   │  $4,987   │               │
+│  │  BUY   │  VGS.AX  │    52   │  $4,954   │               │
+│  └────────┴──────────┴─────────┴───────────┘               │
+│                                                             │
+│  TAX IMPACT:                                                │
+│  • Capital gain: $825 (long-term)                          │
+│  • Estimated tax: $175                                      │
+│  • Net transaction cost: $195                               │
+│                                                             │
+│  EXPECTED RESULT:                                           │
+│  Australian Equities: 46% → 40% (at target)                │
+│  International: 32% → 38%                                   │
+│                                                             │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐                  │
+│  │ APPROVE  │  │  MODIFY  │  │  REJECT  │                  │
+│  └──────────┘  └──────────┘  └──────────┘                  │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Error Recovery Trace
+
+Example of partial execution failure and recovery:
+
+```yaml
+error_recovery_trace:
+  - seq: 9
+    timestamp: "2024-12-20T10:18:00Z"
+    from_state: EXECUTION
+    to_state: PARTIAL_EXECUTION
+    trigger: some_failed
+    error:
+      failed_trade: "ORD-002"
+      reason: "Insufficient liquidity"
+      trades_completed: 1
+      trades_failed: 1
+
+  - seq: 10
+    timestamp: "2024-12-20T10:18:05Z"
+    from_state: PARTIAL_EXECUTION
+    to_state: EXECUTION
+    trigger: retry_failed
+    action_taken: "Changed order type to MARKET"
+
+  - seq: 11
+    timestamp: "2024-12-20T10:20:00Z"
+    from_state: EXECUTION
+    to_state: VERIFICATION
+    trigger: all_executed
+    notes: "Retry successful with market order"
+```
