@@ -263,7 +263,10 @@ See [Architecture: Versioning](docs/architecture.mdx#versioning-safe-evolution-w
 - [Documentation](https://agentskills.io) - Guides and tutorials
 - [Specification](https://agentskills.io/specification) - Format details
 - [Architecture](docs/architecture.mdx) - Composability design rationale and type system
+- [Portfolio Manager Showcase](examples/_showcase/portfolio-manager/) - 22 skills for portfolio management with execution traces
+- [Financial Advisor Showcase](examples/_showcase/financial-advisor/) - 19 skills for compliance-aware advisory
 - [Trip Optimizer Showcase](examples/_showcase/trip-optimizer/) - Full example with 12 skills across all 3 levels
+- [Skill Reuse Guide](examples/_showcase/SKILL-REUSE-GUIDE.md) - Patterns for composing and extending skills
 - [Research Skill Example](examples/_composite/research/) - Complete lessons and versioning lifecycle demonstration
 - [Higher-Order Skills](examples/) - Combinators, decorators, and meta-learning examples
 - [Example Skills](https://github.com/anthropics/skills) - See what's possible

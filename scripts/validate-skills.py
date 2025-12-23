@@ -175,7 +175,7 @@ def main():
     total_skills = 0
 
     for showcase in showcases:
-        if showcase.name.startswith('.'):
+        if showcase.name.startswith('.') or showcase.name == 'tests':
             continue
 
         results = validate_showcase(showcase)
