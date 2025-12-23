@@ -32,8 +32,18 @@ examples/
 ├── _atomic/                     # Level 1: Single operations
 │   ├── web-search/
 │   │   └── SKILL.md            # Search the web, return citations
-│   └── pdf-save/
-│       └── SKILL.md            # Save URL as PDF
+│   ├── pdf-save/
+│   │   └── SKILL.md            # Save URL as PDF
+│   ├── http-request/
+│   │   └── SKILL.md            # Make HTTP requests to any URL
+│   ├── github-issues-create/
+│   │   └── SKILL.md            # Create GitHub issues
+│   ├── github-issues-list/
+│   │   └── SKILL.md            # List/filter GitHub issues
+│   ├── slack-message-send/
+│   │   └── SKILL.md            # Send Slack messages
+│   └── google-sheets-read/
+│       └── SKILL.md            # Read from Google Sheets
 │
 ├── _composite/                  # Level 2: Combined operations
 │   ├── research/
@@ -180,6 +190,22 @@ Generate prompt XML:
 ```bash
 skills-ref to-prompt _atomic/web-search _composite/research _workflows/daily-briefing
 ```
+
+## n8n-Inspired Atomic Skills
+
+Several atomic skills are inspired by [n8n's node ecosystem](https://n8n.io/), enabling familiar patterns for workflow automation:
+
+| Skill | Operation | n8n Equivalent |
+|-------|-----------|----------------|
+| `http-request` | READ | HTTP Request node |
+| `github-issues-create` | WRITE | GitHub → Issues → Create |
+| `github-issues-list` | READ | GitHub → Issues → Get All |
+| `slack-message-send` | WRITE | Slack → Message → Send |
+| `google-sheets-read` | READ | Google Sheets → Read |
+
+These follow the **MECE decomposition pattern**: each n8n node's resource+operation combinations become separate atomic skills. For example, n8n's GitHub node becomes `github-issues-create`, `github-issues-list`, `github-repos-read`, etc.
+
+See [docs/n8n-node-mapping.md](../docs/n8n-node-mapping.md) for the complete mapping pattern.
 
 ## Creating Your Own
 
