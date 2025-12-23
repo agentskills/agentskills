@@ -48,12 +48,22 @@ examples/
 ├── _composite/                  # Level 2: Combined operations
 │   ├── research/
 │   │   └── SKILL.md            # web-search + pdf-save
-│   └── deep-research/
-│       └── SKILL.md            # RECURSIVE: follows citation chains
+│   ├── deep-research/
+│   │   └── SKILL.md            # RECURSIVE: follows citation chains
+│   ├── data-merge/
+│   │   └── SKILL.md            # Merge data from multiple sources
+│   ├── email-reply/
+│   │   └── SKILL.md            # Context-aware email replies
+│   └── issue-triage/
+│       └── SKILL.md            # Classify and route GitHub issues
 │
 └── _workflows/                  # Level 3: Complex orchestration
-    └── daily-briefing/
-        └── SKILL.md            # Orchestrates multiple composites
+    ├── daily-briefing/
+    │   └── SKILL.md            # Orchestrates multiple composites
+    ├── slack-to-issue/
+    │   └── SKILL.md            # Convert Slack messages to GitHub issues
+    └── notion-sheets-sync/
+        └── SKILL.md            # Bidirectional Notion ↔ Sheets sync
 ```
 
 ## How Composition Works
@@ -206,6 +216,29 @@ Several atomic skills are inspired by [n8n's node ecosystem](https://n8n.io/), e
 These follow the **MECE decomposition pattern**: each n8n node's resource+operation combinations become separate atomic skills. For example, n8n's GitHub node becomes `github-issues-create`, `github-issues-list`, `github-repos-read`, etc.
 
 See [docs/n8n-node-mapping.md](../docs/n8n-node-mapping.md) for the complete mapping pattern.
+
+## n8n-Inspired Composite Skills (Level 2)
+
+These skills combine multiple atomics, inspired by n8n's data transformation and multi-step nodes:
+
+| Skill | Operation | Pattern |
+|-------|-----------|---------|
+| `data-merge` | READ | Merge node: combine data from multiple sources |
+| `email-reply` | WRITE | Gmail Reply: read thread + send reply |
+| `issue-triage` | WRITE | GitHub + AI: classify, label, assign |
+
+Level 2 skills add **intelligence between reads and writes** - the value is in the combination.
+
+## n8n-Inspired Workflows (Level 3)
+
+These workflows demonstrate complex orchestration patterns from popular n8n templates:
+
+| Skill | Operation | n8n Template Equivalent |
+|-------|-----------|------------------------|
+| `slack-to-issue` | WRITE | "Create Jira issues from Slack messages" |
+| `notion-sheets-sync` | WRITE | "Sync Notion database to Google Sheets" |
+
+Level 3 skills have **decision logic, state management, and multi-directional data flow**.
 
 ## Creating Your Own
 
