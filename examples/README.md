@@ -30,20 +30,27 @@ examples/
 ├── README.md                    # This file
 │
 ├── _atomic/                     # Level 1: Single operations
-│   ├── web-search/
-│   │   └── SKILL.md            # Search the web, return citations
-│   ├── pdf-save/
-│   │   └── SKILL.md            # Save URL as PDF
-│   ├── http-request/
-│   │   └── SKILL.md            # Make HTTP requests to any URL
-│   ├── github-issues-create/
-│   │   └── SKILL.md            # Create GitHub issues
-│   ├── github-issues-list/
-│   │   └── SKILL.md            # List/filter GitHub issues
-│   ├── slack-message-send/
-│   │   └── SKILL.md            # Send Slack messages
-│   └── google-sheets-read/
-│       └── SKILL.md            # Read from Google Sheets
+│   │
+│   │   # API/Service Skills
+│   ├── web-search/              # Search the web, return citations
+│   ├── pdf-save/                # Save URL as PDF
+│   ├── http-request/            # Make HTTP requests to any URL
+│   ├── github-issues-create/    # Create GitHub issues
+│   ├── github-issues-list/      # List/filter GitHub issues
+│   ├── slack-message-send/      # Send Slack messages
+│   ├── google-sheets-read/      # Read from Google Sheets
+│   │
+│   │   # Linux/POSIX Utilities
+│   ├── file-find/               # Find files by name/type/size (find)
+│   ├── file-read/               # Read file contents (cat/head/tail)
+│   ├── file-checksum/           # Calculate checksums (sha256sum)
+│   ├── text-grep/               # Search text patterns (grep)
+│   ├── text-sed/                # Stream text editing (sed)
+│   ├── text-awk/                # Text processing (awk)
+│   ├── process-list/            # List processes (ps/top)
+│   ├── disk-usage/              # Check disk space (df/du)
+│   ├── archive-extract/         # Extract archives (tar/unzip)
+│   └── network-fetch/           # Download from URLs (curl/wget)
 │
 ├── _composite/                  # Level 2: Combined operations
 │   ├── research/
@@ -239,6 +246,37 @@ These workflows demonstrate complex orchestration patterns from popular n8n temp
 | `notion-sheets-sync` | WRITE | "Sync Notion database to Google Sheets" |
 
 Level 3 skills have **decision logic, state management, and multi-directional data flow**.
+
+## Linux/POSIX Utility Skills
+
+These atomic skills wrap standard Linux/POSIX command-line utilities, providing a foundation for system automation:
+
+### File Operations
+
+| Skill | Operation | Wraps | Use Case |
+|-------|-----------|-------|----------|
+| `file-find` | READ | `find` | Locate files by name, type, size, date |
+| `file-read` | READ | `cat`/`head`/`tail` | Read file contents |
+| `file-checksum` | READ | `sha256sum` | Verify file integrity |
+| `archive-extract` | WRITE | `tar`/`unzip` | Extract compressed archives |
+
+### Text Processing
+
+| Skill | Operation | Wraps | Use Case |
+|-------|-----------|-------|----------|
+| `text-grep` | READ | `grep` | Search for patterns in files |
+| `text-sed` | READ | `sed` | Stream text transformations |
+| `text-awk` | READ | `awk` | Column extraction and data processing |
+
+### System Monitoring
+
+| Skill | Operation | Wraps | Use Case |
+|-------|-----------|-------|----------|
+| `process-list` | READ | `ps`/`top` | List running processes |
+| `disk-usage` | READ | `df`/`du` | Check filesystem usage |
+| `network-fetch` | READ | `curl`/`wget` | Download from URLs |
+
+These utilities are available on virtually any Linux system, making them reliable building blocks for cross-platform automation.
 
 ## Creating Your Own
 
