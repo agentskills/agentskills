@@ -36,7 +36,8 @@ The Agent Orchestrator provides skills for:
 │  ├── mcp-skill-map         Map MCP tools to skill definitions  │
 │  ├── mcp-tool-retry        Execute MCP tools with retry logic  │
 │  ├── mcp-tool-batch        Batch execute multiple MCP tools    │
-│  └── mcp-tool-validate     Validate MCP tool arguments         │
+│  ├── mcp-tool-validate     Validate MCP tool arguments         │
+│  └── math-solve            Parse problem & execute with audit  │
 ├─────────────────────────────────────────────────────────────────┤
 │  L1 Atomics                                                     │
 │  ├── skill-registry-read   Read skill definitions              │
@@ -50,7 +51,8 @@ The Agent Orchestrator provides skills for:
 │  ├── mcp-tools-list        Query tools from MCP server         │
 │  ├── mcp-tool-call         Execute single MCP tool             │
 │  ├── mcp-resources-list    Query resources from MCP server     │
-│  └── mcp-prompts-list      Query prompts from MCP server       │
+│  ├── mcp-prompts-list      Query prompts from MCP server       │
+│  └── math-execute          Execute Python math with audit      │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -253,6 +255,57 @@ mcp-skill-generate \
   --include_composites true
 → Creates: L1 skill for each MCP tool, L2 composites for common patterns
 ```
+
+## Strict Math Skills
+
+The agent orchestrator includes skills for strict mathematical calculations that force Python execution instead of unreliable LLM mental math. This ensures accuracy, auditability, and reproducibility.
+
+### Math Atomic (L1)
+
+| Skill | Operation | Description |
+|-------|-----------|-------------|
+| math-execute | EXECUTE | Execute Python math code with full audit trail |
+
+### Math Composite (L2)
+
+| Skill | Operation | Description |
+|-------|-----------|-------------|
+| math-solve | TRANSFORM | Parse problem, generate code, execute, validate |
+
+### Why Strict Math Matters
+
+LLMs are notoriously unreliable at arithmetic:
+
+| Problem | LLM Mental Math | Python Execution |
+|---------|-----------------|------------------|
+| 23 × 47 | Often wrong (1081? 1181?) | Always 1081 |
+| √2 × √3 | Approximation errors | `math.sqrt(2) * math.sqrt(3)` = 2.449489743 |
+| Compound interest | Rounding errors accumulate | Decimal precision |
+| Statistical analysis | Cannot perform | Full statistics module |
+
+### Math Benefits
+
+1. **Accuracy** - Python handles arithmetic precisely (no hallucinated calculations)
+2. **Auditability** - The exact code used is recorded and returned for review
+3. **Reproducibility** - Same inputs always produce same outputs
+4. **Testability** - Calculations can be verified independently
+
+### Math Usage Example
+
+```
+User: "What is 25 times 47?"
+
+# math-solve automatically invoked
+→ Generates Python: "result = 25 * 47"
+→ Executes via math-execute
+→ Returns:
+  answer: "25 × 47 = 1,175"
+  python_code: "result = 25 * 47"
+  execution_time_ms: 0.015
+  code_executed: "result = 25 * 47"  # AUDIT TRAIL
+```
+
+The `python_code` and `code_executed` fields allow anyone to verify the calculation independently.
 
 ## Safety Model
 

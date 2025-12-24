@@ -170,7 +170,7 @@ class TestDomainConsistency:
 
     def test_all_skills_have_valid_domain(self, all_skill_dirs):
         """All skills should have a valid domain."""
-        valid_domains = ["agent-orchestration", "mcp"]
+        valid_domains = ["agent-orchestration", "mcp", "math"]
         for skill_dir in all_skill_dirs:
             content = (skill_dir / "SKILL.md").read_text()
             has_valid_domain = any(f"domain: {d}" in content for d in valid_domains)
