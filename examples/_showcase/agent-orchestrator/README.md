@@ -22,14 +22,21 @@ The Agent Orchestrator provides skills for:
 │  L3 Workflows                                                   │
 │  ├── skill-compose         Compose new skills dynamically      │
 │  ├── worktree-isolate      Parallel execution with isolation   │
-│  └── parallel-execute      Orchestrate multi-agent execution   │
+│  ├── parallel-execute      Orchestrate multi-agent execution   │
+│  ├── mcp-skill-generate    Generate skills from MCP servers    │
+│  └── mcp-reliable-execute  Production-grade MCP execution      │
 ├─────────────────────────────────────────────────────────────────┤
 │  L2 Composites                                                  │
 │  ├── skill-discover        Find skills by intent               │
 │  ├── skill-disambiguate    Resolve unclear selections          │
 │  ├── skill-coherence-check Validate skill consistency          │
 │  ├── agent-spawn-decide    Decide sub-agent strategy           │
-│  └── conflict-detect       Detect file edit conflicts          │
+│  ├── conflict-detect       Detect file edit conflicts          │
+│  ├── mcp-tool-discover     Find MCP tools across servers       │
+│  ├── mcp-skill-map         Map MCP tools to skill definitions  │
+│  ├── mcp-tool-retry        Execute MCP tools with retry logic  │
+│  ├── mcp-tool-batch        Batch execute multiple MCP tools    │
+│  └── mcp-tool-validate     Validate MCP tool arguments         │
 ├─────────────────────────────────────────────────────────────────┤
 │  L1 Atomics                                                     │
 │  ├── skill-registry-read   Read skill definitions              │
@@ -38,7 +45,12 @@ The Agent Orchestrator provides skills for:
 │  ├── worktree-create       Create git worktree                 │
 │  ├── worktree-merge        Merge worktree changes              │
 │  ├── agent-session-spawn   Spawn isolated agent session        │
-│  └── completion-marker-set Set idempotency marker              │
+│  ├── completion-marker-set Set idempotency marker              │
+│  ├── mcp-server-list       Discover configured MCP servers     │
+│  ├── mcp-tools-list        Query tools from MCP server         │
+│  ├── mcp-tool-call         Execute single MCP tool             │
+│  ├── mcp-resources-list    Query resources from MCP server     │
+│  └── mcp-prompts-list      Query prompts from MCP server       │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -177,6 +189,70 @@ Tasks: [analyse-portfolio-a, analyse-portfolio-b, analyse-portfolio-c]
 | skill-compose | WRITE | Compose new skills dynamically |
 | worktree-isolate | WRITE | Full worktree isolation workflow |
 | parallel-execute | WRITE | Orchestrate parallel agent execution |
+
+## MCP Integration Skills
+
+The agent orchestrator includes comprehensive skills for integrating with Model Context Protocol (MCP) servers. These skills enable automatic tool discovery, skill generation, and reliable execution with decorators for retries, validation, and batching.
+
+### MCP Atomic (L1)
+
+| Skill | Operation | Description |
+|-------|-----------|-------------|
+| mcp-server-list | READ | Discover configured MCP servers |
+| mcp-tools-list | READ | Query available tools from a server |
+| mcp-tool-call | WRITE | Execute a single MCP tool |
+| mcp-resources-list | READ | Query resources from a server |
+| mcp-prompts-list | READ | Query prompts from a server |
+
+### MCP Composite (L2)
+
+| Skill | Operation | Description |
+|-------|-----------|-------------|
+| mcp-tool-discover | READ | Find tools across all servers by intent |
+| mcp-skill-map | TRANSFORM | Map MCP tools to skill definitions |
+| mcp-tool-retry | WRITE | Execute with retry, backoff, circuit breaker |
+| mcp-tool-batch | WRITE | Execute multiple tools in sequence/parallel |
+| mcp-tool-validate | READ | Validate arguments against schema |
+
+### MCP Workflow (L3)
+
+| Skill | Operation | Description |
+|-------|-----------|-------------|
+| mcp-skill-generate | WRITE | Generate complete skill library from MCP servers |
+| mcp-reliable-execute | WRITE | Production-grade execution with full reliability |
+
+### MCP Benefits
+
+1. **Automatic Skill Generation** - Discover MCP servers and automatically generate L1 skills for each tool
+2. **Reliability Decorators** - Built-in retry, timeout, circuit breaker, and validation patterns
+3. **Schema-Driven Validation** - Pre-validate arguments against tool inputSchema before execution
+4. **Batch Operations** - Execute multiple tools with dependency tracking and parallel execution
+5. **Intent-Based Discovery** - Find relevant MCP tools using natural language queries
+
+### MCP Usage Example
+
+```
+# Discover all filesystem tools
+mcp-tool-discover --query "read and write files"
+→ Returns: [filesystem/read_file, filesystem/write_file, filesystem/list_directory]
+
+# Execute with reliability
+mcp-reliable-execute \
+  --server filesystem \
+  --tool read_file \
+  --arguments '{"path": "/home/user/config.json"}' \
+  --retry.max_attempts 3 \
+  --retry.backoff exponential \
+  --validate true
+→ Returns: file contents with retry report
+
+# Generate skills from all MCP servers
+mcp-skill-generate \
+  --output_dir ./generated-skills \
+  --include_decorators true \
+  --include_composites true
+→ Creates: L1 skill for each MCP tool, L2 composites for common patterns
+```
 
 ## Safety Model
 

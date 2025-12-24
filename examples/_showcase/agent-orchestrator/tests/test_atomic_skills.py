@@ -4,6 +4,20 @@ import pytest
 import re
 from pathlib import Path
 
+from conftest import MCP_ATOMIC_SKILLS
+
+
+# Original orchestrator skills (non-MCP)
+ORCHESTRATOR_ATOMIC_SKILLS = [
+    "skill-registry-read",
+    "skill-graph-query",
+    "intent-classify",
+    "worktree-create",
+    "worktree-merge",
+    "agent-session-spawn",
+    "completion-marker-set",
+]
+
 
 class TestAtomicSkillsExist:
     """Test that all expected atomic skills exist."""
@@ -26,39 +40,41 @@ class TestAtomicSkillStructure:
     """Test the structure of atomic skill definitions."""
 
     @pytest.fixture
-    def atomic_skill_files(self, atomic_dir, atomic_skills):
-        """Return list of SKILL.md paths for all atomic skills."""
-        return [atomic_dir / name / "SKILL.md" for name in atomic_skills]
+    def orchestrator_skill_files(self, atomic_dir):
+        """Return list of SKILL.md paths for orchestrator atomic skills (non-MCP)."""
+        return [atomic_dir / name / "SKILL.md" for name in ORCHESTRATOR_ATOMIC_SKILLS]
 
-    def test_atomic_skills_have_yaml_frontmatter(self, atomic_skill_files):
-        """All atomic skills should have YAML frontmatter."""
-        for skill_file in atomic_skill_files:
+    def test_orchestrator_skills_have_yaml_frontmatter(self, orchestrator_skill_files):
+        """Orchestrator atomic skills should have YAML frontmatter."""
+        for skill_file in orchestrator_skill_files:
             content = skill_file.read_text()
             assert content.startswith("---"), f"Missing YAML frontmatter in {skill_file.parent.name}"
 
-    def test_atomic_skills_have_required_fields(self, atomic_skill_files):
-        """All atomic skills should have required fields."""
+    def test_orchestrator_skills_have_required_fields(self, orchestrator_skill_files):
+        """Orchestrator atomic skills should have required fields in frontmatter."""
         required_fields = ['name', 'description', 'level', 'operation']
 
-        for skill_file in atomic_skill_files:
+        for skill_file in orchestrator_skill_files:
             content = skill_file.read_text()
             for field in required_fields:
                 assert f"{field}:" in content, f"Missing {field} in {skill_file.parent.name}"
 
-    def test_atomic_skills_are_level_1(self, atomic_skill_files):
+    def test_atomic_skills_are_level_1(self, atomic_dir, atomic_skills):
         """All atomic skills should be level 1."""
-        for skill_file in atomic_skill_files:
+        for skill_name in atomic_skills:
+            skill_file = atomic_dir / skill_name / "SKILL.md"
             content = skill_file.read_text()
-            assert "level: 1" in content, f"{skill_file.parent.name} should be level 1"
+            assert "level: 1" in content, f"{skill_name} should be level 1"
 
-    def test_atomic_skills_have_valid_operation(self, atomic_skill_files):
+    def test_atomic_skills_have_valid_operation(self, atomic_dir, atomic_skills):
         """All atomic skills should have a valid operation type."""
         valid_operations = ['READ', 'WRITE', 'TRANSFORM']
 
-        for skill_file in atomic_skill_files:
+        for skill_name in atomic_skills:
+            skill_file = atomic_dir / skill_name / "SKILL.md"
             content = skill_file.read_text()
             has_valid_op = any(f"operation: {op}" in content for op in valid_operations)
-            assert has_valid_op, f"Invalid operation in {skill_file.parent.name}"
+            assert has_valid_op, f"Invalid operation in {skill_name}"
 
 
 class TestAtomicSkillContent:
@@ -92,13 +108,21 @@ class TestAtomicSkillContent:
 class TestOrchestratorDomain:
     """Test domain-specific aspects of orchestrator skills."""
 
-    def test_all_atomic_skills_have_orchestrator_domain(self, atomic_dir, atomic_skills):
-        """All atomic skills should have agent-orchestration domain."""
-        for skill_name in atomic_skills:
+    def test_orchestrator_atomic_skills_have_orchestrator_domain(self, atomic_dir):
+        """Orchestrator atomic skills should have agent-orchestration domain."""
+        for skill_name in ORCHESTRATOR_ATOMIC_SKILLS:
             skill_file = atomic_dir / skill_name / "SKILL.md"
             content = skill_file.read_text()
             assert "domain: agent-orchestration" in content, \
                 f"{skill_name} should have agent-orchestration domain"
+
+    def test_mcp_atomic_skills_have_mcp_domain(self, atomic_dir):
+        """MCP atomic skills should have mcp domain."""
+        for skill_name in MCP_ATOMIC_SKILLS:
+            skill_file = atomic_dir / skill_name / "SKILL.md"
+            content = skill_file.read_text()
+            assert "domain: mcp" in content, \
+                f"{skill_name} should have mcp domain"
 
     def test_worktree_skills_reference_git(self, atomic_dir):
         """Worktree skills should reference git."""

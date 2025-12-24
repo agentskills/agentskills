@@ -4,6 +4,16 @@ import pytest
 import re
 from pathlib import Path
 
+from conftest import MCP_WORKFLOW_SKILLS
+
+
+# Original orchestrator workflow skills (non-MCP)
+ORCHESTRATOR_WORKFLOW_SKILLS = [
+    "skill-compose",
+    "worktree-isolate",
+    "parallel-execute",
+]
+
 
 class TestWorkflowSkillsExist:
     """Test that all expected workflow skills exist."""
@@ -25,28 +35,44 @@ class TestWorkflowSkillStructure:
     """Test the structure of workflow skill definitions."""
 
     @pytest.fixture
-    def workflow_skill_files(self, workflows_dir, workflow_skills):
-        """Return list of SKILL.md paths for all workflow skills."""
-        return [workflows_dir / name / "SKILL.md" for name in workflow_skills]
+    def orchestrator_skill_files(self, workflows_dir):
+        """Return list of SKILL.md paths for orchestrator workflow skills (non-MCP)."""
+        return [workflows_dir / name / "SKILL.md" for name in ORCHESTRATOR_WORKFLOW_SKILLS]
 
-    def test_workflow_skills_are_level_3(self, workflow_skill_files):
+    def test_workflow_skills_are_level_3(self, workflows_dir, workflow_skills):
         """All workflow skills should be level 3."""
-        for skill_file in workflow_skill_files:
+        for skill_name in workflow_skills:
+            skill_file = workflows_dir / skill_name / "SKILL.md"
             content = skill_file.read_text()
-            assert "level: 3" in content, f"{skill_file.parent.name} should be level 3"
+            assert "level: 3" in content, f"{skill_name} should be level 3"
 
-    def test_workflow_skills_have_state_machine(self, workflow_skill_files):
-        """All workflow skills should have state_machine flag."""
-        for skill_file in workflow_skill_files:
+    def test_orchestrator_workflow_skills_have_state_machine(self, orchestrator_skill_files):
+        """Orchestrator workflow skills should have state_machine flag in frontmatter."""
+        for skill_file in orchestrator_skill_files:
             content = skill_file.read_text()
             assert "state_machine: true" in content, \
                 f"{skill_file.parent.name} should have state_machine"
 
-    def test_workflow_skills_have_composes(self, workflow_skill_files):
-        """All workflow skills should have composes field."""
-        for skill_file in workflow_skill_files:
+    def test_mcp_workflow_skills_have_state_documentation(self, workflows_dir):
+        """MCP workflow skills should document workflow states."""
+        for skill_name in MCP_WORKFLOW_SKILLS:
+            skill_file = workflows_dir / skill_name / "SKILL.md"
             content = skill_file.read_text()
-            assert "composes:" in content
+            has_states = "## Workflow States" in content or "State" in content
+            assert has_states, f"{skill_name} should document workflow states"
+
+    def test_orchestrator_workflow_skills_have_composes(self, orchestrator_skill_files):
+        """Orchestrator workflow skills should have composes field in frontmatter."""
+        for skill_file in orchestrator_skill_files:
+            content = skill_file.read_text()
+            assert "composes:" in content, f"{skill_file.parent.name} should have composes field"
+
+    def test_mcp_workflow_skills_have_composes_section(self, workflows_dir):
+        """MCP workflow skills should have a Composes section."""
+        for skill_name in MCP_WORKFLOW_SKILLS:
+            skill_file = workflows_dir / skill_name / "SKILL.md"
+            content = skill_file.read_text()
+            assert "## Composes" in content, f"{skill_name} should have Composes section"
 
 
 class TestWorkflowStateMachine:

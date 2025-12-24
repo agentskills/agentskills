@@ -4,6 +4,18 @@ import pytest
 import re
 from pathlib import Path
 
+from conftest import MCP_COMPOSITE_SKILLS
+
+
+# Original orchestrator composite skills (non-MCP)
+ORCHESTRATOR_COMPOSITE_SKILLS = [
+    "skill-discover",
+    "skill-disambiguate",
+    "skill-coherence-check",
+    "agent-spawn-decide",
+    "conflict-detect",
+]
+
 
 class TestCompositeSkillsExist:
     """Test that all expected composite skills exist."""
@@ -25,21 +37,29 @@ class TestCompositeSkillStructure:
     """Test the structure of composite skill definitions."""
 
     @pytest.fixture
-    def composite_skill_files(self, composite_dir, composite_skills):
-        """Return list of SKILL.md paths for all composite skills."""
-        return [composite_dir / name / "SKILL.md" for name in composite_skills]
+    def orchestrator_skill_files(self, composite_dir):
+        """Return list of SKILL.md paths for orchestrator composite skills (non-MCP)."""
+        return [composite_dir / name / "SKILL.md" for name in ORCHESTRATOR_COMPOSITE_SKILLS]
 
-    def test_composite_skills_are_level_2(self, composite_skill_files):
+    def test_composite_skills_are_level_2(self, composite_dir, composite_skills):
         """All composite skills should be level 2."""
-        for skill_file in composite_skill_files:
+        for skill_name in composite_skills:
+            skill_file = composite_dir / skill_name / "SKILL.md"
             content = skill_file.read_text()
-            assert "level: 2" in content, f"{skill_file.parent.name} should be level 2"
+            assert "level: 2" in content, f"{skill_name} should be level 2"
 
-    def test_composite_skills_have_composes_field(self, composite_skill_files):
-        """All composite skills should have a composes field."""
-        for skill_file in composite_skill_files:
+    def test_orchestrator_composite_skills_have_composes_field(self, orchestrator_skill_files):
+        """Orchestrator composite skills should have a composes field in frontmatter."""
+        for skill_file in orchestrator_skill_files:
             content = skill_file.read_text()
             assert "composes:" in content, f"{skill_file.parent.name} should have composes field"
+
+    def test_mcp_composite_skills_have_composes_section(self, composite_dir):
+        """MCP composite skills should have a Composes section."""
+        for skill_name in MCP_COMPOSITE_SKILLS:
+            skill_file = composite_dir / skill_name / "SKILL.md"
+            content = skill_file.read_text()
+            assert "## Composes" in content, f"{skill_name} should have Composes section"
 
 
 class TestCompositeSkillComposition:
@@ -108,10 +128,19 @@ class TestCompositeSkillContent:
 class TestCompositeSkillOperations:
     """Test operation types of composite skills."""
 
-    def test_all_composite_skills_are_read(self, composite_dir, composite_skills):
-        """All composite skills should be READ operation (analysis only)."""
-        for skill_name in composite_skills:
+    def test_orchestrator_composite_skills_are_read(self, composite_dir):
+        """Orchestrator composite skills should be READ operation (analysis only)."""
+        for skill_name in ORCHESTRATOR_COMPOSITE_SKILLS:
             skill_file = composite_dir / skill_name / "SKILL.md"
             content = skill_file.read_text()
             assert "operation: READ" in content, \
                 f"{skill_name} should be READ operation"
+
+    def test_mcp_composite_skills_have_valid_operations(self, composite_dir):
+        """MCP composite skills should have valid operation types."""
+        valid_operations = ['READ', 'WRITE', 'TRANSFORM']
+        for skill_name in MCP_COMPOSITE_SKILLS:
+            skill_file = composite_dir / skill_name / "SKILL.md"
+            content = skill_file.read_text()
+            has_valid_op = any(f"operation: {op}" in content for op in valid_operations)
+            assert has_valid_op, f"Invalid operation in {skill_name}"

@@ -7,6 +7,34 @@ import pytest
 import re
 from pathlib import Path
 
+from conftest import (
+    MCP_ATOMIC_SKILLS,
+    MCP_COMPOSITE_SKILLS,
+    MCP_WORKFLOW_SKILLS,
+)
+
+
+# Original orchestrator skills (non-MCP)
+ORCHESTRATOR_SKILLS = [
+    "skill-registry-read",
+    "skill-graph-query",
+    "intent-classify",
+    "worktree-create",
+    "worktree-merge",
+    "agent-session-spawn",
+    "completion-marker-set",
+    "skill-discover",
+    "skill-disambiguate",
+    "skill-coherence-check",
+    "agent-spawn-decide",
+    "conflict-detect",
+    "skill-compose",
+    "worktree-isolate",
+    "parallel-execute",
+]
+
+MCP_SKILLS = MCP_ATOMIC_SKILLS + MCP_COMPOSITE_SKILLS + MCP_WORKFLOW_SKILLS
+
 
 class TestShowcaseStructure:
     """Test overall showcase structure."""
@@ -124,12 +152,29 @@ class TestCompositionGraph:
 class TestDomainConsistency:
     """Test domain consistency for agent orchestrator."""
 
-    def test_all_skills_have_orchestrator_domain(self, all_skill_dirs):
-        """All skills should have agent-orchestration domain."""
+    def test_orchestrator_skills_have_orchestrator_domain(self, all_skill_dirs):
+        """Orchestrator skills should have agent-orchestration domain."""
+        for skill_dir in all_skill_dirs:
+            if skill_dir.name in ORCHESTRATOR_SKILLS:
+                content = (skill_dir / "SKILL.md").read_text()
+                assert "domain: agent-orchestration" in content, \
+                    f"{skill_dir.name} should have agent-orchestration domain"
+
+    def test_mcp_skills_have_mcp_domain(self, all_skill_dirs):
+        """MCP skills should have mcp domain."""
+        for skill_dir in all_skill_dirs:
+            if skill_dir.name in MCP_SKILLS:
+                content = (skill_dir / "SKILL.md").read_text()
+                assert "domain: mcp" in content, \
+                    f"{skill_dir.name} should have mcp domain"
+
+    def test_all_skills_have_valid_domain(self, all_skill_dirs):
+        """All skills should have a valid domain."""
+        valid_domains = ["agent-orchestration", "mcp"]
         for skill_dir in all_skill_dirs:
             content = (skill_dir / "SKILL.md").read_text()
-            assert "domain: agent-orchestration" in content, \
-                f"{skill_dir.name} should have agent-orchestration domain"
+            has_valid_domain = any(f"domain: {d}" in content for d in valid_domains)
+            assert has_valid_domain, f"{skill_dir.name} should have a valid domain"
 
 
 class TestMetaSkillPatterns:
@@ -165,10 +210,12 @@ class TestDocumentation:
     """Test documentation quality."""
 
     def test_all_skills_have_description(self, all_skill_dirs):
-        """All skills should have a description field."""
+        """All skills should have a description (field or section)."""
         for skill_dir in all_skill_dirs:
             content = (skill_dir / "SKILL.md").read_text()
-            assert "description:" in content, f"{skill_dir.name} missing description"
+            # Orchestrator skills use description: field, MCP skills use ## Description section
+            has_description = "description:" in content or "## Description" in content
+            assert has_description, f"{skill_dir.name} missing description"
 
     def test_all_skills_have_usage_examples(self, all_skill_dirs):
         """All skills should have some form of usage documentation."""

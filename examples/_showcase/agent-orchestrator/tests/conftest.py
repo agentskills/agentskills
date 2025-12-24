@@ -56,6 +56,12 @@ ATOMIC_SKILLS = [
     "worktree-merge",
     "agent-session-spawn",
     "completion-marker-set",
+    # MCP atomic skills
+    "mcp-server-list",
+    "mcp-tools-list",
+    "mcp-tool-call",
+    "mcp-resources-list",
+    "mcp-prompts-list",
 ]
 
 COMPOSITE_SKILLS = [
@@ -64,12 +70,43 @@ COMPOSITE_SKILLS = [
     "skill-coherence-check",
     "agent-spawn-decide",
     "conflict-detect",
+    # MCP composite skills
+    "mcp-tool-discover",
+    "mcp-skill-map",
+    "mcp-tool-retry",
+    "mcp-tool-batch",
+    "mcp-tool-validate",
 ]
 
 WORKFLOW_SKILLS = [
     "skill-compose",
     "worktree-isolate",
     "parallel-execute",
+    # MCP workflow skills
+    "mcp-skill-generate",
+    "mcp-reliable-execute",
+]
+
+# MCP-specific skill lists for targeted tests
+MCP_ATOMIC_SKILLS = [
+    "mcp-server-list",
+    "mcp-tools-list",
+    "mcp-tool-call",
+    "mcp-resources-list",
+    "mcp-prompts-list",
+]
+
+MCP_COMPOSITE_SKILLS = [
+    "mcp-tool-discover",
+    "mcp-skill-map",
+    "mcp-tool-retry",
+    "mcp-tool-batch",
+    "mcp-tool-validate",
+]
+
+MCP_WORKFLOW_SKILLS = [
+    "mcp-skill-generate",
+    "mcp-reliable-execute",
 ]
 
 
@@ -89,3 +126,27 @@ def composite_skills():
 def workflow_skills():
     """Return list of expected workflow skill names."""
     return WORKFLOW_SKILLS
+
+
+@pytest.fixture
+def mcp_atomic_skills():
+    """Return list of MCP atomic skill names."""
+    return MCP_ATOMIC_SKILLS
+
+
+@pytest.fixture
+def mcp_composite_skills():
+    """Return list of MCP composite skill names."""
+    return MCP_COMPOSITE_SKILLS
+
+
+@pytest.fixture
+def mcp_workflow_skills():
+    """Return list of MCP workflow skill names."""
+    return MCP_WORKFLOW_SKILLS
+
+
+@pytest.fixture
+def all_mcp_skills():
+    """Return all MCP skill names."""
+    return MCP_ATOMIC_SKILLS + MCP_COMPOSITE_SKILLS + MCP_WORKFLOW_SKILLS
