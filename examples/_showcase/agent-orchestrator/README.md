@@ -24,7 +24,8 @@ The Agent Orchestrator provides skills for:
 │  ├── worktree-isolate      Parallel execution with isolation   │
 │  ├── parallel-execute      Orchestrate multi-agent execution   │
 │  ├── mcp-skill-generate    Generate skills from MCP servers    │
-│  └── mcp-reliable-execute  Production-grade MCP execution      │
+│  ├── mcp-reliable-execute  Production-grade MCP execution      │
+│  └── pr-review-complete    End-to-end PR review workflow       │
 ├─────────────────────────────────────────────────────────────────┤
 │  L2 Composites                                                  │
 │  ├── skill-discover        Find skills by intent               │
@@ -37,7 +38,10 @@ The Agent Orchestrator provides skills for:
 │  ├── mcp-tool-retry        Execute MCP tools with retry logic  │
 │  ├── mcp-tool-batch        Batch execute multiple MCP tools    │
 │  ├── mcp-tool-validate     Validate MCP tool arguments         │
-│  └── math-solve            Parse problem & execute with audit  │
+│  ├── math-solve            Parse problem & execute with audit  │
+│  ├── pr-review             Comprehensive PR code review        │
+│  ├── pr-respond            Respond to review feedback          │
+│  └── pr-improve            Make changes from feedback          │
 ├─────────────────────────────────────────────────────────────────┤
 │  L1 Atomics                                                     │
 │  ├── skill-registry-read   Read skill definitions              │
@@ -52,7 +56,11 @@ The Agent Orchestrator provides skills for:
 │  ├── mcp-tool-call         Execute single MCP tool             │
 │  ├── mcp-resources-list    Query resources from MCP server     │
 │  ├── mcp-prompts-list      Query prompts from MCP server       │
-│  └── math-execute          Execute Python math with audit      │
+│  ├── math-execute          Execute Python math with audit      │
+│  ├── pr-read               Read PR metadata and status         │
+│  ├── pr-diff-read          Read PR diff and changed files      │
+│  ├── pr-comment-create     Create PR comments (inline/general) │
+│  └── pr-review-submit      Submit formal review                │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -306,6 +314,62 @@ User: "What is 25 times 47?"
 ```
 
 The `python_code` and `code_executed` fields allow anyone to verify the calculation independently.
+
+## Pull Request Review Skills
+
+Comprehensive skills for reviewing, commenting on, and improving pull requests using `gh` CLI, GitHub REST API, and GitHub MCP server.
+
+### PR Atomic (L1)
+
+| Skill | Operation | Description |
+|-------|-----------|-------------|
+| pr-read | READ | Read PR metadata, status, reviews, and checks |
+| pr-diff-read | READ | Read diff, changed files, and hunk information |
+| pr-comment-create | WRITE | Create general, inline, or reply comments |
+| pr-review-submit | WRITE | Submit formal review (approve, request changes, comment) |
+
+### PR Composite (L2)
+
+| Skill | Operation | Description |
+|-------|-----------|-------------|
+| pr-review | WRITE | Comprehensive code review with AI analysis |
+| pr-respond | WRITE | Intelligently respond to review feedback |
+| pr-improve | WRITE | Make changes to address feedback |
+
+### PR Workflow (L3)
+
+| Skill | Operation | Description |
+|-------|-----------|-------------|
+| pr-review-complete | WRITE | End-to-end review lifecycle with iteration |
+
+### PR Review Features
+
+1. **Multi-Source Integration** - Uses `gh` CLI, REST API, and MCP for flexibility
+2. **Inline Comments** - Create comments on specific lines with code suggestions
+3. **Security Analysis** - Detect SQL injection, XSS, hardcoded secrets
+4. **Iterative Review** - Track issues across review cycles until resolved
+5. **Both Roles** - Support for reviewer and author workflows
+
+### PR Review Example
+
+```
+# As Reviewer
+pr-review --repo org/project --pr 42 --focus security,correctness
+→ Analyses diff for security issues
+→ Creates inline comments with suggestions
+→ Submits review: REQUEST_CHANGES
+
+# As Author
+pr-improve --repo org/project --pr 42 --auto-apply-suggestions
+→ Applies GitHub suggestions automatically
+→ Runs tests to verify changes
+→ Commits and notifies reviewers
+
+# Full Workflow
+pr-review-complete --repo org/project --pr 42 --role reviewer
+→ Initial review → Await changes → Re-review → Approve
+→ Tracks iterations until PR is ready to merge
+```
 
 ## Safety Model
 
