@@ -17,14 +17,19 @@
   "navigation": {
     "pages": [
       "home",
+      "quickstart",
       "what-are-skills",
       "getting-started-guide",
       "value-demonstrations",
       "two-tier-design",
+      "type-system",
+      "confirmation-system",
+      "mcp-interop",
       "specification",
       "architecture",
       "integrate-skills",
       "contributing",
+      "anti-patterns",
       "faq"
     ]
   },

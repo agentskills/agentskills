@@ -1,0 +1,366 @@
+---
+title: "Confirmation System"
+description: "How WRITE skill confirmations work"
+---
+
+# Confirmation System: Safety for WRITE Operations
+
+WRITE skills require confirmation before execution. This document explains who, when, how, and what happens.
+
+## The Four Questions
+
+| Question | Answer |
+|----------|--------|
+| **Who** provides confirmation? | User, automated policy, or system admin |
+| **When** is it requested? | Before execution of any WRITE skill |
+| **How** is it granted? | Callback handler, config, or interactive prompt |
+| **What** if denied? | Execution halts, error returned |
+
+## How It Works
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ 1. Agent decides to execute WRITE skill                │
+├─────────────────────────────────────────────────────────┤
+│ 2. Framework checks: confirmation_required?            │
+│    ├─ false → Execute immediately                      │
+│    └─ true → Request confirmation                      │
+├─────────────────────────────────────────────────────────┤
+│ 3. Confirmation handler invoked                        │
+│    ├─ Shows: skill name, description, context          │
+│    └─ Returns: true (proceed) or false (deny)          │
+├─────────────────────────────────────────────────────────┤
+│ 4. Based on response                                   │
+│    ├─ Confirmed → Execute skill                        │
+│    └─ Denied → Return ConfirmationDeniedError          │
+└─────────────────────────────────────────────────────────┘
+```
+
+## Configuration
+
+### In SKILL.md
+
+```yaml
+name: deploy-production
+level: 2
+operation: WRITE
+confirmation_required: true  # Default for WRITE
+
+# Optional: Provide context for confirmation dialog
+confirmation_context:
+  severity: high
+  reversible: false
+  message: "This will deploy to production environment"
+```
+
+### Confirmation Handlers
+
+#### Interactive Handler (Default)
+
+```python
+class InteractiveConfirmationHandler:
+    """Prompts user in terminal."""
+
+    def request_confirmation(
+        self,
+        skill: Skill,
+        context: dict
+    ) -> bool:
+        print(f"⚠️  WRITE operation: {skill.name}")
+        print(f"   {skill.description[:100]}...")
+        print()
+
+        if context.get("inputs"):
+            print(f"   Inputs: {context['inputs']}")
+        if skill.confirmation_context:
+            print(f"   Severity: {skill.confirmation_context.get('severity', 'normal')}")
+            print(f"   Reversible: {skill.confirmation_context.get('reversible', True)}")
+            if msg := skill.confirmation_context.get('message'):
+                print(f"   Note: {msg}")
+        print()
+
+        response = input("Proceed? [y/N]: ")
+        return response.lower() in ('y', 'yes')
+```
+
+#### Policy-Based Handler
+
+```python
+class PolicyConfirmationHandler:
+    """Confirms based on rules, no user interaction."""
+
+    def __init__(self, policy: dict):
+        self.policy = policy
+
+    def request_confirmation(
+        self,
+        skill: Skill,
+        context: dict
+    ) -> bool:
+        # Always allow in development
+        if context.get('environment') == 'development':
+            return True
+
+        # Check trusted skills list
+        if skill.name in self.policy.get('trusted_skills', []):
+            return True
+
+        # Check trusted users
+        if context.get('user') in self.policy.get('trusted_users', []):
+            return True
+
+        # Check time-based rules
+        if self._within_maintenance_window():
+            return True
+
+        # Default: deny
+        return False
+
+    def _within_maintenance_window(self) -> bool:
+        # Implementation
+        pass
+```
+
+#### Pre-Approved Handler
+
+```python
+class PreApprovedHandler:
+    """For automated pipelines where approval is pre-granted."""
+
+    def __init__(self, approved_skills: list[str]):
+        self.approved_skills = approved_skills
+
+    def request_confirmation(
+        self,
+        skill: Skill,
+        context: dict
+    ) -> bool:
+        if skill.name in self.approved_skills:
+            print(f"✓ Pre-approved: {skill.name}")
+            return True
+        else:
+            print(f"✗ Not pre-approved: {skill.name}")
+            return False
+```
+
+## Registering Handlers
+
+```python
+from agentskills import SkillRunner, InteractiveConfirmationHandler
+
+# Use interactive (default)
+runner = SkillRunner()
+
+# Use custom handler
+runner = SkillRunner(
+    confirmation_handler=PolicyConfirmationHandler({
+        'trusted_skills': ['backup-database', 'update-cache'],
+        'trusted_users': ['admin@company.com'],
+    })
+)
+
+# Disable confirmations (dangerous!)
+runner = SkillRunner(
+    confirmation_handler=None,  # All confirmations auto-approved
+    allow_unconfirmed_writes=True  # Must explicitly opt-in
+)
+```
+
+## What Happens When Denied?
+
+```python
+try:
+    result = runner.execute(
+        skill="delete-all-data",
+        inputs={"confirm": True}
+    )
+except ConfirmationDeniedError as e:
+    print(f"Execution cancelled: {e.skill_name}")
+    print(f"User response: {e.response}")
+    # Handle gracefully - maybe offer alternatives
+```
+
+## Composed Workflows
+
+In a composition, confirmations happen at WRITE boundaries:
+
+```yaml
+name: pr-review-and-merge
+level: 3
+operation: WORKFLOW
+
+composes:
+  - pr-read          # READ - no confirmation
+  - code-analyze     # READ - no confirmation
+  - review-generate  # READ - no confirmation
+  - comment-post     # WRITE - CONFIRMATION HERE
+  - pr-merge         # WRITE - CONFIRMATION HERE
+```
+
+**Execution flow:**
+
+```
+Executing pr-review-and-merge...
+  ✓ pr-read (READ)
+  ✓ code-analyze (READ)
+  ✓ review-generate (READ)
+
+  ⚠️ comment-post (WRITE)
+     Will post 3 comments to PR #42
+     Proceed? [y/N]: y
+  ✓ comment-post
+
+  ⚠️ pr-merge (WRITE)
+     Will merge PR #42 into main
+     Proceed? [y/N]: y
+  ✓ pr-merge
+
+Workflow complete.
+```
+
+## Batching Confirmations
+
+For workflows with multiple WRITE operations, you can batch:
+
+```yaml
+name: bulk-update
+level: 3
+operation: WORKFLOW
+confirmation_mode: batch  # Ask once for all WRITEs
+
+composes:
+  - update-record-1   # WRITE
+  - update-record-2   # WRITE
+  - update-record-3   # WRITE
+```
+
+**Execution flow:**
+
+```
+Executing bulk-update...
+
+  ⚠️ This workflow will perform 3 WRITE operations:
+     1. update-record-1: Update customer record
+     2. update-record-2: Update order record
+     3. update-record-3: Update inventory record
+
+     Proceed with all? [y/N]: y
+
+  ✓ update-record-1
+  ✓ update-record-2
+  ✓ update-record-3
+
+Workflow complete.
+```
+
+## Auditing
+
+All confirmations are logged:
+
+```python
+# Enable audit logging
+runner = SkillRunner(
+    confirmation_handler=InteractiveConfirmationHandler(),
+    audit_log="/var/log/agentskills/confirmations.jsonl"
+)
+```
+
+**Log format:**
+
+```json
+{
+  "timestamp": "2025-12-26T08:30:00Z",
+  "skill": "deploy-production",
+  "operation": "WRITE",
+  "user": "alice@company.com",
+  "confirmed": true,
+  "context": {
+    "environment": "production",
+    "inputs": {"version": "2.3.1"}
+  }
+}
+```
+
+## Testing Confirmations
+
+```python
+from agentskills.testing import MockConfirmationHandler
+
+def test_write_skill_requests_confirmation():
+    """WRITE skills must request confirmation."""
+    handler = MockConfirmationHandler(responses=[True])
+
+    runner = SkillRunner(confirmation_handler=handler)
+    runner.execute("deploy-production", {"version": "1.0"})
+
+    assert handler.confirmation_requested
+    assert handler.skills_asked == ["deploy-production"]
+
+
+def test_denied_confirmation_raises_error():
+    """Denied confirmation should raise error."""
+    handler = MockConfirmationHandler(responses=[False])
+
+    runner = SkillRunner(confirmation_handler=handler)
+
+    with pytest.raises(ConfirmationDeniedError):
+        runner.execute("deploy-production", {"version": "1.0"})
+
+
+def test_read_skill_skips_confirmation():
+    """READ skills should not request confirmation."""
+    handler = MockConfirmationHandler()
+
+    runner = SkillRunner(confirmation_handler=handler)
+    runner.execute("fetch-data", {"query": "test"})
+
+    assert not handler.confirmation_requested
+```
+
+## FAQ
+
+### Can I skip confirmation for testing?
+
+```python
+# In tests only
+runner = SkillRunner(
+    confirmation_handler=AutoApproveHandler()
+)
+```
+
+### What if no handler is registered?
+
+Default `InteractiveConfirmationHandler` is used, prompting in terminal.
+
+### Can the agent confirm its own actions?
+
+**No by design.** Confirmation requires an external party (user, policy system, or pre-approval). This prevents agents from self-approving dangerous operations.
+
+### How do I handle timeouts?
+
+```python
+class TimeoutConfirmationHandler:
+    def __init__(self, timeout_seconds: int = 60):
+        self.timeout = timeout_seconds
+
+    def request_confirmation(self, skill, context) -> bool:
+        try:
+            return self._prompt_with_timeout()
+        except TimeoutError:
+            print(f"Confirmation timed out after {self.timeout}s")
+            return False  # Deny on timeout
+```
+
+### What about async/non-blocking confirmation?
+
+```python
+class AsyncConfirmationHandler:
+    async def request_confirmation(self, skill, context) -> bool:
+        # Send notification to approval system
+        request_id = await self.send_approval_request(skill, context)
+
+        # Wait for response (with timeout)
+        response = await self.wait_for_response(request_id, timeout=300)
+
+        return response.approved
+```
