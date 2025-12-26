@@ -18,9 +18,14 @@
     "pages": [
       "home",
       "what-are-skills",
+      "getting-started-guide",
+      "value-demonstrations",
+      "two-tier-design",
       "specification",
       "architecture",
-      "integrate-skills"
+      "integrate-skills",
+      "contributing",
+      "faq"
     ]
   },
   "contextual": {
