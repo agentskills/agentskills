@@ -1,11 +1,11 @@
-"""Skill validation logic."""
+"""Skill validation logic. (Legacy)"""
 
 import unicodedata
 from pathlib import Path
 from typing import Optional
 
-from .errors import ParseError
-from .parser import find_skill_md, parse_frontmatter
+from ..errors import ParseError
+from ..parser.legacy import find_skill_md, parse_frontmatter
 
 MAX_SKILL_NAME_LENGTH = 64
 MAX_DESCRIPTION_LENGTH = 1024
@@ -22,7 +22,7 @@ ALLOWED_FIELDS = {
 }
 
 
-def _validate_name(name: str, skill_dir: Path) -> list[str]:
+def _validate_name(name: str, skill_dir: Optional[Path]) -> list[str]:
     """Validate skill name format and directory match.
 
     Skill names support i18n characters (Unicode letters) plus hyphens.

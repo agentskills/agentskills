@@ -1,12 +1,12 @@
-"""YAML frontmatter parsing for SKILL.md files."""
+"""YAML frontmatter parsing for SKILL.md files. (Legacy)"""
 
 from pathlib import Path
 from typing import Optional
 
 import strictyaml
 
-from .errors import ParseError, ValidationError
-from .models import SkillProperties
+from ..errors import ParseError, ValidationError
+from ..models import SkillProperties
 
 
 def find_skill_md(skill_dir: Path) -> Optional[Path]:

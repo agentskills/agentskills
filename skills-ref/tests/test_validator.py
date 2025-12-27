@@ -1,6 +1,6 @@
 """Tests for validator module."""
 
-from skills_ref.validator import validate
+from skills_ref.validation import validate
 
 
 def test_valid_skill(tmp_path):
