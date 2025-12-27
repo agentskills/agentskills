@@ -6,7 +6,64 @@ from typing import Optional
 import strictyaml
 
 from .errors import ParseError, ValidationError
-from .models import SkillProperties
+from .models import FieldSchema, SkillProperties
+
+
+def _parse_field_schema(field_data: dict) -> FieldSchema:
+    """Parse a FieldSchema from YAML data.
+
+    Args:
+        field_data: Dictionary containing field schema definition
+
+    Returns:
+        FieldSchema instance
+
+    Raises:
+        ValidationError: If required fields are missing
+    """
+    if not isinstance(field_data, dict):
+        raise ValidationError("Field schema must be a mapping")
+
+    name = field_data.get("name")
+    if not name:
+        raise ValidationError("Field schema missing required 'name'")
+
+    field_type = field_data.get("type", "any")
+
+    # Parse range as tuple if present
+    range_val = field_data.get("range")
+    if range_val is not None:
+        if isinstance(range_val, list) and len(range_val) == 2:
+            range_val = (float(range_val[0]), float(range_val[1]))
+        else:
+            range_val = None
+
+    return FieldSchema(
+        name=str(name),
+        type=str(field_type),
+        required=field_data.get("required", True),
+        description=field_data.get("description"),
+        default=field_data.get("default"),
+        requires_source=field_data.get("requires_source", False),
+        requires_rationale=field_data.get("requires_rationale", False),
+        min_length=field_data.get("min_length"),
+        min_items=field_data.get("min_items"),
+        range=range_val,
+    )
+
+
+def _parse_field_schemas(fields_data: list) -> list[FieldSchema]:
+    """Parse a list of FieldSchema from YAML data.
+
+    Args:
+        fields_data: List of field schema definitions
+
+    Returns:
+        List of FieldSchema instances
+    """
+    if not isinstance(fields_data, list):
+        return []
+    return [_parse_field_schema(f) for f in fields_data if isinstance(f, dict)]
 
 
 def find_skill_md(skill_dir: Path) -> Optional[Path]:
@@ -102,6 +159,27 @@ def read_properties(skill_dir: Path) -> SkillProperties:
     if not isinstance(description, str) or not description.strip():
         raise ValidationError("Field 'description' must be a non-empty string")
 
+    # Handle composes field - ensure it's a list
+    composes = metadata.get("composes")
+    if composes is not None and not isinstance(composes, list):
+        composes = [composes] if composes else None
+
+    # Handle level field - coerce to int if it's a valid integer string
+    level = metadata.get("level")
+    if level is not None:
+        try:
+            level = int(level)
+        except (ValueError, TypeError):
+            pass  # Let validator catch invalid levels
+
+    # Parse inputs and outputs schemas
+    inputs = None
+    outputs = None
+    if "inputs" in metadata:
+        inputs = _parse_field_schemas(metadata["inputs"])
+    if "outputs" in metadata:
+        outputs = _parse_field_schemas(metadata["outputs"])
+
     return SkillProperties(
         name=name.strip(),
         description=description.strip(),
@@ -109,4 +187,11 @@ def read_properties(skill_dir: Path) -> SkillProperties:
         compatibility=metadata.get("compatibility"),
         allowed_tools=metadata.get("allowed-tools"),
         metadata=metadata.get("metadata"),
+        # Composability fields
+        level=level,
+        operation=metadata.get("operation"),
+        composes=composes,
+        # Type checking fields
+        inputs=inputs if inputs else None,
+        outputs=outputs if outputs else None,
     )

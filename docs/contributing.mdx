@@ -1,0 +1,222 @@
+---
+title: "Contributing Skills"
+description: "How to add skills to the framework - no category theory required"
+---
+
+# Contributing Skills
+
+You can contribute skills while staying entirely in Tier 1. No category theory, monads, or type theory required.
+
+## Minimal Checklist
+
+Before submitting a PR with new skills:
+
+- [ ] Each skill has a valid `SKILL.md` with required fields
+- [ ] Types are defined for all inputs/outputs
+- [ ] `composes:` references exist and are valid
+- [ ] Tests pass: `pytest tests/ -v`
+- [ ] Level constraints respected (L2 composes L1 only, etc.)
+
+## Adding a Level 1 Atomic Skill
+
+### Step 1: Create the skill folder
+
+```bash
+mkdir -p examples/_showcase/your-domain/_atomic/your-skill/
+```
+
+### Step 2: Write SKILL.md
+
+```yaml
+# examples/_showcase/your-domain/_atomic/your-skill/SKILL.md
+name: your-skill
+level: 1
+operation: READ  # or WRITE
+
+description: |
+  One sentence describing what this skill does.
+
+inputs:
+  - name: input_name
+    type: string
+    required: true
+    description: What this input represents
+
+outputs:
+  - name: output_name
+    type: object
+    properties:
+      field1: string
+      field2: integer
+    description: What this output contains
+
+examples:
+  - input:
+      input_name: "example value"
+    output:
+      output_name:
+        field1: "result"
+        field2: 42
+```
+
+### Step 3: Add tests
+
+```python
+# examples/_showcase/your-domain/tests/test_your_skill.py
+import pytest
+from pathlib import Path
+import yaml
+
+def test_skill_structure():
+    skill_path = Path(__file__).parent.parent / "_atomic/your-skill/SKILL.md"
+    with open(skill_path) as f:
+        skill = yaml.safe_load(f)
+
+    assert skill["name"] == "your-skill"
+    assert skill["level"] == 1
+    assert "inputs" in skill
+    assert "outputs" in skill
+
+def test_skill_has_required_fields():
+    # Validate all required fields present
+    ...
+
+def test_skill_types_valid():
+    # Validate type definitions
+    ...
+```
+
+### Step 4: Run validation
+
+```bash
+pytest examples/_showcase/your-domain/tests/ -v
+```
+
+## Adding a Level 2 Composite Skill
+
+Composites combine atomics. They only reference L1 skills.
+
+```yaml
+# examples/_showcase/your-domain/_composite/combined-skill/SKILL.md
+name: combined-skill
+level: 2
+operation: READ  # Maximum of composed skills
+
+description: |
+  Combines skill-a and skill-b for a higher-level operation.
+
+composes:
+  - skill-a    # Must be L1
+  - skill-b    # Must be L1
+
+inputs:
+  - name: query
+    type: string
+    required: true
+
+outputs:
+  - name: combined_result
+    type: object
+```
+
+**Key constraint:** L2 skills can only compose L1 skills.
+
+## Adding a Level 3 Workflow
+
+Workflows orchestrate composites with state management.
+
+```yaml
+# examples/_showcase/your-domain/_workflows/full-workflow/SKILL.md
+name: full-workflow
+level: 3
+operation: WORKFLOW
+
+description: |
+  End-to-end workflow with state transitions.
+
+composes:
+  - combined-skill    # L2
+  - another-composite # L2
+
+states:
+  - INITIAL
+  - PROCESSING
+  - COMPLETE
+
+initial_state: INITIAL
+
+transitions:
+  - from: INITIAL
+    to: PROCESSING
+    when: START
+  - from: PROCESSING
+    to: COMPLETE
+    when: DONE
+```
+
+## Example PR: Adding a New Skill
+
+Here's what a typical contribution PR looks like:
+
+```
+feat: Add weather-forecast L1 skill to Trip Optimizer
+
+Added:
+- _atomic/weather-forecast/SKILL.md
+- tests/test_weather_forecast.py
+
+The skill fetches weather data for a location and date range.
+Used by the existing destination-research L2 composite.
+
+Tests: 4 new tests, all passing
+```
+
+**Files changed:**
+```
+examples/_showcase/trip-optimizer/
+├── _atomic/
+│   └── weather-forecast/
+│       └── SKILL.md          # New skill definition
+└── tests/
+    └── test_weather_forecast.py  # New tests
+```
+
+## What You Don't Need to Touch
+
+As a Tier 1 contributor, you never need to:
+
+- Understand or modify the categorical core
+- Write monad implementations
+- Define type system rules
+- Touch the validation framework internals
+
+**Focus on:** SKILL.md files, tests, and ensuring your skills compose correctly.
+
+## Common Mistakes to Avoid
+
+| Mistake | Fix |
+|---------|-----|
+| L2 composing another L2 | Move logic to L1 atomics, compose those |
+| Missing `required: true` on mandatory inputs | Add the field |
+| WRITE skill without `confirmation_required` | Add explicit confirmation setting |
+| Tests only check structure | Add semantic tests for your domain |
+
+## Getting Help
+
+- **Validation errors unclear?** Check the FAQ
+- **Unsure about levels?** Look at existing showcases for patterns
+- **Type system questions?** The FAQ covers polymorphism and subtyping
+
+## Review Criteria
+
+When reviewing skill contributions, maintainers check:
+
+1. **Structure valid** - SKILL.md parses and has required fields
+2. **Types defined** - All inputs/outputs have explicit types
+3. **Composition valid** - Referenced skills exist at correct levels
+4. **Tests present** - At least structure + one semantic test
+5. **Documentation** - Clear description and examples
+
+---
+
+Ready to contribute? Pick a showcase, add a skill, and open a PR!

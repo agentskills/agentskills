@@ -1,0 +1,396 @@
+---
+title: "FAQ"
+description: "Frequently asked questions about composable skills"
+---
+
+# Frequently Asked Questions
+
+Technical and practical questions answered directly.
+
+---
+
+## General
+
+### What problem does this solve?
+
+AI agents lack structure. They call tools in unpredictable orders, mix concerns in single operations, and fail in hard-to-debug ways. Composable skills provide:
+
+- **Typed contracts** between operations
+- **Validated composition** before runtime
+- **Graded safety** (READ vs WRITE) with automatic confirmations
+- **Testable units** at each abstraction level
+
+### Do I need to understand category theory?
+
+**No.** Category theory provides the foundation that makes composition reliable. You interact with SKILL.md files, not mathematical abstractions. See the [Getting Started guide](/docs/getting-started-guide) for the practical approach.
+
+### Is this only for Claude/Anthropic agents?
+
+**No.** The framework is agent-agnostic. Skills are descriptions (SKILL.md files) that any agent runtime can interpret. The showcases include MCP integration examples, but the core concepts apply to any LLM-based agent system.
+
+---
+
+## Type System
+
+### How does polymorphism work?
+
+Skills support **structural subtyping**:
+
+```yaml
+# Skill A outputs:
+outputs:
+  - name: user
+    type: object
+    properties:
+      name: string
+      email: string
+      age: integer
+
+# Skill B accepts:
+inputs:
+  - name: person
+    type: object
+    properties:
+      name: string
+      email: string
+```
+
+**Skill A can feed into Skill B** because A's output has all fields B requires (and more).
+
+**Rules:**
+- Outputs are **covariant**: can return more specific types
+- Inputs are **contravariant**: can accept more general types
+
+### Is composition checked statically or at runtime?
+
+**Both, with emphasis on static.**
+
+| Check Type | When | What |
+|------------|------|------|
+| Static | `pytest` or skill validation | Schema compatibility, reference resolution, hierarchy constraints |
+| Runtime | Agent execution | Actual data matches declared types |
+
+**Static catches:**
+- Missing required fields
+- Type mismatches between composed skills
+- Invalid `composes:` references
+- Hierarchy violations (L2 can't compose L3)
+
+**Runtime catches:**
+- Malformed data from external APIs
+- LLM outputs that don't match schema
+
+### What if an LLM produces unexpected output?
+
+Skills define expected output schemas. When the LLM generates output:
+
+1. **Output is validated** against the declared schema
+2. **Mismatches are errors**, not silent failures
+3. **Error handling** can use the `Result` monad pattern:
+
+```yaml
+outputs:
+  - name: result
+    type: Result[ReviewSummary]  # Either Ok(data) or Err(message)
+```
+
+The `retry-skill` and `fallback-skill` combinators handle these failures compositionally.
+
+---
+
+## Integration
+
+### How do skills integrate with MCP servers?
+
+Level 1 atomics can wrap MCP tools:
+
+```yaml
+name: mcp-invoke
+level: 1
+operation: READ  # or WRITE, depending on the tool
+
+inputs:
+  - name: server
+    type: string
+  - name: tool_name
+    type: string
+  - name: arguments
+    type: object
+
+outputs:
+  - name: result
+    type: object
+```
+
+The Agent Orchestrator showcase includes:
+- `mcp-discover`: List available tools
+- `mcp-invoke`: Call a specific tool
+- `mcp-map`: Apply tool across a collection
+- `mcp-reliable`: Invoke with retry/fallback
+
+### Can I use this with LangChain/AutoGPT/etc?
+
+**Yes, with adaptation.** Skills are specifications, not implementations. You can:
+
+1. **Interpret SKILL.md in your framework** - Parse the YAML, use it to structure your tool calls
+2. **Generate framework-specific code** - SKILL.md → LangChain tool definitions
+3. **Use as documentation** - Even without runtime integration, skills document your tools
+
+The value is in the structure and validation, not a specific runtime.
+
+### How do I wrap existing tools as skills?
+
+Create a Level 1 atomic:
+
+```yaml
+name: my-existing-tool
+level: 1
+operation: WRITE  # or READ
+
+# Document the existing interface
+inputs:
+  - name: arg1
+    type: string
+    required: true
+  - name: arg2
+    type: integer
+    default: 10
+
+outputs:
+  - name: result
+    type: object
+    properties:
+      status: string
+      data: array
+
+# Point to the implementation
+implementation:
+  type: script
+  path: scripts/my-tool.py
+  # Or: type: mcp, server: my-server, tool: my-tool
+```
+
+Now `my-existing-tool` can compose with any other skill.
+
+---
+
+## Safety & Effects
+
+### How does the safety classification work?
+
+Skills declare their effect level:
+
+| Level | Meaning | Confirmation |
+|-------|---------|--------------|
+| `READ` | Only reads data, no side effects | None |
+| `WRITE` | Modifies external state | Required |
+| `WORKFLOW` | Multi-step with mixed effects | At WRITE boundaries |
+
+**Composition rule:** The composed skill has the maximum effect of its parts.
+
+```yaml
+email-read:      READ
+email-classify:  READ
+email-send:      WRITE
+
+email-workflow:
+  composes: [email-read, email-classify, email-send]
+  # → Automatically classified as WRITE
+```
+
+### What counts as a WRITE operation?
+
+Any operation that:
+- Sends data externally (email, API call, webhook)
+- Modifies files or databases
+- Creates resources (calendar events, tasks, comments)
+- Deletes anything
+
+**Rule of thumb:** If running it twice would be different from running it once, it's WRITE.
+
+### Can I bypass confirmations for trusted workflows?
+
+**Yes, with explicit configuration:**
+
+```yaml
+name: automated-backup
+operation: WRITE
+confirmation_required: false  # Explicit opt-out
+safety_note: "Runs on schedule, no user present"
+```
+
+This is for automation scenarios. The default is safe.
+
+---
+
+## Architecture
+
+### Why three levels (L1, L2, L3)?
+
+Each level serves a purpose:
+
+| Level | Purpose | Typical Size |
+|-------|---------|--------------|
+| L1 (Atomic) | Single responsibility, wraps primitives | 20-50 lines |
+| L2 (Composite) | Business logic, combines atomics | 30-80 lines |
+| L3 (Workflow) | State machines, orchestrates composites | 50-150 lines |
+
+**Key constraint:** Each level only composes from lower levels.
+
+This prevents circular dependencies and makes the hierarchy testable.
+
+### Can L2 skills compose other L2 skills?
+
+**By default, no.** The hierarchy is strict:
+- L3 composes L2 (and optionally L1)
+- L2 composes L1 only
+- L1 composes nothing (wraps primitives)
+
+**Exception:** You can create "horizontal composition" explicitly:
+
+```yaml
+name: combined-research
+level: 2
+composes:
+  - web-research      # L2
+  - internal-search   # L2
+allow_same_level: true  # Explicit override
+```
+
+This is discouraged but available when needed.
+
+### How do state machines work in workflows?
+
+Level 3 workflows can declare states and transitions:
+
+```yaml
+name: pr-review-complete
+level: 3
+operation: WORKFLOW
+
+states:
+  - INITIAL_REVIEW
+  - AWAITING_CHANGES
+  - RE_REVIEWING
+  - APPROVED
+  - REJECTED
+
+initial_state: INITIAL_REVIEW
+
+transitions:
+  - from: INITIAL_REVIEW
+    to: AWAITING_CHANGES
+    when: REQUEST_CHANGES
+    action: pr-respond
+  - from: AWAITING_CHANGES
+    to: RE_REVIEWING
+    when: CHANGES_PUSHED
+    action: pr-review
+  - from: RE_REVIEWING
+    to: APPROVED
+    when: ALL_RESOLVED
+```
+
+The agent uses this to determine valid next actions.
+
+---
+
+## Development
+
+### How do I validate my skills?
+
+Run the test suite:
+
+```bash
+# Validate all skills in a showcase
+pytest examples/_showcase/agent-orchestrator/tests/ -v
+
+# Validate a specific skill
+pytest tests/test_skill_validation.py -k "pr-read"
+```
+
+Tests check:
+- SKILL.md structural validity
+- Required fields present
+- `composes:` references resolve
+- Type compatibility
+- Hierarchy constraints
+
+### What's the recommended development workflow?
+
+1. **Start with L1 atomics** for your domain primitives
+2. **Compose into L2** for business logic
+3. **Build L3 workflows** for complex processes
+4. **Test at each level** before composing higher
+
+**Don't start with L3.** Build bottom-up.
+
+### How do I debug composition failures?
+
+Validation errors show exact issues:
+
+```
+FAILED: pr-review composes pr-read
+  - pr-read.outputs.pr_id: integer
+  - pr-diff-read.inputs.pr_id: string
+  Type mismatch: integer ≠ string
+```
+
+For runtime issues, enable skill-level tracing to see which skill received what input.
+
+---
+
+## Comparison
+
+### How is this different from function composition?
+
+Skills are functions, but with:
+- **Declared types** (JSON Schema, not language types)
+- **Effect tracking** (READ/WRITE/WORKFLOW)
+- **Documentation** embedded in the definition
+- **Agent-readable** metadata
+
+Regular functions: `f(g(x))`
+Skills: Composition with validation, safety, and observability.
+
+### How does this compare to workflow engines (Temporal, Airflow)?
+
+| Feature | Workflow Engines | Composable Skills |
+|---------|------------------|-------------------|
+| Focus | Infrastructure orchestration | Agent skill organisation |
+| Types | Language-native | JSON Schema |
+| Safety | Retry/saga patterns | Effect classification |
+| Users | Backend engineers | AI developers |
+| Runtime | Dedicated workers | Agent-integrated |
+
+**Complementary:** Skills can invoke workflow engines as L1 atomics.
+
+### Is this "over-engineering" for simple agents?
+
+For a single-purpose agent with 3 tools? Probably.
+
+For agents that:
+- Compose 10+ operations
+- Handle errors gracefully
+- Need user confirmation for writes
+- Must be testable and debuggable
+
+...structured composition pays off quickly.
+
+---
+
+## Getting Help
+
+### Where do I report issues?
+
+GitHub Issues on the agentskills repository.
+
+### How do I contribute skills?
+
+1. Follow the SKILL.md specification
+2. Add tests for your skills
+3. Open a PR with your showcase or addition
+
+### Is there a community?
+
+Growing. Check the repository discussions for conversations about skill design patterns.

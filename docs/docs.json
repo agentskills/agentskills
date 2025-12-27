@@ -17,9 +17,23 @@
   "navigation": {
     "pages": [
       "home",
+      "quickstart",
       "what-are-skills",
+      "getting-started-guide",
+      "value-demonstrations",
+      "two-tier-design",
+      "type-system",
+      "confirmation-system",
+      "credential-management",
+      "testing-guide",
+      "mcp-interop",
       "specification",
-      "integrate-skills"
+      "architecture",
+      "skill-crystallisation",
+      "integrate-skills",
+      "contributing",
+      "anti-patterns",
+      "faq"
     ]
   },
   "contextual": {

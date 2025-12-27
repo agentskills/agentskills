@@ -1,0 +1,801 @@
+---
+title: "Skill Crystallisation"
+description: "Evolving natural language skills into deterministic code implementations"
+---
+
+# Skill Crystallisation
+
+**Crystallisation** is the process of transforming natural language skills into coded implementations as their scope becomes clear and edge cases are identified.
+
+<Info>
+Skills don't have to stay as prompts forever. As you learn what works, crystallise them into code for determinism, testability, and performance.
+</Info>
+
+## The Crystallisation Spectrum
+
+Skills exist on a spectrum from fully natural language to fully coded:
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                     THE CRYSTALLISATION SPECTRUM                         │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  FLUID                                                      CRYSTALLISED │
+│  (Natural Language)                                              (Code)  │
+│                                                                          │
+│  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐          │
+│  │  Pure    │───▶│  Hybrid  │───▶│  Guided  │───▶│  Pure    │          │
+│  │  Prompt  │    │  Prompt  │    │   Code   │    │   Code   │          │
+│  └──────────┘    └──────────┘    └──────────┘    └──────────┘          │
+│                                                                          │
+│  • Exploratory   • Structured     • Code with    • Deterministic        │
+│  • Flexible      • Validated      • LLM fallback • Testable             │
+│  • Adaptable     • Constrained    • Best of both • Performant           │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Stage 1: Pure Prompt (Fluid)
+
+```yaml
+# Initial exploration - maximum flexibility
+name: extract-invoice-data
+type: atomic
+classification: READ
+
+prompt: |
+  Extract invoice data from the provided document.
+  Return structured JSON with vendor, amount, date, and line items.
+```
+
+### Stage 2: Hybrid Prompt (Structured)
+
+```yaml
+# Learned patterns - add constraints
+name: extract-invoice-data
+type: atomic
+classification: READ
+
+input_schema:
+  type: object
+  properties:
+    document_text:
+      type: string
+    document_type:
+      enum: [pdf_text, email, image_ocr]
+  required: [document_text]
+
+output_schema:
+  type: object
+  properties:
+    vendor: { type: string }
+    amount: { type: number }
+    currency: { type: string, pattern: "^[A-Z]{3}$" }
+    date: { type: string, format: date }
+    line_items:
+      type: array
+      items:
+        type: object
+        properties:
+          description: { type: string }
+          quantity: { type: number }
+          unit_price: { type: number }
+
+prompt: |
+  Extract invoice data from: {document_text}
+  Document type: {document_type}
+
+  Rules learned from production:
+  - Amounts should exclude VAT unless explicitly stated
+  - Dates should be ISO 8601 format
+  - Currency codes must be uppercase ISO 4217
+```
+
+### Stage 3: Guided Code (Hybrid)
+
+```python
+# Code handles known patterns, LLM handles edge cases
+# skill: extract-invoice-data
+# classification: READ
+
+import re
+from datetime import datetime
+from skills import skill, llm_fallback
+
+@skill(classification="READ")
+def extract_invoice_data(document_text: str, document_type: str) -> dict:
+    """Extract invoice data - crystallised from 6 months of production use."""
+
+    # Known vendor patterns (crystallised knowledge)
+    vendor_patterns = {
+        r"Amazon Web Services": "AWS",
+        r"Google Cloud Platform": "GCP",
+        r"Microsoft Azure": "Azure",
+        # ... 50+ patterns learned from production
+    }
+
+    # Try deterministic extraction first
+    result = {
+        "vendor": extract_vendor(document_text, vendor_patterns),
+        "amount": extract_amount(document_text),
+        "currency": extract_currency(document_text),
+        "date": extract_date(document_text),
+        "line_items": extract_line_items(document_text),
+    }
+
+    # Validate completeness
+    missing = [k for k, v in result.items() if v is None]
+
+    if missing:
+        # Fall back to LLM for edge cases
+        return llm_fallback(
+            document_text=document_text,
+            partial_result=result,
+            missing_fields=missing,
+            prompt="Complete the missing invoice fields: {missing_fields}"
+        )
+
+    return result
+
+def extract_amount(text: str) -> float | None:
+    """Crystallised amount extraction - handles 95% of cases."""
+    patterns = [
+        r"Total:?\s*[\$£€]?([\d,]+\.?\d*)",
+        r"Amount Due:?\s*[\$£€]?([\d,]+\.?\d*)",
+        r"Grand Total:?\s*[\$£€]?([\d,]+\.?\d*)",
+    ]
+    for pattern in patterns:
+        if match := re.search(pattern, text, re.IGNORECASE):
+            return float(match.group(1).replace(",", ""))
+    return None
+```
+
+### Stage 4: Pure Code (Crystallised)
+
+```python
+# Fully deterministic - no LLM required
+# skill: extract-aws-invoice
+# classification: READ
+# crystallised_from: extract-invoice-data
+# crystallisation_date: 2025-03-15
+
+from dataclasses import dataclass
+from decimal import Decimal
+import re
+
+@dataclass
+class AWSInvoice:
+    account_id: str
+    billing_period: str
+    total_amount: Decimal
+    currency: str
+    services: list[dict]
+
+@skill(classification="READ", deterministic=True)
+def extract_aws_invoice(document_text: str) -> AWSInvoice:
+    """
+    100% deterministic AWS invoice extraction.
+
+    Crystallised after processing 10,000+ AWS invoices with:
+    - 99.7% accuracy on known formats
+    - 0 LLM calls required
+    - 50ms average execution (vs 2s with LLM)
+    """
+
+    account_id = re.search(r"Account:\s*(\d{12})", document_text).group(1)
+    billing_period = re.search(r"Billing Period:\s*(.+)", document_text).group(1)
+
+    # Parse known AWS format
+    total_match = re.search(r"Total:\s*\$?([\d,]+\.\d{2})", document_text)
+    total_amount = Decimal(total_match.group(1).replace(",", ""))
+
+    # Extract service breakdown
+    services = parse_aws_service_lines(document_text)
+
+    return AWSInvoice(
+        account_id=account_id,
+        billing_period=billing_period,
+        total_amount=total_amount,
+        currency="USD",
+        services=services,
+    )
+```
+
+## When to Crystallise
+
+Crystallisation is appropriate when:
+
+| Criterion | Threshold | Why It Matters |
+|-----------|-----------|----------------|
+| **Volume** | 100+ executions | Enough data to identify patterns |
+| **Stability** | <5% prompt changes/month | Requirements have settled |
+| **Edge cases** | 95%+ documented | Know what to handle |
+| **Error rate** | <2% with current prompt | Prompt is already reliable |
+| **Performance need** | Latency matters | Code is 10-100x faster |
+
+### Crystallisation Decision Matrix
+
+```
+                    High Volume
+                         │
+                         │
+    ┌────────────────────┼────────────────────┐
+    │                    │                    │
+    │   MONITOR          │   CRYSTALLISE      │
+    │   Keep as prompt,  │   Convert to code  │
+    │   track patterns   │   for performance  │
+    │                    │                    │
+────┼────────────────────┼────────────────────┼────
+    │                    │                    │   High
+Low │   KEEP FLUID       │   GUIDED CODE      │   Stability
+Stability               │   Code + LLM       │
+    │   Too early to     │   fallback         │
+    │   crystallise      │                    │
+    │                    │                    │
+    └────────────────────┼────────────────────┘
+                         │
+                    Low Volume
+```
+
+## The Crystallisation Process
+
+### Step 1: Gather Evidence
+
+```python
+# Track skill execution patterns
+class CrystallisationMetrics:
+    def __init__(self, skill_name: str):
+        self.skill_name = skill_name
+        self.executions = []
+        self.input_patterns = Counter()
+        self.output_patterns = Counter()
+        self.edge_cases = []
+        self.failures = []
+
+    def record_execution(self, input_data: dict, output_data: dict, success: bool):
+        self.executions.append({
+            "timestamp": datetime.now(),
+            "input_hash": self._pattern_hash(input_data),
+            "output_hash": self._pattern_hash(output_data),
+            "success": success,
+        })
+
+        # Track patterns
+        self.input_patterns[self._pattern_hash(input_data)] += 1
+        self.output_patterns[self._pattern_hash(output_data)] += 1
+
+    def crystallisation_readiness(self) -> dict:
+        """Assess if skill is ready for crystallisation."""
+        total = len(self.executions)
+        if total < 100:
+            return {"ready": False, "reason": f"Only {total} executions, need 100+"}
+
+        # Check pattern concentration
+        top_5_patterns = sum(c for _, c in self.input_patterns.most_common(5))
+        pattern_coverage = top_5_patterns / total
+
+        # Check failure rate
+        failures = sum(1 for e in self.executions if not e["success"])
+        failure_rate = failures / total
+
+        return {
+            "ready": pattern_coverage > 0.8 and failure_rate < 0.02,
+            "executions": total,
+            "pattern_coverage": pattern_coverage,
+            "failure_rate": failure_rate,
+            "top_patterns": self.input_patterns.most_common(10),
+            "edge_cases": len(self.edge_cases),
+        }
+```
+
+### Step 2: Identify Core Logic
+
+Extract the deterministic parts from successful executions:
+
+```python
+# Analyze what the LLM consistently does
+def analyze_skill_outputs(skill_name: str, executions: list[dict]) -> dict:
+    """Find patterns in successful skill outputs."""
+
+    patterns = {
+        "transformations": [],  # Input→Output mappings
+        "validations": [],      # Rules that are always applied
+        "edge_cases": [],       # Exceptions that needed special handling
+    }
+
+    for execution in executions:
+        if execution["success"]:
+            # What transformation was applied?
+            patterns["transformations"].append(
+                diff_transform(execution["input"], execution["output"])
+            )
+
+    # Find common transformations
+    common = find_common_patterns(patterns["transformations"])
+
+    return {
+        "crystallisable": common,
+        "requires_llm": patterns["edge_cases"],
+        "coverage": len(common) / len(executions),
+    }
+```
+
+### Step 3: Write Tests First
+
+```python
+# tests/test_crystallised_invoice.py
+import pytest
+from skills.crystallised import extract_aws_invoice
+
+class TestAWSInvoiceCrystallisation:
+    """Tests derived from production execution history."""
+
+    # These test cases come from actual production data
+    @pytest.mark.parametrize("input_file,expected", [
+        ("fixtures/aws_invoice_standard.txt", {
+            "account_id": "123456789012",
+            "total_amount": Decimal("1234.56"),
+        }),
+        ("fixtures/aws_invoice_credits.txt", {
+            "account_id": "123456789012",
+            "total_amount": Decimal("890.12"),  # After credits
+        }),
+        ("fixtures/aws_invoice_multi_region.txt", {
+            "account_id": "123456789012",
+            "total_amount": Decimal("5678.90"),
+        }),
+    ])
+    def test_known_formats(self, input_file, expected):
+        with open(input_file) as f:
+            result = extract_aws_invoice(f.read())
+
+        assert result.account_id == expected["account_id"]
+        assert result.total_amount == expected["total_amount"]
+
+    def test_crystallisation_coverage(self):
+        """Verify crystallised code handles same cases as prompt version."""
+        # Load production execution history
+        executions = load_production_executions("extract-invoice-data")
+        aws_executions = [e for e in executions if "AWS" in e["input"]]
+
+        matches = 0
+        for execution in aws_executions:
+            crystallised_result = extract_aws_invoice(execution["input"])
+            prompt_result = execution["output"]
+
+            if crystallised_result == prompt_result:
+                matches += 1
+
+        coverage = matches / len(aws_executions)
+        assert coverage >= 0.95, f"Only {coverage:.1%} coverage, need 95%+"
+```
+
+### Step 4: Implement with Fallback
+
+```python
+# skills/crystallised/invoice.py
+from skills import skill, llm_fallback
+from skills.original import extract_invoice_data as prompt_version
+
+@skill(classification="READ")
+def extract_invoice_data(document_text: str, document_type: str) -> dict:
+    """
+    Crystallised invoice extraction with LLM fallback.
+
+    Crystallisation history:
+    - v1 (2025-01): Pure prompt
+    - v2 (2025-03): Added schema validation
+    - v3 (2025-06): Crystallised vendor extraction
+    - v4 (2025-09): Crystallised amount/date extraction
+    - v5 (2025-12): 95% crystallised, LLM for edge cases only
+    """
+
+    # Try crystallised extraction
+    try:
+        result = crystallised_extract(document_text, document_type)
+
+        # Validate result completeness
+        if is_complete(result) and passes_sanity_checks(result):
+            return result
+
+    except CrystallisationError as e:
+        # Log for future crystallisation improvements
+        log_crystallisation_miss(document_text, e)
+
+    # Fall back to prompt version for edge cases
+    return prompt_version(document_text, document_type)
+```
+
+## Level Transformation
+
+Crystallisation can transform skill levels:
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      LEVEL TRANSFORMATION                                │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  L1 (Atomic Prompt)  ─────crystallise────▶  Script (No LLM)             │
+│                                                                          │
+│  Example:                                                                │
+│  "Format date to ISO 8601"  ──▶  datetime.fromisoformat(date).isoformat()│
+│                                                                          │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  L2 (Composite)  ─────crystallise────▶  L1 (Atomic)                     │
+│                                                                          │
+│  Example:                                                                │
+│  compose(                         @skill(classification="READ")          │
+│    fetch_webpage,        ──▶      def extract_price(url: str) -> float: │
+│    extract_text,                      html = requests.get(url).text     │
+│    identify_price                     soup = BeautifulSoup(html)        │
+│  )                                    return parse_price(soup)          │
+│                                                                          │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  L3 (Workflow)  ─────crystallise────▶  L2 (Composite)                   │
+│                                                                          │
+│  Example:                                                                │
+│  workflow(                        compose(                               │
+│    gather_requirements,  ──▶        parse_requirements,                 │
+│    design_solution,                 apply_template,                     │
+│    implement_code,                  validate_output                     │
+│    test_and_iterate                )                                    │
+│  )                                                                       │
+│                                                                          │
+│  (Only possible when LLM reasoning is not required)                     │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### L1 → Script Example
+
+```yaml
+# BEFORE: L1 Atomic Skill
+name: format-phone-number
+type: atomic
+classification: READ
+
+prompt: |
+  Format the phone number to E.164 international format.
+  Input: {phone_number}
+  Country: {country_code}
+```
+
+```python
+# AFTER: Pure Python Script (no LLM)
+import phonenumbers
+
+def format_phone_number(phone_number: str, country_code: str = "GB") -> str:
+    """
+    Crystallised from format-phone-number skill.
+
+    Production stats before crystallisation:
+    - 50,000 executions
+    - 99.8% followed E.164 format
+    - 0.2% edge cases now handled by phonenumbers library
+
+    Performance improvement:
+    - Before: 800ms (LLM call)
+    - After: 2ms (pure Python)
+    """
+    parsed = phonenumbers.parse(phone_number, country_code)
+    return phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
+```
+
+### L2 → L1 Example
+
+```yaml
+# BEFORE: L2 Composite Skill
+name: customer-health-score
+type: composite
+classification: READ
+
+compose:
+  - skill: fetch-customer-data
+  - skill: analyze-engagement-metrics
+  - skill: calculate-health-score
+
+# Each sub-skill required LLM reasoning
+```
+
+```python
+# AFTER: L1 Atomic Skill (deterministic)
+@skill(classification="READ", deterministic=True)
+def customer_health_score(customer_id: str) -> dict:
+    """
+    Crystallised from customer-health-score composite.
+
+    After analyzing 10,000 health score calculations:
+    - Identified 5 key metrics that drive 95% of scores
+    - Formula crystallised from LLM patterns
+    - Sub-skills no longer need LLM reasoning
+    """
+    # Fetch data (was: fetch-customer-data skill)
+    customer = db.customers.get(customer_id)
+
+    # Calculate metrics (was: analyze-engagement-metrics skill)
+    metrics = {
+        "login_frequency": calculate_login_frequency(customer),
+        "feature_adoption": calculate_feature_adoption(customer),
+        "support_tickets": count_recent_tickets(customer),
+        "nps_score": get_latest_nps(customer),
+        "contract_value": customer.contract_value,
+    }
+
+    # Compute score (was: calculate-health-score skill)
+    # Formula crystallised from LLM patterns
+    score = (
+        metrics["login_frequency"] * 0.25 +
+        metrics["feature_adoption"] * 0.30 +
+        (100 - metrics["support_tickets"] * 5) * 0.15 +
+        metrics["nps_score"] * 0.20 +
+        min(metrics["contract_value"] / 10000, 10) * 0.10
+    )
+
+    return {
+        "customer_id": customer_id,
+        "health_score": round(score, 1),
+        "metrics": metrics,
+        "risk_level": "low" if score > 70 else "medium" if score > 40 else "high",
+    }
+```
+
+## Crystallisation Metadata
+
+Track crystallisation history in skill definitions:
+
+```yaml
+# Crystallised skill with full history
+name: extract-aws-invoice
+type: atomic
+classification: READ
+deterministic: true
+
+crystallisation:
+  status: crystallised
+  crystallised_from: extract-invoice-data
+  crystallisation_date: 2025-03-15
+
+  history:
+    - version: 1
+      date: 2024-09-01
+      type: pure_prompt
+      accuracy: 0.85
+
+    - version: 2
+      date: 2024-11-15
+      type: hybrid_prompt
+      changes: "Added schema validation"
+      accuracy: 0.92
+
+    - version: 3
+      date: 2025-01-10
+      type: guided_code
+      changes: "Crystallised vendor and amount extraction"
+      accuracy: 0.97
+
+    - version: 4
+      date: 2025-03-15
+      type: pure_code
+      changes: "Fully crystallised for AWS format"
+      accuracy: 0.997
+
+  metrics:
+    total_executions: 15000
+    llm_calls_saved: 14955  # 99.7% handled by code
+    avg_latency_before: 1800ms
+    avg_latency_after: 45ms
+    cost_savings: "$2,991/month"
+
+  edge_cases_handled:
+    - "Multi-currency invoices"
+    - "Credit adjustments"
+    - "Reserved instance discounts"
+    - "Consolidated billing"
+
+  known_limitations:
+    - "New service types may need prompt fallback"
+    - "Non-English invoices not supported"
+```
+
+## Maintaining Hybrid Systems
+
+Most production systems will have a mix of fluid and crystallised skills:
+
+```python
+# skills/router.py
+class SkillRouter:
+    """Routes execution between crystallised and prompt versions."""
+
+    def __init__(self):
+        self.crystallised_skills = load_crystallised_skills()
+        self.prompt_skills = load_prompt_skills()
+        self.metrics = CrystallisationMetrics()
+
+    def execute(self, skill_name: str, input_data: dict) -> dict:
+        # Check if crystallised version exists and applies
+        if skill_name in self.crystallised_skills:
+            crystallised = self.crystallised_skills[skill_name]
+
+            if crystallised.can_handle(input_data):
+                result = crystallised.execute(input_data)
+                self.metrics.record_crystallised_hit(skill_name)
+                return result
+
+        # Fall back to prompt version
+        prompt_skill = self.prompt_skills[skill_name]
+        result = prompt_skill.execute(input_data)
+
+        # Record for future crystallisation
+        self.metrics.record_prompt_execution(skill_name, input_data, result)
+
+        return result
+
+    def get_crystallisation_candidates(self) -> list[dict]:
+        """Identify skills ready for crystallisation."""
+        candidates = []
+
+        for skill_name, metrics in self.metrics.skill_metrics.items():
+            readiness = metrics.crystallisation_readiness()
+            if readiness["ready"]:
+                candidates.append({
+                    "skill": skill_name,
+                    "executions": readiness["executions"],
+                    "pattern_coverage": readiness["pattern_coverage"],
+                    "estimated_savings": self._estimate_savings(skill_name),
+                })
+
+        return sorted(candidates, key=lambda x: x["estimated_savings"], reverse=True)
+```
+
+## Crystallisation Anti-Patterns
+
+<Warning>
+Avoid these common crystallisation mistakes.
+</Warning>
+
+### ❌ Premature Crystallisation
+
+```python
+# BAD: Crystallising after 50 executions
+# Not enough data to identify edge cases
+
+@skill(deterministic=True)  # Too early!
+def process_invoice(text: str) -> dict:
+    # Only handles the 3 invoice formats seen so far
+    # Will fail on the 4th format
+    ...
+```
+
+### ❌ All-or-Nothing Crystallisation
+
+```python
+# BAD: Trying to crystallise everything at once
+def fully_crystallised_workflow(data):
+    # 500 lines of brittle code
+    # No fallback for edge cases
+    # Fails catastrophically on unexpected input
+    ...
+```
+
+### ❌ Ignoring the Tail
+
+```python
+# BAD: Only crystallising the common cases
+@skill(deterministic=True)
+def extract_amount(text: str) -> float:
+    # Handles 80% of cases perfectly
+    # Silently returns wrong values for 20%
+    return regex_extract(text)  # No fallback!
+```
+
+### ✅ Correct Approach
+
+```python
+# GOOD: Gradual crystallisation with fallback
+@skill(classification="READ")
+def extract_amount(text: str) -> float:
+    """Crystallised with LLM fallback for edge cases."""
+
+    # Try crystallised patterns (handles 95% of cases)
+    for pattern in CRYSTALLISED_PATTERNS:
+        if match := pattern.search(text):
+            return parse_amount(match)
+
+    # Log miss for future crystallisation
+    log_crystallisation_miss("extract_amount", text)
+
+    # Fall back to LLM for remaining 5%
+    return llm_extract_amount(text)
+```
+
+## Measuring Crystallisation Success
+
+Track these metrics to evaluate crystallisation effectiveness:
+
+```python
+@dataclass
+class CrystallisationReport:
+    skill_name: str
+    period: str  # e.g., "2025-Q1"
+
+    # Coverage
+    total_executions: int
+    crystallised_hits: int  # Handled by code
+    llm_fallbacks: int      # Needed LLM
+
+    # Quality
+    accuracy_crystallised: float  # When code handled it
+    accuracy_llm: float           # When LLM handled it
+
+    # Performance
+    avg_latency_crystallised_ms: float
+    avg_latency_llm_ms: float
+
+    # Cost
+    llm_cost_before: Decimal
+    llm_cost_after: Decimal
+
+    @property
+    def crystallisation_rate(self) -> float:
+        return self.crystallised_hits / self.total_executions
+
+    @property
+    def latency_improvement(self) -> float:
+        return self.avg_latency_llm_ms / self.avg_latency_crystallised_ms
+
+    @property
+    def cost_savings(self) -> Decimal:
+        return self.llm_cost_before - self.llm_cost_after
+
+    def summary(self) -> str:
+        return f"""
+Crystallisation Report: {self.skill_name} ({self.period})
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Coverage:    {self.crystallisation_rate:.1%} handled by code
+Latency:     {self.latency_improvement:.0f}x faster
+Cost:        ${self.cost_savings:,.2f} saved
+Accuracy:    {self.accuracy_crystallised:.1%} (code) vs {self.accuracy_llm:.1%} (LLM)
+"""
+```
+
+## When NOT to Crystallise
+
+Some skills should remain as prompts:
+
+| Skill Type | Why Keep as Prompt |
+|------------|-------------------|
+| **Creative tasks** | Novelty is the point |
+| **Evolving domains** | Rules change frequently |
+| **Low volume** | Not worth the engineering effort |
+| **High variance** | No consistent patterns to extract |
+| **Judgment calls** | Requires contextual reasoning |
+
+```yaml
+# This skill should stay as a prompt
+name: write-marketing-copy
+type: atomic
+classification: WRITE
+
+crystallisation:
+  status: not_recommended
+  reason: "Creative task with high variance - crystallisation would reduce quality"
+
+  evidence:
+    - "Output diversity is a feature, not a bug"
+    - "Brand voice evolves quarterly"
+    - "A/B tests show LLM copy outperforms templates"
+```
+
+## Summary
+
+Skill crystallisation is the natural evolution of mature skills:
+
+1. **Start fluid** - Explore with natural language prompts
+2. **Gather evidence** - Track patterns, edge cases, failures
+3. **Crystallise gradually** - Code the deterministic parts first
+4. **Keep fallbacks** - LLM handles what code cannot
+5. **Measure success** - Track coverage, latency, cost savings
+
+The goal is not to eliminate LLMs, but to use them where they add value while crystallising the predictable parts into reliable, fast, testable code.

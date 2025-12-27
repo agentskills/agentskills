@@ -1,0 +1,467 @@
+---
+title: "Testing and Validation"
+description: "How to test skills, compositions, and integrate with CI/CD"
+---
+
+# Testing and Validation Guide
+
+This guide covers how to test skills at every level, validate compositions, and integrate with CI/CD pipelines.
+
+## Testing Pyramid
+
+```
+        /\
+       /  \     Integration Tests (workflows)
+      /----\
+     /      \   Composition Tests (L2+)
+    /--------\
+   /          \ Unit Tests (L1 atomics)
+  --------------
+     Foundation
+```
+
+| Level | What to Test | How Many |
+|-------|--------------|----------|
+| Unit | Each L1 skill in isolation | Many (~70%) |
+| Composition | L2 skill compositions | Medium (~20%) |
+| Integration | Full L3 workflows | Few (~10%) |
+
+## Unit Testing L1 Skills
+
+Each L1 atomic skill should have isolated tests:
+
+```python
+# tests/atomic/test_weather_fetch.py
+import pytest
+from pathlib import Path
+import yaml
+
+class TestWeatherFetch:
+    @pytest.fixture
+    def skill(self):
+        skill_path = Path(__file__).parent.parent.parent / "_atomic/weather-fetch/SKILL.md"
+        with open(skill_path) as f:
+            return yaml.safe_load(f)
+
+    def test_skill_has_required_fields(self, skill):
+        """Every skill must have name, level, and operation."""
+        assert skill["name"] == "weather-fetch"
+        assert skill["level"] == 1
+        assert skill["operation"] == "READ"
+
+    def test_inputs_are_typed(self, skill):
+        """All inputs must have type declarations."""
+        for inp in skill["inputs"]:
+            assert "type" in inp, f"Input {inp['name']} missing type"
+            assert "name" in inp
+
+    def test_outputs_are_typed(self, skill):
+        """All outputs must have type declarations."""
+        for out in skill["outputs"]:
+            assert "type" in out, f"Output {out['name']} missing type"
+
+    def test_has_examples(self, skill):
+        """Skills should have at least one example."""
+        assert "examples" in skill
+        assert len(skill["examples"]) >= 1
+
+    def test_example_matches_schema(self, skill):
+        """Examples should match input/output schemas."""
+        for example in skill["examples"]:
+            # Check all required inputs are in example
+            for inp in skill["inputs"]:
+                if inp.get("required", False):
+                    assert inp["name"] in example["input"]
+```
+
+## Composition Testing L2 Skills
+
+Test that compositions resolve correctly:
+
+```python
+# tests/composite/test_weather_report.py
+import pytest
+from skills_validator import SkillLoader, CompositionValidator
+
+class TestWeatherReport:
+    @pytest.fixture
+    def loader(self):
+        return SkillLoader("examples/_showcase/trip-optimizer/")
+
+    def test_all_composed_skills_exist(self, loader):
+        """All skills in composes: must exist."""
+        skill = loader.load("weather-report")
+
+        for ref in skill.get("composes", []):
+            assert loader.skill_exists(ref), f"Missing skill: {ref}"
+
+    def test_level_hierarchy_respected(self, loader):
+        """L2 can only compose L1."""
+        skill = loader.load("weather-report")
+        assert skill["level"] == 2
+
+        for ref in skill.get("composes", []):
+            composed = loader.load(ref)
+            assert composed["level"] < skill["level"], \
+                f"{ref} is L{composed['level']}, must be < L{skill['level']}"
+
+    def test_type_flow_valid(self, loader):
+        """Output types must satisfy next skill's input types."""
+        validator = CompositionValidator(loader)
+        skill = loader.load("weather-report")
+
+        result = validator.validate_type_flow(skill)
+        assert result.valid, f"Type flow error: {result.errors}"
+
+    def test_effect_propagation(self, loader):
+        """Declared effect must be max of composed effects."""
+        validator = CompositionValidator(loader)
+        skill = loader.load("weather-report")
+
+        computed_effect = validator.compute_max_effect(skill)
+        assert skill["operation"] == computed_effect, \
+            f"Declared {skill['operation']} but should be {computed_effect}"
+```
+
+## Integration Testing L3 Workflows
+
+Test end-to-end workflows:
+
+```python
+# tests/integration/test_pr_review_workflow.py
+import pytest
+from skills_runner import SkillRunner
+from unittest.mock import Mock, patch
+
+class TestPRReviewWorkflow:
+    @pytest.fixture
+    def runner(self):
+        return SkillRunner(
+            confirmation_handler=Mock(return_value=True)
+        )
+
+    def test_complete_workflow_execution(self, runner):
+        """Full workflow should execute all steps."""
+        with patch('mcp_client.github') as mock_github:
+            mock_github.read_pr.return_value = {
+                "title": "Fix bug",
+                "diff": "- old\n+ new"
+            }
+
+            result = runner.execute(
+                "pr-review-complete",
+                {"pr_number": 42, "repo": "owner/repo"}
+            )
+
+            assert result["status"] == "completed"
+            assert "review_summary" in result
+
+    def test_write_operations_confirm(self, runner):
+        """WRITE operations should request confirmation."""
+        handler = Mock(return_value=True)
+        runner = SkillRunner(confirmation_handler=handler)
+
+        runner.execute("pr-comment-post", {"pr": 42, "body": "LGTM"})
+
+        handler.request_confirmation.assert_called_once()
+
+    def test_workflow_stops_on_denied_confirmation(self, runner):
+        """Denied confirmation should halt workflow."""
+        handler = Mock(return_value=False)
+        runner = SkillRunner(confirmation_handler=handler)
+
+        with pytest.raises(ConfirmationDeniedError):
+            runner.execute("pr-merge", {"pr": 42})
+
+    def test_workflow_state_transitions(self, runner):
+        """Workflow should follow state machine."""
+        result = runner.execute(
+            "pr-review-complete",
+            {"pr_number": 42}
+        )
+
+        # Check state progression
+        assert result["states_visited"] == [
+            "INITIAL_REVIEW",
+            "AWAITING_CHANGES",
+            "APPROVED"
+        ]
+```
+
+## Property-Based Testing
+
+Use Hypothesis to find edge cases in composition:
+
+```python
+# tests/properties/test_composition_laws.py
+from hypothesis import given, strategies as st
+from skills_validator import compose_skills, identity_skill
+
+@given(st.sampled_from(all_l1_skills))
+def test_identity_composition(skill):
+    """Identity law: id ∘ f = f = f ∘ id"""
+    left = compose_skills(identity_skill, skill)
+    right = compose_skills(skill, identity_skill)
+
+    assert equivalent(left, skill)
+    assert equivalent(right, skill)
+
+@given(
+    st.sampled_from(all_l1_skills),
+    st.sampled_from(all_l1_skills),
+    st.sampled_from(all_l1_skills)
+)
+def test_associativity(f, g, h):
+    """Associativity: (f ∘ g) ∘ h = f ∘ (g ∘ h)"""
+    if not types_compatible(f, g) or not types_compatible(g, h):
+        pytest.skip("Incompatible types")
+
+    left = compose_skills(compose_skills(f, g), h)
+    right = compose_skills(f, compose_skills(g, h))
+
+    assert equivalent(left, right)
+
+@given(st.sampled_from(all_skills))
+def test_effect_is_max(skill):
+    """Effect propagation: composed = max(components)"""
+    if "composes" not in skill:
+        pytest.skip("Not a composition")
+
+    computed = max(
+        get_effect_level(ref)
+        for ref in skill["composes"]
+    )
+    declared = get_effect_level(skill)
+
+    assert declared >= computed
+```
+
+## Validation Scripts
+
+### Quick Validation
+
+```bash
+# Validate single skill
+python scripts/validate-skills.py path/to/skill/
+
+# Validate all skills in showcase
+python scripts/validate-skills.py examples/_showcase/agent-orchestrator/
+
+# Type safety validation
+python scripts/validate-type-safety.py examples/_showcase/
+```
+
+### Full Test Suite
+
+```bash
+# Run all tests (unit + composition + integration)
+pytest tests/ -v
+
+# Run with coverage
+pytest tests/ --cov=skills --cov-report=html
+
+# Run specific level
+pytest tests/atomic/ -v        # Unit tests only
+pytest tests/composite/ -v     # Composition tests only
+pytest tests/integration/ -v   # Integration tests only
+```
+
+### Continuous Validation
+
+```bash
+# Full validation suite (same as CI)
+python scripts/validate-all.py
+
+# Quick mode (skip benchmarks)
+python scripts/validate-all.py --quick
+
+# Verbose for debugging
+python scripts/validate-all.py --verbose
+```
+
+## CI/CD Integration
+
+### GitHub Actions
+
+```yaml
+# .github/workflows/skill-validation.yml
+name: Skill Validation
+
+on:
+  push:
+    branches: [main, feature/*]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install pytest pyyaml jsonschema hypothesis
+
+      - name: Validate skill definitions
+        run: python scripts/validate-skills.py examples/
+
+      - name: Run unit tests
+        run: pytest tests/atomic/ -v
+
+      - name: Run composition tests
+        run: pytest tests/composite/ -v
+
+      - name: Run type safety checks
+        run: python scripts/validate-type-safety.py examples/
+
+      - name: Integration tests
+        run: pytest tests/integration/ -v
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            test-results.json
+            validation-results.json
+```
+
+### GitLab CI
+
+```yaml
+# .gitlab-ci.yml
+stages:
+  - validate
+  - test
+  - benchmark
+
+validate-skills:
+  stage: validate
+  script:
+    - python scripts/validate-skills.py examples/
+    - python scripts/validate-type-safety.py examples/
+
+unit-tests:
+  stage: test
+  script:
+    - pytest tests/atomic/ tests/composite/ -v --junitxml=report.xml
+  artifacts:
+    reports:
+      junit: report.xml
+
+integration-tests:
+  stage: test
+  script:
+    - pytest tests/integration/ -v
+  needs: [validate-skills]
+
+benchmarks:
+  stage: benchmark
+  script:
+    - python scripts/benchmark-skills.py examples/
+    - python scripts/benchmark-scaling.py
+  only:
+    - main
+```
+
+### Pre-commit Hooks
+
+```yaml
+# .pre-commit-config.yaml
+repos:
+  - repo: local
+    hooks:
+      - id: validate-skills
+        name: Validate skill definitions
+        entry: python scripts/validate-skills.py
+        language: python
+        files: SKILL\.md$
+
+      - id: type-safety
+        name: Check type safety
+        entry: python scripts/validate-type-safety.py examples/
+        language: python
+        pass_filenames: false
+```
+
+## Test Coverage Requirements
+
+### Minimum Coverage
+
+| Component | Required Coverage |
+|-----------|-------------------|
+| L1 atomics | 80% |
+| L2 composites | 70% |
+| L3 workflows | 60% |
+| Validators | 90% |
+
+### Running Coverage
+
+```bash
+# Generate coverage report
+pytest tests/ --cov=skills --cov-report=html --cov-fail-under=75
+
+# View report
+open htmlcov/index.html
+```
+
+## Adding Tests for New Skills
+
+When you add a new skill:
+
+1. **L1 Atomic:**
+```bash
+# Create test file
+touch tests/atomic/test_my_skill.py
+
+# Run
+pytest tests/atomic/test_my_skill.py -v
+```
+
+2. **L2 Composite:**
+```bash
+# Create test file
+touch tests/composite/test_my_workflow.py
+
+# Run with dependency validation
+pytest tests/composite/test_my_workflow.py -v
+```
+
+3. **L3 Workflow:**
+```bash
+# Create integration test
+touch tests/integration/test_full_workflow.py
+
+# Run with mocks
+pytest tests/integration/test_full_workflow.py -v
+```
+
+## Debugging Failed Tests
+
+```bash
+# Verbose output
+pytest tests/ -v -s
+
+# Stop on first failure
+pytest tests/ -x
+
+# Show local variables on failure
+pytest tests/ -l
+
+# Run specific test
+pytest tests/atomic/test_weather.py::TestWeather::test_inputs -v
+```
+
+## Validation Badge
+
+Add to your README:
+
+```markdown
+[![Skill Validation](https://github.com/ORG/REPO/actions/workflows/skill-validation.yml/badge.svg)](https://github.com/ORG/REPO/actions)
+```
+
+Shows green when all validations pass.

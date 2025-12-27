@@ -4,13 +4,334 @@
 
 Skills are folders of instructions, scripts, and resources that agents can discover and use to perform better at specific tasks. Write once, use everywhere.
 
+## The Problem: Non-Deterministic Tool Selection
+
+As teams rapidly develop MCP servers and agent skills, a critical problem emerges: **flat, unstructured skill definitions lead to unpredictable agent behaviour**.
+
+### Why Flat Skills Fail at Scale
+
+When multiple developers create skills independently, they inevitably build overlapping functionality with subtly different implementations. Without a formal composition hierarchy, these skills violate **MECE principles** (Mutually Exclusive, Collectively Exhaustive):
+
+| Problem | Consequence |
+|---------|-------------|
+| **Overlapping skills** | Multiple skills can handle the same request, but with different approaches |
+| **Non-deterministic selection** | LLMs may choose different tools for identical prompts across runs |
+| **Cascading inconsistency** | A skill chosen on Monday may not be chosen on Tuesday |
+| **Unpredictable permutations** | With N overlapping skills, there are N! possible execution paths |
+
+**The result:** Agent systems that appear to "have a mind of their own" - unsuitable for applications requiring real-world reliability, predictability, and determinism.
+
+### What Trustworthy Agents Require
+
+Production-grade agent systems must be:
+
+- **Predictable**: The same input should produce the same tool selection
+- **Deterministic**: Execution paths should be reproducible and auditable
+- **Reliable**: Behaviour that worked yesterday should work tomorrow
+- **Trustworthy**: Users must be confident the agent will "just do the right thing"
+
+Flat skill definitions cannot guarantee these properties because they provide no mechanism for:
+- Defining canonical implementations of common operations
+- Expressing skill dependencies and composition relationships
+- Ensuring teams build on shared primitives rather than duplicating logic
+
+### The Context Window Problem
+
+There is an additional dimension to this challenge: **LLMs have finite context windows, yet we are experiencing an explosion of available tools**.
+
+When an agent must choose between dozens of flat, potentially overlapping skills:
+- The LLM must hold all tool definitions in context simultaneously
+- Similar descriptions create ambiguity about which tool to select
+- Reasoning complexity grows combinatorially with the number of options
+- Context budget consumed by tool definitions cannot be used for actual work
+
+Composable skills address this by providing **small, contained, unambiguous primitives** that the LLM can reason about clearly. Instead of choosing between 50 overlapping tools, the agent selects from a curated set of atomic operations - and composition handles the rest deterministically.
+
+### Industry Recognition
+
+These challenges are well-documented:
+
+- **a16z**: "MCP lacks a built-in workflow concept" for multi-step tasks ([Deep Dive into MCP](https://a16z.com/a-deep-dive-into-mcp-and-the-future-of-ai-tooling/))
+- **Simon Willison**: "Anthropic outline the proposal... but provide no code" ([Code Execution with MCP](https://simonwillison.net/2025/Nov/4/code-execution-with-mcp/))
+- **Barry Zhang** (Anthropic): "Reduce unnecessary non-determinism... using more code components" ([Making Peace with LLM Non-determinism](https://barryzhang.substack.com/p/making-peace-with-llm-non-determinism))
+- **Anthropic Engineering**: "By writing explicit orchestration logic, Claude makes fewer errors" ([Advanced Tool Use](https://www.anthropic.com/engineering/advanced-tool-use))
+
+This architecture provides those "code components" at the **composition layer**.
+
+## The Solution: Composable Skills
+
+Composable skills introduce a **hierarchical architecture** that enforces MECE principles through explicit composition:
+
+```
+Level 3: Workflows        Complex multi-step processes with decision logic
+    ↑ composes
+Level 2: Composites       Combined operations for common patterns
+    ↑ composes
+Level 1: Atomics          Single-purpose operations (READ or WRITE)
+    ↑ wraps
+Level 0: Primitives       Raw scripts, APIs, or tools
+```
+
+### How Composition Solves Non-Determinism
+
+| Principle | Implementation |
+|-----------|----------------|
+| **Single responsibility** | Level 1 atomics do ONE thing - no overlap possible |
+| **Explicit dependencies** | `composes` field declares exactly which skills are used |
+| **Canonical paths** | Higher-level skills compose lower-level ones, not alternatives |
+| **Auditable structure** | Dependency graph is visible and verifiable |
+
+When a team agrees that `research` composes `web-search` + `pdf-save`, there is no ambiguity about which tools will be invoked. The LLM selects `research`, and the composition is deterministic.
+
+### New Frontmatter Fields
+
+Three optional fields enable composition:
+
+```yaml
+---
+name: research
+description: Research a topic with web search and source verification.
+level: 2              # Composition tier (1=Atomic, 2=Composite, 3=Workflow)
+operation: READ       # Safety classification (READ/WRITE/TRANSFORM)
+composes:             # Explicit dependencies
+  - web-search
+  - pdf-save
+---
+```
+
+### Static Type System
+
+Skills can define **typed inputs and outputs** with static compatibility checking:
+
+```yaml
+inputs:
+  - name: query
+    type: string
+    required: true
+outputs:
+  - name: answer
+    type: string
+    requires_source: true      # Must cite sources
+    requires_rationale: true   # Must explain reasoning
+  - name: confidence
+    type: number
+    range: [0, 1]
+```
+
+**Epistemic requirements** (`requires_source`, `requires_rationale`, `min_items`) prevent hallucination by enforcing cited, reasoned responses. Run `skills-ref typecheck` to validate compositions at build time.
+
+See [Architecture: Type System](docs/architecture.mdx#type-system) for full documentation.
+
+### Higher-Order Skills
+
+Skills can be **first-class citizens** - passed as arguments to other skills, composed dynamically, and reasoned about using types. This enables powerful abstractions:
+
+**Combinators** - Combine skills in useful patterns:
+
+```yaml
+# Apply a skill to each item in a list
+- skill: map-skill
+  inputs:
+    items: ${customer_list}
+    processor: enrich-customer-data
+  outputs:
+    results: enriched_customers
+```
+
+**Decorators** - Wrap skills with cross-cutting concerns:
+
+```yaml
+# Retry with exponential backoff and caching
+- skill: with-cache
+  inputs:
+    target:
+      skill: with-retry
+      inputs:
+        target: expensive-api-call
+        max_attempts: 3
+    ttl: 1h
+```
+
+**Meta Skills** - Learn and adapt from execution:
+
+| Meta Skill | Purpose |
+|------------|---------|
+| `explain-execution` | Reverse-engineer what happened from observed I/O |
+| `intent-refiner` | Learn user preferences from accept/reject feedback |
+| `skill-synthesizer` | Generate new skills from descriptions or examples |
+
+See [Architecture: Higher-Order Skills](docs/architecture.mdx#higher-order-skills) for full documentation.
+
+### Continuous Improvement: The Lessons System
+
+Skills can **learn from execution** through a structured lessons system that captures patterns, validates them over time, and proposes concrete improvements:
+
+```yaml
+lessons:
+  # APPLIED: This lesson has been crystallised into the skill
+  - id: L-research-001
+    context: "WHEN presenting findings without attribution"
+    learned: "Always include inline citations linking claims to specific sources"
+    confidence: 0.98
+    status: applied
+    source: "User feedback: 'Where did you get this information?'"
+    applied_at: "2025-06-01"
+
+  # VALIDATED: Ready for human approval in next version
+  - id: L-research-004
+    context: "WHEN primary sources are unavailable or paywalled"
+    learned: "Explicitly note the limitation and suggest alternatives"
+    confidence: 0.90
+    status: validated
+    proposed_edit: "Add source_limitations output field"
+```
+
+**Lesson Lifecycle:**
+
+| Status | Confidence | Meaning |
+|--------|------------|---------|
+| `observed` | 0.0-0.6 | Pattern noticed, needs more instances |
+| `proposed` | 0.6-0.8 | Accumulating evidence |
+| `validated` | 0.8-1.0 | Ready for human approval |
+| `applied` | 1.0 | Crystallised into skill definition |
+| `deprecated` | - | No longer applicable |
+
+The `skill-evolver` meta skill closes the feedback loop by proposing minimal, targeted edits from validated lessons - always requiring human approval before changes are applied.
+
+See [Architecture: Continuous Improvement](docs/architecture.mdx#continuous-improvement-the-lessons-system) for full documentation.
+
+### Versioning: Safe Skill Evolution
+
+Skills support **semantic versioning** with consumer protection to enable safe evolution:
+
+```yaml
+version: 1.3.0
+version_history:
+  - version: 1.3.0
+    released_at: "2025-12-22"
+    changes:
+      - change_type: feature
+        description: Add data_freshness indicator
+        lesson_id: L-research-003  # Links to lesson that inspired change
+
+  - version: 1.2.0
+    released_at: "2025-09-15"
+    changes:
+      - change_type: feature
+        description: Add source_conflicts output
+        lesson_id: L-research-002
+
+# Consumer protection via version constraints
+requires:
+  - skill_name: web-search
+    constraint: ">=1.0.0"
+  - skill_name: web-fetch
+    constraint: "^1.0.0"  # Compatible updates only
+```
+
+**Version Constraints** (npm/cargo-style):
+
+| Constraint | Meaning | Example |
+|------------|---------|---------|
+| `>=1.0.0` | At least version 1.0.0 | Accepts 1.0.0, 1.5.0, 2.0.0 |
+| `^1.2.0` | Compatible with 1.2.0 | Accepts 1.2.0, 1.9.0; rejects 2.0.0 |
+| `~1.2.0` | Patch updates only | Accepts 1.2.0, 1.2.5; rejects 1.3.0 |
+| `1.2.0` | Exact version | Only 1.2.0 |
+
+**Breaking changes** automatically identify affected consumers and generate migration guidance before applying.
+
+See [Architecture: Versioning](docs/architecture.mdx#versioning-safe-evolution-with-consumer-protection) for full documentation.
+
+### Benefits
+
+| Benefit | Description |
+|---------|-------------|
+| **Predictability** | Composition graph determines execution path |
+| **Determinism** | Same skill selection yields same tool invocations |
+| **Simpler reasoning** | LLMs choose from small, unambiguous atomics instead of many overlapping tools |
+| **Context efficiency** | Fewer tool definitions needed; composition replaces enumeration |
+| **Team coordination** | Shared atomics prevent duplicate implementations |
+| **Reusability** | Write atomic skills once, compose everywhere |
+| **Testability** | Each level can be tested and verified independently |
+| **Safety** | Clear READ/WRITE separation; safety propagates upward |
+| **Transparency** | `composes` field makes dependencies explicit and auditable |
+| **Learning** | Skills improve over time through lessons that crystallise execution patterns |
+| **Safe evolution** | Semantic versioning with consumer protection prevents breaking changes |
+
 ## Getting Started
 
 - [Documentation](https://agentskills.io) - Guides and tutorials
 - [Specification](https://agentskills.io/specification) - Format details
+- [Architecture](docs/architecture.mdx) - Composability design rationale and type system
+- [Portfolio Manager Showcase](examples/_showcase/portfolio-manager/) - 22 skills for portfolio management with execution traces
+- [Financial Advisor Showcase](examples/_showcase/financial-advisor/) - 19 skills for compliance-aware advisory
+- [Trip Optimizer Showcase](examples/_showcase/trip-optimizer/) - Full example with 12 skills across all 3 levels
+- [Skill Reuse Guide](examples/_showcase/SKILL-REUSE-GUIDE.md) - Patterns for composing and extending skills
+- [Research Skill Example](examples/_composite/research/) - Complete lessons and versioning lifecycle demonstration
+- [Higher-Order Skills](examples/) - Combinators, decorators, and meta-learning examples
 - [Example Skills](https://github.com/anthropics/skills) - See what's possible
 
-This repo contains the specification, documentation, and reference SDK. Also see a list of example skills [here](https://github.com/anthropics/skills).
+This repo contains the specification, documentation, and reference SDK.
+
+## Quick Reference
+
+### Skill Levels
+
+| Level | Name | Purpose | Example |
+|-------|------|---------|---------|
+| 1 | Atomic | Single operation | `email-read`, `pdf-save` |
+| 2 | Composite | Combined operations | `research`, `customer-intel` |
+| 3 | Workflow | Complex orchestration | `daily-synthesis` |
+
+### Operation Types
+
+| Operation | Safety | Confirmation |
+|-----------|--------|--------------|
+| `READ` | Safe | Never required |
+| `WRITE` | Side effects | Recommended |
+| `TRANSFORM` | Local only | Never required |
+
+### Directory Structure (Recommended)
+
+```
+skills/
+├── _atomic/              # Level 1: Canonical single operations
+│   ├── email-read/
+│   ├── web-search/
+│   └── pdf-save/
+├── _composite/           # Level 2: Composed from atomics
+│   ├── research/
+│   └── customer-intel/
+├── _combinators/         # Higher-order: Combine skills
+│   ├── map-skill/
+│   ├── filter-skill/
+│   ├── try-first/
+│   └── fan-out/
+├── _decorators/          # Higher-order: Wrap skills
+│   ├── with-retry/
+│   ├── with-cache/
+│   └── with-timeout/
+├── _meta/                # Meta: Learn from execution
+│   ├── explain-execution/
+│   ├── intent-refiner/
+│   └── skill-synthesizer/
+└── _workflows/           # Level 3: Complex orchestration
+    ├── daily-synthesis/
+    ├── resilient-research/
+    └── adaptive-bulk-processor/
+```
+
+## Backwards Compatibility
+
+The composability extension is fully backwards-compatible. Skills without `level`, `operation`, or `composes` fields continue to work unchanged. Teams can adopt composability incrementally.
+
+## References
+
+- [Compiling Higher Order Functional Programs to Composable Digital Hardware](https://doi.org/10.1109/FCCM.2014.69) - Theoretical foundation (FCCM 2014)
+- [Advanced Tool Use](https://www.anthropic.com/engineering/advanced-tool-use) - Anthropic Engineering
+- [A Deep Dive into MCP and the Future of AI Tooling](https://a16z.com/a-deep-dive-into-mcp-and-the-future-of-ai-tooling/) - a16z
+- [Making Peace with LLM Non-determinism](https://barryzhang.substack.com/p/making-peace-with-llm-non-determinism) - Barry Zhang (Anthropic)
+- [Microsoft MCP Gateway](https://github.com/microsoft/mcp-gateway) - Gateway pattern reference
 
 ## About
 

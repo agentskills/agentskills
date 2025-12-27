@@ -1,0 +1,481 @@
+---
+title: "Anti-Patterns"
+description: "Common mistakes and how to avoid them"
+---
+
+# Anti-Patterns: What NOT to Do
+
+Learn from others' mistakes. These patterns will save you debugging time.
+
+---
+
+## ❌ Anti-Pattern 1: Type Mismatch in Composition
+
+**The mistake:**
+
+```yaml
+# weather-fetch outputs:
+outputs:
+  - name: data
+    type: object
+    properties:
+      temperature: number
+      conditions: string
+
+# email-send expects:
+inputs:
+  - name: to
+    type: string
+  - name: body
+    type: string
+```
+
+**Composing directly:**
+
+```yaml
+name: weather-email
+composes:
+  - weather-fetch    # Returns {temperature, conditions}
+  - email-send       # Expects {to, body}
+# ❌ FAILS: Types don't match!
+```
+
+**Why it fails:** Output of step 1 doesn't satisfy input of step 2.
+
+**✅ Correct approach:**
+
+Add a transformer skill between them:
+
+```yaml
+name: weather-email
+composes:
+  - weather-fetch           # Returns weather data
+  - weather-to-email-body   # Transforms to {to, body}
+  - email-send              # Sends email
+```
+
+The transformer:
+
+```yaml
+name: weather-to-email-body
+level: 1
+operation: READ
+
+inputs:
+  - name: temperature
+    type: number
+  - name: conditions
+    type: string
+  - name: recipient
+    type: string
+
+outputs:
+  - name: to
+    type: string
+  - name: body
+    type: string
+```
+
+---
+
+## ❌ Anti-Pattern 2: L2 Composing L2
+
+**The mistake:**
+
+```yaml
+name: super-workflow
+level: 2
+composes:
+  - pr-review        # This is L2!
+  - notification     # This is also L2!
+# ❌ FAILS: L2 cannot compose L2
+```
+
+**Why it fails:** Level hierarchy is strict. L2 only composes L1.
+
+**✅ Correct approach:**
+
+Either upgrade to L3:
+
+```yaml
+name: super-workflow
+level: 3              # ← Upgrade to L3
+operation: WORKFLOW
+composes:
+  - pr-review        # L2 ✓
+  - notification     # L2 ✓
+```
+
+Or break L2s into L1s:
+
+```yaml
+name: super-workflow
+level: 2
+composes:
+  - pr-read          # L1 (from pr-review)
+  - pr-analyze       # L1 (from pr-review)
+  - slack-post       # L1 (from notification)
+```
+
+---
+
+## ❌ Anti-Pattern 3: Missing Required Inputs
+
+**The mistake:**
+
+```yaml
+name: data-pipeline
+composes:
+  - fetch-data           # Outputs: {records: array}
+  - validate-records     # Expects: {records: array, schema: object}
+# ❌ FAILS: Where does 'schema' come from?
+```
+
+**Why it fails:** `validate-records` requires `schema` but `fetch-data` doesn't provide it.
+
+**✅ Correct approach:**
+
+Option A: Add schema as workflow input:
+
+```yaml
+name: data-pipeline
+inputs:
+  - name: schema
+    type: object
+    required: true    # Caller provides schema
+
+composes:
+  - fetch-data
+  - validate-records  # Gets schema from workflow input
+```
+
+Option B: Use a schema-provider skill:
+
+```yaml
+composes:
+  - fetch-data
+  - get-schema        # L1: Returns the schema
+  - validate-records  # Now has both inputs
+```
+
+---
+
+## ❌ Anti-Pattern 4: WRITE Without Confirmation
+
+**The mistake:**
+
+```yaml
+name: auto-deploy
+level: 2
+operation: WRITE
+confirmation_required: false  # ❌ Dangerous!
+
+composes:
+  - build-code
+  - deploy-production  # Deploys without asking!
+```
+
+**Why it's dangerous:** Production deployments should require human confirmation.
+
+**✅ Correct approach:**
+
+Keep confirmation (the default):
+
+```yaml
+name: auto-deploy
+level: 2
+operation: WRITE
+# confirmation_required defaults to true
+
+composes:
+  - build-code
+  - deploy-production
+```
+
+If you truly need unattended execution, document why:
+
+```yaml
+name: scheduled-backup
+level: 2
+operation: WRITE
+confirmation_required: false
+safety_note: |
+  This runs on a schedule when no user is present.
+  Data is written to internal backup storage only.
+  Recovery procedures documented in ops/backup-recovery.md
+```
+
+---
+
+## ❌ Anti-Pattern 5: Overly Large L1 Skills
+
+**The mistake:**
+
+```yaml
+name: do-everything
+level: 1  # ❌ This is NOT atomic!
+operation: WRITE
+
+description: |
+  Fetches PR, analyzes code, generates review,
+  posts comments, updates status, notifies team,
+  and logs metrics.
+```
+
+**Why it's wrong:** L1 skills should do ONE thing. This is a workflow.
+
+**✅ Correct approach:**
+
+Break into true atomics:
+
+```yaml
+# L1 atomics (one responsibility each)
+pr-read           # Read PR data
+code-analyze      # Analyze code
+review-generate   # Generate review text
+comment-post      # Post a comment
+status-update     # Update PR status
+team-notify       # Send notification
+metrics-log       # Log metrics
+
+# L2 composite
+pr-review-full:
+  level: 2
+  composes:
+    - pr-read
+    - code-analyze
+    - review-generate
+    - comment-post
+```
+
+---
+
+## ❌ Anti-Pattern 6: Ignoring Effect Propagation
+
+**The mistake:**
+
+```yaml
+name: read-and-delete
+level: 2
+operation: READ  # ❌ WRONG!
+
+composes:
+  - file-read     # READ
+  - file-delete   # WRITE ← This is a WRITE!
+```
+
+**Why it fails:** Composed effect should be max of components. This should be WRITE.
+
+**✅ Correct approach:**
+
+```yaml
+name: read-and-delete
+level: 2
+operation: WRITE  # Correctly reflects the WRITE component
+
+composes:
+  - file-read
+  - file-delete
+```
+
+The validator catches this:
+
+```
+ERROR: read-and-delete declares READ but composes file-delete (WRITE)
+       Composed effect must be: WRITE
+```
+
+---
+
+## ❌ Anti-Pattern 7: Circular Dependencies
+
+**The mistake:**
+
+```yaml
+# skill-a.yaml
+name: skill-a
+composes:
+  - skill-b
+
+# skill-b.yaml
+name: skill-b
+composes:
+  - skill-a  # ❌ Circular!
+```
+
+**Why it fails:** Infinite loop. Can never resolve.
+
+**✅ Correct approach:**
+
+Extract shared logic into a base skill:
+
+```yaml
+# shared-logic.yaml (L1)
+name: shared-logic
+
+# skill-a.yaml (L2)
+composes:
+  - shared-logic
+  - specific-to-a
+
+# skill-b.yaml (L2)
+composes:
+  - shared-logic
+  - specific-to-b
+```
+
+---
+
+## ❌ Anti-Pattern 8: Vague Type Definitions
+
+**The mistake:**
+
+```yaml
+inputs:
+  - name: data
+    type: object  # ❌ What's in it?
+
+outputs:
+  - name: result
+    type: any     # ❌ Could be anything!
+```
+
+**Why it's bad:** Can't validate, can't compose safely, can't generate tests.
+
+**✅ Correct approach:**
+
+Be specific:
+
+```yaml
+inputs:
+  - name: user
+    type: object
+    properties:
+      id: string
+      email: string
+      roles: array
+    required:
+      - id
+      - email
+
+outputs:
+  - name: profile
+    type: object
+    properties:
+      displayName: string
+      avatar: string
+      permissions: array
+```
+
+---
+
+## ❌ Anti-Pattern 9: No Examples in SKILL.md
+
+**The mistake:**
+
+```yaml
+name: complex-transform
+inputs:
+  - name: input
+    type: object
+outputs:
+  - name: output
+    type: object
+# No examples section!
+```
+
+**Why it's bad:**
+- Hard to understand what the skill does
+- Can't generate tests automatically
+- Consumers have to guess at usage
+
+**✅ Correct approach:**
+
+Always include examples:
+
+```yaml
+examples:
+  - name: basic-usage
+    input:
+      data: {name: "Alice", age: 30}
+    output:
+      result: {greeting: "Hello, Alice!", adult: true}
+
+  - name: edge-case
+    input:
+      data: {name: "", age: 17}
+    output:
+      result: {greeting: "Hello, stranger!", adult: false}
+```
+
+---
+
+## ❌ Anti-Pattern 10: Testing Only the Happy Path
+
+**The mistake:**
+
+```python
+def test_skill_works():
+    result = skill.execute(valid_input)
+    assert result["status"] == "success"
+# ❌ What about errors? Edge cases? Invalid input?
+```
+
+**Why it's incomplete:** Real-world usage encounters errors.
+
+**✅ Correct approach:**
+
+Test the full spectrum:
+
+```python
+class TestEmailSkill:
+    def test_valid_email_succeeds(self):
+        result = skill.execute({"to": "valid@email.com"})
+        assert result["sent"] == True
+
+    def test_invalid_email_fails_validation(self):
+        with pytest.raises(ValidationError):
+            skill.execute({"to": "not-an-email"})
+
+    def test_missing_required_field(self):
+        with pytest.raises(ValidationError) as exc:
+            skill.execute({})
+        assert "to" in str(exc.value)
+
+    def test_network_failure_returns_error(self):
+        with mock_network_failure():
+            result = skill.execute({"to": "valid@email.com"})
+            assert result["error"] == "network_unavailable"
+```
+
+---
+
+## Quick Reference: Validation Errors
+
+| Error Message | Anti-Pattern | Fix |
+|---------------|--------------|-----|
+| `Type mismatch: X → Y` | #1 Type mismatch | Add transformer skill |
+| `L2 cannot compose L2` | #2 Level violation | Use L3 or break into L1s |
+| `Missing required input: X` | #3 Missing inputs | Provide via workflow or add skill |
+| `WRITE without confirmation` | #4 Dangerous write | Set confirmation_required: true |
+| `L1 too complex` | #5 Non-atomic L1 | Break into multiple L1s |
+| `Effect mismatch` | #6 Wrong operation | Set operation to max effect |
+| `Circular dependency` | #7 Circular deps | Extract shared base skill |
+| `Unspecified type` | #8 Vague types | Add property definitions |
+| `No examples` | #9 No examples | Add examples section |
+
+---
+
+## Debugging Tip
+
+When validation fails:
+
+```bash
+# See detailed error output
+python scripts/validate-skills.py --verbose path/to/skill/
+
+# Check specific skill
+python scripts/validate-type-safety.py --skill my-skill examples/
+```
+
+Most errors are caught at validation time, not runtime. **If it validates, it composes.**

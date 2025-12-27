@@ -1,0 +1,225 @@
+---
+title: "Two-Tier Design"
+description: "Simple usage for most, powerful abstractions when needed"
+---
+
+# Two-Tier Design Philosophy
+
+Composable Skills is designed with two distinct audiences in mind. You choose your depth.
+
+## Tier 1: Practical Usage
+
+**For:** AI developers, prompt engineers, and anyone building agent workflows.
+
+**What you need:** 30 minutes with the Getting Started guide.
+
+### The Simple Model
+
+```
+Skills are functions with defined inputs and outputs.
+You compose them by listing what you want to combine.
+The framework handles the rest.
+```
+
+### Core Concepts (5 things to know)
+
+| Concept | What It Means | Example |
+|---------|---------------|---------|
+| **Skill** | A reusable operation | `pr-read`, `email-send` |
+| **Level** | Complexity tier (1-3) | L1 = atomic, L2 = composite, L3 = workflow |
+| **Inputs/Outputs** | Data contract | `pr_number: integer` → `title: string` |
+| **Operation** | Safety classification | READ, WRITE, WORKFLOW |
+| **Composes** | What skills it uses | `composes: [pr-read, pr-diff-read]` |
+
+### Typical Workflow
+
+1. **Browse existing skills** in `examples/_showcase/`
+2. **Compose what you need** by referencing them
+3. **Validate with tests** to ensure compatibility
+4. **Run your workflow** with type safety and confirmations
+
+### What You Don't Need to Know
+
+- Category theory
+- Monads or functors
+- Type theory
+- Formal verification
+
+These exist beneath the surface. They make things work. You don't interact with them.
+
+---
+
+## Tier 2: Formal Foundations
+
+**For:** Framework developers, researchers, and those extending the core system.
+
+**What you need:** Familiarity with functional programming concepts.
+
+### Why the Theory Exists
+
+The formal foundations aren't academic decoration. They provide:
+
+| Foundation | Practical Benefit |
+|------------|-------------------|
+| **Category structure** | Guarantees composition always works |
+| **Type system** | Enables static analysis tools |
+| **Graded monad** | Automatic safety enforcement |
+| **Functorial mapping** | Predictable skill combinators |
+
+### The Category of Skills
+
+```
+Objects:     JSON Schema types
+Morphisms:   Skills (input type → output type)
+Composition: g ∘ f means "apply f, then g"
+Identity:    Skills that pass through unchanged
+```
+
+**Why it matters:** If skills form a category, composition is associative. You can restructure workflows without changing behavior:
+
+```
+(h ∘ g) ∘ f = h ∘ (g ∘ f)
+```
+
+### The Type System
+
+Skills have structural types with subtyping rules:
+
+```
+Inputs:  Contravariant (can accept more general)
+Outputs: Covariant (can return more specific)
+```
+
+**Practical result:** A skill returning `{name: string, email: string}` can be used where `{name: string}` is expected.
+
+### Safety as a Graded Monad
+
+```
+READ ⊑ WRITE ⊑ WORKFLOW
+
+Composition rule:
+  f: A →_READ B, g: B →_READ C
+  ⟹ (g ∘ f): A →_READ C  (no confirmation)
+
+  f: A →_READ B, g: B →_WRITE C
+  ⟹ (g ∘ f): A →_WRITE C  (confirmation at g)
+```
+
+**Practical result:** The maximum effect level determines confirmation requirements.
+
+### Skill Combinators
+
+Higher-order skills that transform other skills:
+
+```
+map-skill:      (A→B) → (List[A] → List[B])
+filter-skill:   (A→Bool) → (List[A] → List[A])
+retry-skill:    (A→Result[B], n) → (A→Result[B])
+fallback-skill: (A→Result[B], A→Result[B]) → (A→Result[B])
+```
+
+**Practical result:** Apply skills to collections, add retry logic, define fallbacks—all compositionally.
+
+---
+
+## How the Tiers Connect
+
+```
+┌─────────────────────────────────────────┐
+│           Tier 1: User Layer            │
+│  ┌─────────────────────────────────┐    │
+│  │ SKILL.md files                  │    │
+│  │ composes: [skill-a, skill-b]    │    │
+│  │ inputs/outputs definitions      │    │
+│  └─────────────────────────────────┘    │
+├─────────────────────────────────────────┤
+│        Tier 2: Framework Layer          │
+│  ┌─────────────────────────────────┐    │
+│  │ Type checker                    │    │
+│  │ Composition validator           │    │
+│  │ Safety enforcer                 │    │
+│  │ Combinator implementations      │    │
+│  └─────────────────────────────────┘    │
+└─────────────────────────────────────────┘
+```
+
+**Tier 1 users** write SKILL.md files. They see validation errors when something doesn't compose.
+
+**Tier 2 developers** build the validators, define type rules, implement combinators.
+
+---
+
+## Choosing Your Tier
+
+### Stay at Tier 1 if:
+
+- You're building agent workflows
+- You want to compose existing skills
+- You need type safety without the theory
+- You care about results, not foundations
+
+### Explore Tier 2 if:
+
+- You're extending the framework
+- You're building new combinators
+- You want to understand *why* things work
+- You're interested in formal methods for AI
+
+---
+
+## Example: Same Feature, Both Tiers
+
+### Tier 1 View: Retry Logic
+
+```yaml
+name: reliable-api-call
+level: 2
+composes:
+  - retry-skill    # Built-in combinator
+  - api-call       # The skill to retry
+
+inputs:
+  - name: request
+    type: object
+  - name: max_retries
+    type: integer
+    default: 3
+```
+
+**User thinks:** "This retries `api-call` up to 3 times."
+
+### Tier 2 View: Same Feature
+
+```
+retry-skill: (A →_{eff} Result[B]) × ℕ → (A →_{eff} Result[B])
+
+Where:
+  - A →_{eff} Result[B] is a skill with effect level eff
+  - ℕ is the retry count
+  - Result[B] = Ok(B) | Err(E)
+
+Semantics:
+  retry(f, 0)(a) = f(a)
+  retry(f, n)(a) = match f(a) with
+    | Ok(b) → Ok(b)
+    | Err(e) → retry(f, n-1)(a)  [with backoff]
+
+Effect preservation:
+  If f has effect eff, retry(f, n) has effect eff
+```
+
+**Developer thinks:** "Retry preserves effect level, uses Result monad for error tracking, implements exponential backoff."
+
+---
+
+## Documentation by Tier
+
+| Document | Tier | Purpose |
+|----------|------|---------|
+| Getting Started | 1 | Quick practical usage |
+| Value Demonstrations | 1 | Why this helps |
+| Specification | 1 | SKILL.md format reference |
+| Architecture | 2 | Formal foundations |
+| Research Paper | 2 | Full theoretical treatment |
+
+**Most users never need Tier 2 docs.** They exist for those who want them.

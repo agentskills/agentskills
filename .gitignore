@@ -4,3 +4,8 @@
 # IDEs
 .idea/
 .vscode/
+.venv
+
+# Test cache
+.hypothesis/
+__pycache__/
