@@ -1,0 +1,632 @@
+# Product Requirements Document (PRD)
+# AgentSkills Obsidian-Flavored Markdown Extensions
+# Version 1.0.0 | 2025-12-21
+
+================================================================================
+EXECUTIVE SUMMARY
+================================================================================
+
+This PRD defines requirements for extending the AgentSkills framework to fully
+support Obsidian-flavored Markdown syntax, enabling rich semantic navigation,
+progressive context loading, and safe code execution within AI agent skills.
+
+Target Users: AI/ML Engineers, Agent Developers, Knowledge Workers
+Primary Value: 10x improvement in skill navigation precision and context efficiency
+
+================================================================================
+SECTION 1: PROBLEM STATEMENT
+================================================================================
+
+1.1 Current State Analysis
+--------------------------
+
+The AgentSkills framework (github.com/agentskills/agentskills) provides:
+✓ YAML frontmatter parsing (name, description)
+✓ Basic skill discovery and activation
+✓ Progressive disclosure model (Discovery → Activation → Execution)
+
+However, it lacks:
+✗ Advanced Markdown syntax parsing
+✗ Block-level content addressing
+✗ Cross-skill reference resolution
+✗ Code execution framework
+✗ Token-aware progressive loading
+
+1.2 User Pain Points
+--------------------
+
+P1: "I can't navigate to specific sections within a skill"
+   - Users must load entire SKILL.md (~5000 tokens) even when only needing
+     a single block (~100 tokens)
+   - No support for `skill:^block-id` or `skill:#heading` addressing
+
+P2: "My rich Obsidian syntax is ignored"
+   - Wikilinks [[target]] rendered as raw text
+   - Block IDs ^identifier not addressable
+   - Callouts >[!warning] not parsed
+   - Tags #category/subcategory not indexed
+
+P3: "I can't compose skills into workflows"
+   - No mechanism for [[other-skill#section]] references
+   - Skills operate as isolated units
+   - No pipeline composition patterns
+
+P4: "Mermaid diagrams and scripts don't execute"
+   - Code blocks require external handling
+   - No validation of diagram syntax
+   - Security concerns with arbitrary execution
+
+1.3 Impact Quantification
+-------------------------
+
+| Metric                      | Current    | Target     | Improvement |
+|-----------------------------|------------|------------|-------------|
+| Tokens per navigation       | ~5000      | ~200       | 25x         |
+| Skill cross-references      | 0          | Unlimited  | ∞           |
+| Block addressing precision  | File-level | Block-level| 100x        |
+| Syntax validation coverage  | 20%        | 95%        | 4.75x       |
+| Code execution capability   | None       | Sandboxed  | New         |
+
+================================================================================
+SECTION 2: USER STORIES & REQUIREMENTS
+================================================================================
+
+2.1 Epic 1: Semantic Parsing
+----------------------------
+
+US-1.1: As a skill author, I want wikilinks parsed so that navigation targets
+        are identified and resolvable.
+
+        Acceptance Criteria:
+        - [[target]] extracts target name
+        - [[target|display]] extracts both target and display text
+        - [[target#heading]] extracts heading anchor
+        - [[target^block-id]] extracts block reference
+        - Invalid syntax produces validation error E007
+
+US-1.2: As a skill author, I want block IDs indexed so that content is
+        addressable at paragraph/list/heading level.
+
+        Acceptance Criteria:
+        - ^identifier at end of any block creates addressable entry
+        - Block registry provides O(1) lookup
+        - Duplicate IDs produce validation error E006
+        - Block context (parent heading path) is preserved
+
+US-1.3: As a skill author, I want callouts parsed so that semantic meaning
+        is extracted from >[!type] blocks.
+
+        Acceptance Criteria:
+        - Callout type extracted (note, warning, tip, etc.)
+        - Fold state extracted (+, -, default)
+        - Optional title extracted
+        - Invalid type produces validation error E005
+
+US-1.4: As a skill author, I want hierarchical tags indexed so that
+        #category/subcategory taxonomy is searchable.
+
+        Acceptance Criteria:
+        - Tag path segments extracted ["category", "subcategory"]
+        - Tags indexed in tree structure
+        - Prefix search supported (find_by_prefix("component/"))
+        - Tag entries include source position and context
+
+US-1.5: As a skill author, I want footnotes validated so that references
+        and definitions are linked.
+
+        Acceptance Criteria:
+        - [^id] references indexed
+        - [^id]: definitions indexed
+        - Orphaned references produce validation error E008
+        - Unused definitions produce warning W007
+
+2.2 Epic 2: Navigation System
+-----------------------------
+
+US-2.1: As an agent, I want to navigate to specific blocks so that I load
+        only relevant content.
+
+        Address Format: skill:^block-id
+        
+        Acceptance Criteria:
+        - Navigate("reason:^structure") returns structure block content
+        - Response includes context (section path, siblings)
+        - Unknown block returns clear error message
+        - Response includes raw content and parsed node
+
+US-2.2: As an agent, I want to navigate to headings so that I load sections
+        without full skill activation.
+
+        Address Format: skill:#heading-anchor
+
+        Acceptance Criteria:
+        - Navigate("reason:#parse") returns parse section
+        - Nested paths supported: "reason:#reduce/five-primitive-operations"
+        - Section content includes all children
+        - Response includes continuation hints for siblings
+
+US-2.3: As an agent, I want token-aware loading so that I respect context
+        budget constraints.
+
+        Acceptance Criteria:
+        - LoadRequest specifies max_tokens
+        - Content truncated intelligently at section boundaries
+        - Truncation indicator included in response
+        - Available sections listed for follow-up navigation
+
+US-2.4: As an agent, I want heading-only loading so that I understand skill
+        structure before deep-diving.
+
+        Acceptance Criteria:
+        - HEADING_ONLY strategy returns all headings + first paragraphs
+        - Depth parameter controls nesting level
+        - Estimated tokens < 500 for typical skills
+        - Anchors included for follow-up navigation
+
+2.3 Epic 3: Code Execution
+--------------------------
+
+US-3.1: As an agent, I want Mermaid diagrams validated so that syntax errors
+        are caught before rendering.
+
+        Acceptance Criteria:
+        - Syntax validation returns (valid, error_message)
+        - All diagram types supported (flowchart, sequence, class, etc.)
+        - Invalid syntax produces validation error E010
+        - Validation completes in <1s for typical diagrams
+
+US-3.2: As an agent, I want Mermaid diagrams rendered so that visual output
+        is available for users.
+
+        Acceptance Criteria:
+        - SVG/PNG/PDF output formats supported
+        - ASCII fallback for terminal contexts
+        - Diagram metadata extracted (nodes, edges, internal-links)
+        - Execution timeout prevents resource exhaustion
+
+US-3.3: As an agent, I want scripts executed safely so that skill automation
+        is possible without security risks.
+
+        Acceptance Criteria:
+        - Python, Bash, JavaScript supported
+        - Execution timeout enforced (default 30s)
+        - Memory limit enforced (default 512MB)
+        - Import allowlisting for Python
+        - Network isolation by default
+        - Output size limit enforced (default 1MB)
+
+US-3.4: As a security engineer, I want dangerous patterns blocked so that
+        malicious code cannot escape sandbox.
+
+        Acceptance Criteria:
+        - os.system(), subprocess.* blocked
+        - eval(), exec() blocked
+        - __import__ blocked
+        - File operations blocked by default
+        - Blocked patterns produce clear error message
+
+2.4 Epic 4: Skill Composition
+-----------------------------
+
+US-4.1: As a skill author, I want cross-skill references so that skills
+        can link to each other.
+
+        Acceptance Criteria:
+        - [[other-skill]] links to another skill
+        - [[other-skill#section]] links to specific section
+        - [[other-skill^block]] links to specific block
+        - Unresolved links produce warning W003
+        - Reference graph buildable for analysis
+
+US-4.2: As an agent, I want skill pipelines so that multi-skill workflows
+        execute in sequence.
+
+        Acceptance Criteria:
+        - Pipeline composition: skill1 → skill2 → skill3
+        - Context passed between steps
+        - Conditional execution supported
+        - Fallback steps supported on failure
+
+US-4.3: As an agent, I want parallel skill loading so that multiple sections
+        load efficiently.
+
+        Acceptance Criteria:
+        - Load multiple skill sections concurrently
+        - Total token budget enforced across all loads
+        - Results aggregated with source attribution
+        - Partial success supported (some sections fail)
+
+================================================================================
+SECTION 3: FUNCTIONAL REQUIREMENTS
+================================================================================
+
+3.1 Parser Requirements
+-----------------------
+
+FR-P01: Parser MUST extract YAML frontmatter with existing field validation
+FR-P02: Parser MUST build AST with all Obsidian syntax node types
+FR-P03: Parser MUST preserve source positions for all nodes
+FR-P04: Parser MUST detect and index block IDs during single pass
+FR-P05: Parser MUST handle malformed syntax gracefully with error recovery
+FR-P06: Parser MUST complete in O(n) time for n characters
+
+3.2 Index Requirements
+----------------------
+
+FR-I01: Block registry MUST provide O(1) lookup by block ID
+FR-I02: Heading tree MUST support path-based navigation
+FR-I03: Tag taxonomy MUST support prefix search
+FR-I04: Link graph MUST track inbound and outbound links
+FR-I05: Index MUST be serializable for caching
+FR-I06: Index rebuild MUST be triggered on content change
+
+3.3 Navigation Requirements
+---------------------------
+
+FR-N01: Navigator MUST resolve skill:^block addresses
+FR-N02: Navigator MUST resolve skill:#heading addresses
+FR-N03: Navigator MUST resolve skill:#heading/subheading paths
+FR-N04: Navigator MUST return context with section path and siblings
+FR-N05: Navigator MUST handle missing targets with clear errors
+FR-N06: Navigator MUST support recursive cross-skill resolution
+
+3.4 Loader Requirements
+-----------------------
+
+FR-L01: Loader MUST support FULL, HEADING_ONLY, SECTION, BLOCK strategies
+FR-L02: Loader MUST enforce token budget with intelligent truncation
+FR-L03: Loader MUST return continuation hints for incomplete loads
+FR-L04: Loader MUST list available sections after any load
+FR-L05: Loader MUST cache loaded content with invalidation
+FR-L06: Loader MUST estimate tokens before loading (±10% accuracy)
+
+3.5 Execution Requirements
+--------------------------
+
+FR-E01: Mermaid executor MUST validate syntax before rendering
+FR-E02: Mermaid executor MUST support SVG, PNG, PDF, ASCII output
+FR-E03: Mermaid executor MUST extract node/edge metadata
+FR-E04: Script sandbox MUST enforce timeout (configurable, default 30s)
+FR-E05: Script sandbox MUST enforce memory limit (configurable, default 512MB)
+FR-E06: Script sandbox MUST enforce output size limit (default 1MB)
+FR-E07: Script sandbox MUST block dangerous patterns
+FR-E08: Script sandbox MUST isolate network by default
+
+3.6 Validation Requirements
+---------------------------
+
+FR-V01: Validator MUST check frontmatter schema compliance
+FR-V02: Validator MUST check block ID uniqueness
+FR-V03: Validator MUST check callout type validity
+FR-V04: Validator MUST check footnote completeness
+FR-V05: Validator MUST check wikilink resolvability
+FR-V06: Validator MUST compute and report metrics
+FR-V07: Validator MUST distinguish errors vs warnings
+FR-V08: Validator MUST provide suggestions for fixes
+
+================================================================================
+SECTION 4: NON-FUNCTIONAL REQUIREMENTS
+================================================================================
+
+4.1 Performance Requirements
+----------------------------
+
+NFR-P01: Parse time MUST be <100ms for 500-line SKILL.md
+NFR-P02: Index lookup MUST be <1ms for any address
+NFR-P03: Navigation MUST complete in <10ms excluding I/O
+NFR-P04: Token estimation MUST be ±10% of actual count
+NFR-P05: Mermaid rendering MUST timeout at 60s maximum
+NFR-P06: Script execution MUST not exceed configured timeout
+
+4.2 Security Requirements
+-------------------------
+
+NFR-S01: Path traversal MUST be prevented via jail enforcement
+NFR-S02: Code injection MUST be prevented via pattern blocking
+NFR-S03: Resource exhaustion MUST be prevented via limits
+NFR-S04: Network exfiltration MUST be blocked by default
+NFR-S05: Prompt injection MUST be mitigated via content sanitization
+NFR-S06: All security failures MUST be logged for audit
+
+4.3 Reliability Requirements
+----------------------------
+
+NFR-R01: Parser MUST not crash on malformed input
+NFR-R02: Navigator MUST return errors, not exceptions
+NFR-R03: Executor MUST cleanup resources on timeout
+NFR-R04: Index MUST be consistent after any operation
+NFR-R05: Validation MUST be idempotent (same input → same output)
+
+4.4 Compatibility Requirements
+------------------------------
+
+NFR-C01: MUST maintain backward compatibility with skills-ref v0.1.x
+NFR-C02: MUST support Python 3.9+
+NFR-C03: MUST work without optional dependencies (tiktoken, mermaid-cli)
+NFR-C04: MUST produce valid Obsidian-compatible output
+NFR-C05: MUST interoperate with existing skill directories
+
+================================================================================
+SECTION 5: TECHNICAL SPECIFICATIONS
+================================================================================
+
+5.1 Type Definitions (TypeScript Reference)
+-------------------------------------------
+
+```typescript
+// Core skill types
+interface ParsedSkill {
+  properties: SkillProperties;
+  ast: ASTNode[];
+  index: SemanticIndex;
+  validation: ValidationResult;
+}
+
+// Navigation types
+interface NavigationResult {
+  found: boolean;
+  content?: string;
+  node?: ASTNode;
+  context?: NavigationContext;
+  error?: string;
+}
+
+// Loading types  
+interface LoadedContent {
+  content: string;
+  token_count: number;
+  truncated: boolean;
+  sections_loaded: string[];
+  sections_available: string[];
+  continuation_hint?: string;
+}
+
+// Execution types
+interface ExecutionResult {
+  success: boolean;
+  stdout: string;
+  stderr: string;
+  return_code: number;
+  execution_time_ms: number;
+  error?: string;
+}
+```
+
+5.2 API Surface
+---------------
+
+```python
+# Parser API
+parser = ExtendedSkillParser(skill_directory)
+result: ExtendedParseResult = parser.parse()
+
+# Navigation API
+navigator = BlockNavigator(skill_registry)
+result: NavigationResult = navigator.navigate("skill:^block-id")
+
+# Loading API
+loader = ProgressiveLoader(skill_registry)
+content: LoadedContent = loader.load(LoadRequest(
+    skill_name="reason",
+    strategy=LoadingStrategy.SECTION,
+    target="parse",
+    max_tokens=500
+))
+
+# Execution API
+executor = MermaidExecutor()
+result: MermaidExecutionResult = executor.execute(mermaid_code)
+
+sandbox = ScriptSandbox(SandboxConfig(timeout_seconds=30))
+result: ExecutionResult = sandbox.execute(code, ScriptLanguage.PYTHON)
+
+# Validation API
+validator = SkillValidator(max_tokens=5000)
+result: ValidationResult = validator.validate(properties, ast, index, raw_body)
+```
+
+5.3 Error Codes
+---------------
+
+ERRORS (block processing):
+- E001: Invalid YAML frontmatter
+- E002: Missing required field (name/description)
+- E003: Invalid name format
+- E004: Unclosed code block
+- E005: Invalid callout type
+- E006: Duplicate block ID
+- E007: Malformed wikilink
+- E008: Orphaned footnote reference
+- E009: Invalid table structure
+- E010: Mermaid syntax error
+
+WARNINGS (non-blocking):
+- W001: Description exceeds recommended length
+- W002: Non-standard block ID format
+- W003: Unresolved wikilink target
+- W004: Skill exceeds token budget
+- W005: Code block missing language tag
+- W006: Inconsistent tag hierarchy depth
+- W007: Unused footnote definition
+- W008: Duplicate heading anchor
+
+================================================================================
+SECTION 6: ACCEPTANCE CRITERIA MATRIX
+================================================================================
+
+| Req ID  | Test Case                           | Expected Result              |
+|---------|-------------------------------------|------------------------------|
+| US-1.1a | Parse [[target]]                    | target="target"              |
+| US-1.1b | Parse [[target|display]]            | target="target", display     |
+| US-1.1c | Parse [[target#heading]]            | heading="heading"            |
+| US-1.1d | Parse [[target^block]]              | block="block"                |
+| US-1.2a | Index ^block-id                     | Block in registry            |
+| US-1.2b | Duplicate ^same-id                  | Error E006                   |
+| US-1.3a | Parse >[!warning]                   | type="warning"               |
+| US-1.3b | Parse >[!invalid]                   | Error E005                   |
+| US-1.4a | Index #a/b/c                        | segments=["a","b","c"]       |
+| US-1.4b | Prefix search #a/                   | All tags starting with a/    |
+| US-2.1a | Navigate reason:^structure          | Content of ^structure        |
+| US-2.1b | Navigate reason:^missing            | Error "not found"            |
+| US-2.2a | Navigate reason:#parse              | Parse section content        |
+| US-2.2b | Navigate reason:#reduce/ops         | Nested section content       |
+| US-2.3a | Load with max_tokens=100            | Content ≤100 tokens          |
+| US-3.1a | Validate valid mermaid              | (True, None)                 |
+| US-3.1b | Validate invalid mermaid            | (False, error_message)       |
+| US-3.3a | Execute safe script                 | stdout captured              |
+| US-3.3b | Execute with os.system              | Blocked, error message       |
+| US-3.4a | Execute with timeout                | ExecutionResult.error        |
+
+================================================================================
+SECTION 7: RISK ASSESSMENT
+================================================================================
+
+7.1 Technical Risks
+-------------------
+
+RISK-T01: Regex performance on pathological input
+- Probability: Medium
+- Impact: High (DoS)
+- Mitigation: Timeout on pattern matching, complexity limits
+
+RISK-T02: Memory exhaustion on deeply nested structures
+- Probability: Low
+- Impact: High
+- Mitigation: Max depth limits, streaming parser
+
+RISK-T03: Mermaid-cli unavailability in production
+- Probability: Medium
+- Impact: Medium
+- Mitigation: ASCII fallback, graceful degradation
+
+7.2 Security Risks
+------------------
+
+RISK-S01: Sandbox escape via unknown attack vector
+- Probability: Low
+- Impact: Critical
+- Mitigation: Defense-in-depth, minimal privileges, audit logging
+
+RISK-S02: Path traversal via edge cases
+- Probability: Medium
+- Impact: High
+- Mitigation: Multiple validation layers, symlink resolution
+
+RISK-S03: Prompt injection via skill content
+- Probability: Medium
+- Impact: Medium
+- Mitigation: Content sanitization, boundary enforcement
+
+7.3 Adoption Risks
+------------------
+
+RISK-A01: Breaking changes for existing skills
+- Probability: Low
+- Impact: High
+- Mitigation: Backward compatibility mode, migration guide
+
+RISK-A02: Learning curve for new syntax
+- Probability: Medium
+- Impact: Medium
+- Mitigation: Documentation, examples, validator suggestions
+
+================================================================================
+SECTION 8: SUCCESS METRICS
+================================================================================
+
+8.1 Adoption Metrics
+--------------------
+
+| Metric                        | Baseline | Target (90d) | Target (180d) |
+|-------------------------------|----------|--------------|---------------|
+| Skills using block IDs        | 0%       | 30%          | 60%           |
+| Skills using cross-references | 0%       | 20%          | 40%           |
+| Navigation API calls/day      | 0        | 1000         | 10000         |
+| Validation pass rate          | N/A      | 80%          | 95%           |
+
+8.2 Performance Metrics
+-----------------------
+
+| Metric                        | Target   | Alert Threshold |
+|-------------------------------|----------|-----------------|
+| P50 parse time                | <50ms    | >100ms          |
+| P99 parse time                | <200ms   | >500ms          |
+| P50 navigation time           | <5ms     | >10ms           |
+| Token estimation accuracy     | ±10%     | ±20%            |
+| Mermaid render success rate   | >95%     | <90%            |
+
+8.3 Quality Metrics
+-------------------
+
+| Metric                        | Target   | Alert Threshold |
+|-------------------------------|----------|-----------------|
+| Validation error rate         | <5%      | >10%            |
+| Parser crash rate             | 0%       | >0%             |
+| Security incident rate        | 0/month  | >0/month        |
+| False positive validations    | <1%      | >5%             |
+
+================================================================================
+SECTION 9: IMPLEMENTATION MILESTONES
+================================================================================
+
+M1: Parser Extensions (Week 3)
+- Extended parser with all syntax detection
+- AST node types for Obsidian syntax
+- Index builder with all registries
+- Validation framework with E001-E010, W001-W008
+
+M2: Navigation System (Week 5)
+- BlockNavigator with address resolution
+- ProgressiveLoader with all strategies
+- Token-aware truncation
+- Caching layer
+
+M3: Execution Framework (Week 8)
+- MermaidExecutor with validation and rendering
+- ScriptSandbox with security controls
+- ASCII fallback rendering
+- Resource limit enforcement
+
+M4: Composition & Integration (Week 10)
+- SkillComposer with pipeline/parallel patterns
+- CrossSkillResolver with reference graphs
+- Integration tests
+- Migration guide
+
+M5: Production Readiness (Week 12)
+- Performance optimization
+- Security audit
+- Documentation
+- Release candidate
+
+================================================================================
+SECTION 10: APPENDICES
+================================================================================
+
+A. Glossary
+-----------
+
+Block ID: Identifier for addressable content unit (^identifier)
+Callout: Styled block quote with semantic type (>[!type])
+Progressive Disclosure: Three-phase loading model
+Skill: Self-contained agent capability package
+Wikilink: Internal reference syntax ([[target]])
+
+B. References
+-------------
+
+1. AgentSkills Specification: github.com/agentskills/agentskills
+2. Obsidian Markdown Reference: help.obsidian.md/Editing+and+formatting
+3. Mermaid Documentation: mermaid.js.org/intro/
+4. SKILL.md Format Specification: See AGENTS.md §2
+
+C. Revision History
+-------------------
+
+| Version | Date       | Author  | Changes                    |
+|---------|------------|---------|----------------------------|
+| 1.0.0   | 2025-12-21 | Claude  | Initial PRD                |
+
+================================================================================
+END OF DOCUMENT
+================================================================================
