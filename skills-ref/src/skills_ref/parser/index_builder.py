@@ -32,6 +32,7 @@ class SemanticIndexBuilder:
 
     def __init__(self):
         self.block_registry: Dict[str, BlockEntry] = {}
+        self.duplicate_block_ids: List[Dict[str, Any]] = []  # Track duplicates for validation
         self.heading_tree: Optional[HeadingTreeNode] = None
         self.heading_stack: List[HeadingTreeNode] = []
         self.tag_entries: List[TagEntry] = []
@@ -90,15 +91,13 @@ class SemanticIndexBuilder:
         block_id = node.block_id
 
         if block_id in self.block_registry:
-            # We will just log/store the error, or raise if strict.
-            # The architecture says "produce validation error", but index builder might not be the validator.
-            # However, for duplicate IDs, we can't really index it correctly.
-            # We'll skip or overwrite? The requirement says "Duplicate IDs produce validation error E006".
-            # The IndexBuilder builds the index, the Validator checks it.
-            # But the IndexBuilder can't store two things at the same key.
-            # We'll assume the Validator runs after or during.
-            # For now, let's keep the first one or overwrite? Let's keep first one.
-            pass
+            # Track duplicate for validation (E006 error)
+            self.duplicate_block_ids.append({
+                'id': block_id,
+                'position': getattr(node, 'position', None),
+                'first_occurrence': self.block_registry[block_id].node
+            })
+            # Keep the first occurrence, don't overwrite
         else:
             # We need to serialize context
             from ..types.index import BlockContext
@@ -222,7 +221,8 @@ class SemanticIndexBuilder:
             inbound_links=dict(self.inbound_links),
             unresolved_links=self.unresolved_links,
             footnote_refs=dict(self.footnote_refs),
-            footnote_defs=self.footnote_defs
+            footnote_defs=self.footnote_defs,
+            duplicate_block_ids=self.duplicate_block_ids
         )
 
     def _resolve_links(self) -> None:

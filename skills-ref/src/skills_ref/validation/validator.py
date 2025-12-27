@@ -147,11 +147,26 @@ class SkillValidator:
     def _validate_block_ids(self, index: SemanticIndex) -> List[ValidationIssue]:
         """Validate block ID uniqueness and format."""
         issues = []
-        # seen_ids: Dict[str, int] = {} # Unused? Index prevents duplicates at index time?
-        # Actually index builder overrides duplicate IDs or fails?
-        # If we had access to raw parsing errors we could report duplicates.
-        # But here we inspect the registry.
 
+        # Check for duplicate block IDs (E006)
+        for duplicate in index.duplicate_block_ids:
+            position = duplicate.get('position')
+            line = None
+            if position:
+                if hasattr(position, 'start'):
+                    line = position.start.line
+                elif isinstance(position, dict):
+                    line = position.get('start', {}).get('line')
+
+            issues.append(ValidationIssue(
+                code='E006',
+                message=f"Duplicate block ID: '^{duplicate['id']}'",
+                severity=Severity.ERROR,
+                line=line,
+                suggestion="Each block ID must be unique within a skill"
+            ))
+
+        # Check format of registered block IDs
         for block_id, entry in index.block_registry.items():
             # Check format
             if not re.match(r'^[a-zA-Z][a-zA-Z0-9_-]*$', block_id):
@@ -160,7 +175,7 @@ class SkillValidator:
                     message=f"Block ID '^{block_id}' has non-standard format",
                     severity=Severity.WARNING,
                     suggestion="Use alphanumeric characters, starting with a letter",
-                    line=entry.node.position.start.line
+                    line=entry.node.position.start.line if hasattr(entry.node, 'position') else None
                 ))
 
         return issues

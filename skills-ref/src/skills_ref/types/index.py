@@ -52,6 +52,7 @@ class SemanticIndex:
     unresolved_links: List[Dict[str, Any]]
     footnote_refs: Dict[str, List[Dict[str, Any]]]
     footnote_defs: Dict[str, Dict[str, Any]]
+    duplicate_block_ids: List[Dict[str, Any]] = field(default_factory=list)  # For E006 validation
 
     def lookup_block(self, block_id: str) -> Optional[BlockEntry]:
         """O(1) block lookup."""
