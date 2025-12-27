@@ -83,10 +83,18 @@ class ScriptSandbox:
     ) -> ExecutionResult:
         """Execute Python code in sandbox."""
 
+        wrappers = []
+
+        # Network isolation
+        if not self.config.network_access:
+            wrappers.append(self._generate_network_blocker())
+
         # Wrap code with import restrictions if configured
         if self.config.allowed_imports:
-            wrapper = self._generate_import_wrapper(self.config.allowed_imports)
-            code = wrapper + '\n' + code
+            wrappers.append(self._generate_import_wrapper(self.config.allowed_imports))
+
+        if wrappers:
+            code = '\n'.join(wrappers) + '\n' + code
 
         with tempfile.NamedTemporaryFile(
             mode='w',
@@ -173,6 +181,15 @@ class ScriptSandbox:
             )
         finally:
             Path(script_path).unlink(missing_ok=True)
+
+    def _generate_network_blocker(self) -> str:
+        """Generate code to block network-related modules."""
+        return '''
+import sys
+# Block network modules
+for mod in ['socket', 'urllib', 'http', 'requests', 'aiohttp']:
+    sys.modules[mod] = None
+'''
 
     def _generate_import_wrapper(self, allowed_imports: List[str]) -> str:
         """Generate import restriction wrapper."""
