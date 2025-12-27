@@ -9,23 +9,38 @@ This module provides:
 """
 
 from .types import (
+    DataType,
+    ErrorHandlingStrategy,
+    OperationType,
+    ResourceConstraints,
+    FieldSchema,
     SkillInputContract,
     SkillOutputContract,
+    SkillDefinitionExt,
     SkillChain,
     SkillTransition,
     CompositionError,
+    CompositionErrorType,
     ValidationResult,
 )
 from .validator import (
     ContractValidator,
     CompositionValidator,
 )
-from .executor import SkillChainExecutor
+from .executor import SkillChainExecutor, SkillExecutionResult, ChainExecutionResult
 
 __all__ = [
+    # Enums
+    "DataType",
+    "ErrorHandlingStrategy",
+    "OperationType",
+    "CompositionErrorType",
     # Types
+    "ResourceConstraints",
+    "FieldSchema",
     "SkillInputContract",
     "SkillOutputContract",
+    "SkillDefinitionExt",
     "SkillChain",
     "SkillTransition",
     "CompositionError",
@@ -35,4 +50,6 @@ __all__ = [
     "CompositionValidator",
     # Executor
     "SkillChainExecutor",
+    "SkillExecutionResult",
+    "ChainExecutionResult",
 ]

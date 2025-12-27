@@ -28,6 +28,60 @@ class ErrorHandlingStrategy(Enum):
     RETRY = "retry"        # Retry the failed skill
 
 
+class OperationType(Enum):
+    """
+    Effect classification for skills.
+
+    Used for security validation and confirmation requirements.
+    Effects are ordered: READ < TRANSFORM < WRITE
+    """
+    READ = "read"           # No side effects, idempotent
+    TRANSFORM = "transform"  # Transforms data, no external effects
+    WRITE = "write"         # Modifies external state, requires confirmation
+
+    def __lt__(self, other: "OperationType") -> bool:
+        order = {self.READ: 0, self.TRANSFORM: 1, self.WRITE: 2}
+        return order[self] < order[other]
+
+    def __le__(self, other: "OperationType") -> bool:
+        return self == other or self < other
+
+    def __gt__(self, other: "OperationType") -> bool:
+        return other < self
+
+    def __ge__(self, other: "OperationType") -> bool:
+        return self == other or self > other
+
+    @classmethod
+    def max(cls, *ops: "OperationType") -> "OperationType":
+        """Return the highest effect level."""
+        return max(ops, key=lambda o: {cls.READ: 0, cls.TRANSFORM: 1, cls.WRITE: 2}[o])
+
+
+@dataclass
+class ResourceConstraints:
+    """Resource limits for skill execution."""
+    max_memory_mb: Optional[int] = None
+    max_cpu_percent: Optional[float] = None
+    max_network_bytes: Optional[int] = None
+    max_disk_bytes: Optional[int] = None
+    max_duration_ms: Optional[int] = None
+    max_depth: int = 10  # Maximum composition/recursion depth
+    max_iterations: int = 10000  # For self-recursive skills
+
+    def merge(self, other: "ResourceConstraints") -> "ResourceConstraints":
+        """Merge constraints, taking the more restrictive."""
+        return ResourceConstraints(
+            max_memory_mb=min(filter(None, [self.max_memory_mb, other.max_memory_mb]), default=None),
+            max_cpu_percent=min(filter(None, [self.max_cpu_percent, other.max_cpu_percent]), default=None),
+            max_network_bytes=min(filter(None, [self.max_network_bytes, other.max_network_bytes]), default=None),
+            max_disk_bytes=min(filter(None, [self.max_disk_bytes, other.max_disk_bytes]), default=None),
+            max_duration_ms=min(filter(None, [self.max_duration_ms, other.max_duration_ms]), default=None),
+            max_depth=min(self.max_depth, other.max_depth),
+            max_iterations=min(self.max_iterations, other.max_iterations),
+        )
+
+
 @dataclass
 class FieldSchema:
     """Schema for a contract field."""
@@ -133,15 +187,26 @@ class SkillDefinitionExt:
     # Composition
     level: int = 1  # 1=atomic, 2=composite, 3=workflow
     composes: List[str] = field(default_factory=list)
-    operation: str = "READ"  # READ, WRITE, TRANSFORM
+    operation: OperationType = OperationType.READ
 
     # Execution
     timeout_ms: int = 30000
     retry_count: int = 0
+    constraints: Optional[ResourceConstraints] = None
+
+    # Security
+    confirmation_required: Optional[bool] = None  # None = auto-detect from operation
 
     # Lifecycle
     deprecated_at: Optional[str] = None
     sunset_at: Optional[str] = None
+
+    def requires_confirmation(self) -> bool:
+        """Check if this skill requires user confirmation."""
+        if self.confirmation_required is not None:
+            return self.confirmation_required
+        # Auto-detect: WRITE operations require confirmation
+        return self.operation == OperationType.WRITE
 
 
 @dataclass
@@ -207,6 +272,9 @@ class CompositionErrorType(Enum):
     INCOMPATIBLE_VERSION = "incompatible_version"
     INVALID_TRANSITION = "invalid_transition"
     LEVEL_VIOLATION = "level_violation"
+    EFFECT_VIOLATION = "effect_violation"  # Declared effect lower than actual
+    RESOURCE_VIOLATION = "resource_violation"  # Exceeds resource constraints
+    DEPTH_EXCEEDED = "depth_exceeded"  # Composition too deep
 
 
 @dataclass

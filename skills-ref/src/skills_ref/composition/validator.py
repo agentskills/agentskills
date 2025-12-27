@@ -10,6 +10,8 @@ from .types import (
     CompositionErrorType,
     DataType,
     FieldSchema,
+    OperationType,
+    ResourceConstraints,
     SkillChain,
     SkillDefinitionExt,
     SkillInputContract,
@@ -482,3 +484,172 @@ class CompositionValidator:
         except ImportError:
             # packaging not available, skip version check
             return ValidationResult.success(["Version checking skipped (packaging not installed)"])
+
+    def validate_effect_safety(
+        self,
+        skill: SkillDefinitionExt,
+        available_skills: Dict[str, SkillDefinitionExt],
+    ) -> ValidationResult:
+        """
+        Validate that declared effect matches transitive reality.
+
+        CRITICAL SECURITY CHECK: A skill cannot claim a lower effect
+        than what its composed skills actually perform.
+
+        Example violation:
+            skill: "safe-read"
+            operation: READ
+            composes:
+              - delete-data  # WRITE! Violates declared READ
+        """
+        errors = []
+
+        # Compute transitive effect
+        actual_effect = self._compute_transitive_effect(
+            skill, available_skills, visited=set()
+        )
+
+        # Check if declared effect is accurate
+        if actual_effect > skill.operation:
+            errors.append(CompositionError(
+                error_type=CompositionErrorType.EFFECT_VIOLATION,
+                message=(
+                    f"Skill '{skill.name}' declares {skill.operation.value} "
+                    f"but transitively performs {actual_effect.value}. "
+                    f"This is a security violation - skills cannot hide WRITE operations."
+                ),
+                skill_name=skill.name,
+                expected=skill.operation.value,
+                actual=actual_effect.value,
+            ))
+
+        if errors:
+            return ValidationResult.failure(errors)
+        return ValidationResult.success()
+
+    def _compute_transitive_effect(
+        self,
+        skill: SkillDefinitionExt,
+        available_skills: Dict[str, SkillDefinitionExt],
+        visited: Set[str],
+    ) -> OperationType:
+        """
+        Compute the actual effect by traversing composition tree.
+
+        Effect composition is monotonic: max of all component effects.
+        """
+        if skill.name in visited:
+            # Avoid infinite recursion for self-referential skills
+            return skill.operation
+
+        visited.add(skill.name)
+        max_effect = skill.operation
+
+        for composed_name in skill.composes:
+            # Skip self-recursion
+            if composed_name == skill.name:
+                continue
+
+            composed = available_skills.get(composed_name)
+            if composed:
+                composed_effect = self._compute_transitive_effect(
+                    composed, available_skills, visited
+                )
+                if composed_effect > max_effect:
+                    max_effect = composed_effect
+
+        return max_effect
+
+    def validate_depth(
+        self,
+        skill: SkillDefinitionExt,
+        available_skills: Dict[str, SkillDefinitionExt],
+        max_depth: int = 10,
+    ) -> ValidationResult:
+        """
+        Validate that composition depth doesn't exceed limit.
+
+        Prevents unbounded recursion and ensures reasonable complexity.
+        """
+        actual_depth = self._compute_depth(
+            skill, available_skills, current_depth=0, visited=set()
+        )
+
+        if actual_depth > max_depth:
+            return ValidationResult.failure([CompositionError(
+                error_type=CompositionErrorType.DEPTH_EXCEEDED,
+                message=(
+                    f"Skill '{skill.name}' has composition depth {actual_depth}, "
+                    f"which exceeds the maximum allowed depth of {max_depth}"
+                ),
+                skill_name=skill.name,
+                expected=str(max_depth),
+                actual=str(actual_depth),
+            )])
+
+        return ValidationResult.success()
+
+    def _compute_depth(
+        self,
+        skill: SkillDefinitionExt,
+        available_skills: Dict[str, SkillDefinitionExt],
+        current_depth: int,
+        visited: Set[str],
+    ) -> int:
+        """Compute the maximum depth of the composition tree."""
+        if skill.name in visited:
+            return current_depth  # Avoid infinite recursion
+
+        visited.add(skill.name)
+        max_child_depth = current_depth
+
+        for composed_name in skill.composes:
+            if composed_name == skill.name:
+                continue  # Skip self-recursion
+
+            composed = available_skills.get(composed_name)
+            if composed:
+                child_depth = self._compute_depth(
+                    composed, available_skills, current_depth + 1, visited.copy()
+                )
+                max_child_depth = max(max_child_depth, child_depth)
+
+        return max_child_depth
+
+    def validate_full(
+        self,
+        chain: SkillChain,
+        available_skills: Optional[Dict[str, SkillDefinitionExt]] = None,
+        max_depth: int = 10,
+    ) -> ValidationResult:
+        """
+        Perform full validation including security checks.
+
+        Combines:
+        - Chain structure validation
+        - Effect safety validation
+        - Depth validation
+        """
+        available = available_skills or {s.name: s for s in chain.skills}
+        all_errors = []
+        all_warnings = []
+
+        # Chain validation
+        chain_result = self.validate_chain(chain, available)
+        all_errors.extend(chain_result.errors)
+        all_warnings.extend(chain_result.warnings)
+
+        # Effect safety for each skill
+        for skill in chain.skills:
+            effect_result = self.validate_effect_safety(skill, available)
+            all_errors.extend(effect_result.errors)
+            all_warnings.extend(effect_result.warnings)
+
+            # Depth validation
+            depth_result = self.validate_depth(skill, available, max_depth)
+            all_errors.extend(depth_result.errors)
+            all_warnings.extend(depth_result.warnings)
+
+        if all_errors:
+            return ValidationResult(valid=False, errors=all_errors, warnings=all_warnings)
+        return ValidationResult.success(all_warnings)
