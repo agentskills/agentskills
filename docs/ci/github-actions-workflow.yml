@@ -1,0 +1,182 @@
+name: Skill Self-Validation & Benchmarking
+
+on:
+  push:
+    branches: [main, develop, feature/*]
+  pull_request:
+  schedule:
+    - cron: '0 */6 * * *'  # Run every 6 hours for trend data
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  validate-skills:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for baseline comparison
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-json-report pyyaml jsonschema hypothesis
+
+      - name: Run Unit Tests (All Skills)
+        run: |
+          pytest examples/_showcase/*/tests/ \
+            --json-report \
+            --json-report-file=test-results.json \
+            -v
+        continue-on-error: true
+
+      - name: Validate Skill Definitions
+        run: |
+          python scripts/validate-skills.py \
+            --output validation-results.json \
+            examples/_showcase/
+
+      - name: Run Composition Tests
+        run: |
+          pytest examples/_showcase/*/tests/test_composite_skills.py \
+            examples/_showcase/*/tests/test_workflow_skills.py \
+            --json-report \
+            --json-report-file=composition-results.json \
+            -v
+        continue-on-error: true
+
+      - name: Benchmark Skills (Isolated)
+        run: |
+          python scripts/benchmark-skills.py \
+            --mode isolated \
+            --iterations 100 \
+            --output benchmarks/isolated-candidate.json \
+            examples/_showcase/
+
+      - name: Benchmark Compositions
+        run: |
+          python scripts/benchmark-skills.py \
+            --mode compositions \
+            --iterations 50 \
+            --output benchmarks/composition-candidate.json \
+            examples/_showcase/
+
+      - name: Benchmark Scaling
+        run: |
+          python scripts/benchmark-scaling.py \
+            --max-width 10 \
+            --max-depth 5 \
+            --output benchmarks/scaling-results.json
+
+      - name: Validate Type Safety
+        run: |
+          python scripts/validate-type-safety.py \
+            --output type-safety-results.json \
+            examples/_showcase/
+
+      - name: Compare Against Baseline
+        if: github.event_name == 'pull_request'
+        run: |
+          # Fetch baseline from main branch
+          git show origin/main:benchmarks/baseline.json > benchmarks/baseline.json 2>/dev/null || echo '{}' > benchmarks/baseline.json
+
+          python scripts/compare-benchmarks.py \
+            --baseline benchmarks/baseline.json \
+            --candidate benchmarks/isolated-candidate.json \
+            --output reports/comparison.json
+
+      - name: Generate Dashboard
+        run: |
+          mkdir -p reports
+          python scripts/generate-dashboard.py \
+            --test-results test-results.json \
+            --validation validation-results.json \
+            --benchmarks benchmarks/ \
+            --output reports/dashboard.html
+
+      - name: Generate Markdown Report
+        run: |
+          python scripts/generate-report.py \
+            --test-results test-results.json \
+            --validation validation-results.json \
+            --benchmarks benchmarks/ \
+            --comparison reports/comparison.json \
+            --output reports/summary.md
+
+      - name: Upload Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: skill-validation-results
+          path: |
+            test-results.json
+            validation-results.json
+            composition-results.json
+            type-safety-results.json
+            benchmarks/
+            reports/
+          retention-days: 90
+
+      - name: Comment on PR with Results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            let comment = '';
+
+            // Read the generated markdown report
+            try {
+              comment = fs.readFileSync('reports/summary.md', 'utf8');
+            } catch (e) {
+              comment = '## Skill Validation Results\n\nError generating report. Check workflow logs.';
+            }
+
+            // Find existing comment to update
+            const { data: comments } = await github.rest.issues.listComments({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+
+            const botComment = comments.find(c =>
+              c.user.type === 'Bot' &&
+              c.body.includes('Skill Validation Results')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                comment_id: botComment.id,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            } else {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            }
+
+      - name: Update Baseline (main branch only)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          cp benchmarks/isolated-candidate.json benchmarks/baseline.json
+
+      - name: Check for Regressions
+        run: |
+          python scripts/check-regressions.py \
+            --comparison reports/comparison.json \
+            --threshold 10

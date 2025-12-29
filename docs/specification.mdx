@@ -52,6 +52,9 @@ metadata:
 | `compatibility` | No | Max 500 characters. Indicates environment requirements (intended product, system packages, network access, etc.). |
 | `metadata` | No | Arbitrary key-value mapping for additional metadata. |
 | `allowed-tools` | No | Space-delimited list of pre-approved tools the skill may use. (Experimental) |
+| `level` | No | Integer 1-3 indicating composition tier. See [Composability](#composability-fields). |
+| `operation` | No | Safety classification: `READ`, `WRITE`, or `TRANSFORM`. See [Composability](#composability-fields). |
+| `composes` | No | List of skill names this skill uses. See [Composability](#composability-fields). |
 
 #### `name` field
 
@@ -154,6 +157,106 @@ The optional `allowed-tools` field:
 Example:
 ```yaml
 allowed-tools: Bash(git:*) Bash(jq:*) Read
+```
+
+### Composability fields
+
+These optional fields enable **composable skills** - building complex behaviours from simpler ones, like higher-order functions in functional programming. See [ARCHITECTURE.md](ARCHITECTURE.md) for the full design rationale.
+
+#### `level` field
+
+The optional `level` field indicates where a skill sits in the composition hierarchy:
+
+| Value | Name | Description |
+|-------|------|-------------|
+| `1` | Atomic | Single-purpose operation (e.g., read emails, save PDF) |
+| `2` | Composite | Combines multiple atomic skills (e.g., research = search + fetch) |
+| `3` | Workflow | Complex orchestration with decision logic (e.g., daily synthesis) |
+
+Example:
+```yaml
+level: 2
+```
+
+<Tip>
+Level 1 skills should do ONE thing. Level 2+ skills should always specify `composes` to declare their dependencies.
+</Tip>
+
+#### `operation` field
+
+The optional `operation` field classifies the skill's safety level:
+
+| Value | Description | User Confirmation |
+|-------|-------------|-------------------|
+| `READ` | Only reads data, no side effects | Never required |
+| `WRITE` | Creates, modifies, or deletes data | Recommended |
+| `TRANSFORM` | Local-only transformation | Never required |
+
+Example:
+```yaml
+operation: READ
+```
+
+For composite skills, the operation should be the **most restrictive** of its components:
+- If ANY component is WRITE → skill is WRITE
+- If ALL components are READ → skill is READ
+
+<Note>
+This enables clients to automatically determine which skills need confirmation before execution.
+</Note>
+
+#### `composes` field
+
+The optional `composes` field lists the skills this skill depends on:
+
+```yaml
+composes:
+  - web-search
+  - pdf-save
+  - email-read
+```
+
+Benefits of explicit composition:
+- **Auditable**: See exactly what capabilities a skill uses
+- **Testable**: Verify all dependencies are available before activation
+- **Upgradeable**: Know what's affected when changing a skill
+
+<Warning>
+Skills cannot compose themselves. Circular dependencies are not allowed.
+</Warning>
+
+#### Composability example
+
+Here's a complete example of a Level 2 composite skill:
+
+```yaml
+---
+name: research
+description: Research a topic with web search and source archival. Use for comprehensive topic investigation.
+level: 2
+operation: READ
+composes:
+  - web-search
+  - pdf-save
+license: Apache-2.0
+---
+
+# Research
+
+Comprehensive topic research with optional source archival.
+
+## Workflow
+
+1. Use **web-search** to get synthesised answer with citations
+2. Optionally fetch full content from top citations
+3. If requested, use **pdf-save** to archive sources
+
+## When to use
+
+Use this skill when the user needs:
+- In-depth research on a topic
+- Verified sources for claims
+- Archived copies of web sources
 ```
 
 ### Body content

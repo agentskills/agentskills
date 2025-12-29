@@ -1,0 +1,404 @@
+---
+title: "Migration Guide"
+description: "Progressive adoption from existing AI tools to Agent Skills"
+---
+
+# Migration Guide
+
+This guide provides a progressive adoption pathway from existing AI tools to Agent Skills. Based on enterprise adoption patterns, we recommend a three-tier approach over 12 weeks.
+
+<Note>
+**Reality Check:** 96% of enterprises are in experimentation; only 2.9% have reached scale. This guide closes that gap by providing concrete migration steps with validated outcomes at each stage.
+</Note>
+
+## Migration Paths
+
+| Coming From | Complexity | Timeline |
+|-------------|------------|----------|
+| **Custom GPTs / Claude Projects** | Low | 1-2 weeks |
+| **LangChain / LlamaIndex** | Medium | 2-4 weeks |
+| **Raw API calls** | Medium | 2-4 weeks |
+| **CrewAI / AutoGen** | Medium | 3-5 weeks |
+| **Custom agent framework** | High | 4-8 weeks |
+
+---
+
+## Tier 1: Single Skill (Week 1-2)
+
+**Goal:** Convert one existing workflow to Agent Skills format.
+
+### Step 1: Identify Candidate Workflow
+
+Choose a workflow that:
+- ✅ Runs frequently (daily or more)
+- ✅ Has clear inputs and outputs
+- ✅ Is currently working (don't fix bugs during migration)
+- ✅ Is low-risk (READ operations preferred)
+
+**Good first candidates:**
+- Data retrieval (search, lookup)
+- Report generation
+- Status summaries
+- Classification tasks
+
+### Step 2: Extract the Skill Definition
+
+**From Custom GPT:**
+
+```
+GPT Instructions:
+"When the user asks about a customer, search the CRM for their
+information and summarize their account status, recent interactions,
+and any open issues."
+```
+
+**To SKILL.md:**
+
+```yaml
+name: customer-lookup
+level: 1
+operation: READ
+
+description: |
+  Retrieves customer information from CRM and summarizes
+  account status, recent interactions, and open issues.
+
+inputs:
+  - name: customer_id
+    type: string
+    required: true
+    description: "Customer ID or email"
+
+outputs:
+  - name: summary
+    type: object
+    properties:
+      account_status: string
+      recent_interactions: array
+      open_issues: array
+
+examples:
+  - input:
+      customer_id: "acme-corp"
+    output:
+      summary:
+        account_status: "Active - Enterprise"
+        recent_interactions: ["Call 2025-12-20", "Email 2025-12-18"]
+        open_issues: ["Ticket #1234 - API rate limiting"]
+```
+
+### Step 3: Validate and Test
+
+```bash
+# Validate skill structure
+agentskills validate skills/customer-lookup/
+
+# Run with test input
+agentskills run customer-lookup --input '{"customer_id": "test-123"}'
+
+# Compare output with existing system
+# Ensure parity before proceeding
+```
+
+### Step 4: Measure Baseline
+
+Record these metrics for later comparison:
+- Execution time
+- Token usage
+- Error rate
+- Output quality (manual review)
+
+---
+
+## Tier 2: Composite Skill (Week 3-6)
+
+**Goal:** Build a workflow that chains 2-3 atomic skills.
+
+### Step 1: Map the Workflow
+
+Identify the steps in your existing workflow:
+
+```
+Existing: "When a support ticket comes in, look up the customer,
+check their recent interactions, and draft a response."
+
+Steps:
+1. customer-lookup (L1) - Get customer context
+2. ticket-read (L1) - Get ticket details
+3. response-draft (L1) - Generate response
+```
+
+### Step 2: Create L1 Skills for Each Step
+
+If skills don't exist, create them following Tier 1 pattern.
+
+### Step 3: Compose into L2
+
+```yaml
+# support-response/SKILL.md
+name: support-response
+level: 2
+operation: READ
+
+description: |
+  Handles incoming support tickets by gathering customer context
+  and drafting an appropriate response.
+
+composes:
+  - customer-lookup
+  - ticket-read
+  - response-draft
+
+inputs:
+  - name: ticket_id
+    type: string
+    required: true
+
+outputs:
+  - name: draft_response
+    type: string
+  - name: customer_context
+    type: object
+  - name: suggested_priority
+    type: string
+    enum: [low, medium, high, urgent]
+```
+
+### Step 4: Add Type Mappings
+
+Ensure outputs of each skill match inputs of the next:
+
+```yaml
+# In composition config
+mappings:
+  - from: customer-lookup.summary
+    to: response-draft.customer_context
+  - from: ticket-read.details
+    to: response-draft.ticket_info
+```
+
+### Step 5: Validate Composition
+
+```bash
+# Check type flow
+agentskills validate --check-types skills/support-response/
+
+# Run end-to-end
+agentskills run support-response --input '{"ticket_id": "T-12345"}'
+```
+
+---
+
+## Tier 3: Multi-Agent System (Week 7-12)
+
+**Goal:** Orchestrate specialized agents using skills with governance.
+
+### Step 1: Design Agent Roles
+
+Map your workflow to specialized agents:
+
+```
+Customer Success Agent
+├── customer-intel (L2) - Aggregate customer context
+├── renewal-risk (L2) - Assess renewal probability
+└── expansion-opportunity (L2) - Identify upsell potential
+
+Support Agent
+├── support-triage (L2) - Classify and route tickets
+├── support-response (L2) - Draft responses
+└── escalation-decide (L2) - Determine escalation need
+```
+
+### Step 2: Create L3 Workflow
+
+```yaml
+# customer-success-workflow/SKILL.md
+name: customer-success-workflow
+level: 3
+operation: WORKFLOW
+
+description: |
+  Full customer success workflow for account reviews.
+  Orchestrates intelligence gathering, risk assessment,
+  and action planning.
+
+composes:
+  - customer-intel
+  - renewal-risk
+  - expansion-opportunity
+  - action-plan-generate
+
+states:
+  - GATHERING_CONTEXT
+  - ANALYZING_RISK
+  - IDENTIFYING_OPPORTUNITIES
+  - PLANNING_ACTIONS
+  - COMPLETE
+
+transitions:
+  - from: GATHERING_CONTEXT
+    to: ANALYZING_RISK
+    when: context_complete
+  - from: ANALYZING_RISK
+    to: IDENTIFYING_OPPORTUNITIES
+    when: risk_assessed
+  - from: IDENTIFYING_OPPORTUNITIES
+    to: PLANNING_ACTIONS
+    when: opportunities_identified
+```
+
+### Step 3: Add Governance
+
+```yaml
+# Governance configuration
+governance:
+  confirmation:
+    required_for: [WRITE]
+    timeout: 300s
+    escalation: manager@company.com
+
+  audit:
+    log_all_executions: true
+    retention_days: 90
+    pii_redaction: true
+
+  cost:
+    budget_per_day: 100.00
+    alert_at: [50, 80, 100]
+```
+
+### Step 4: Deploy with Feature Flags
+
+```python
+# Gradual rollout
+from agentskills import SkillRunner, FeatureFlags
+
+flags = FeatureFlags({
+    "use_new_workflow": {
+        "enabled": True,
+        "rollout_percentage": 10,  # Start with 10%
+        "allowed_users": ["beta-testers"]
+    }
+})
+
+runner = SkillRunner(feature_flags=flags)
+```
+
+---
+
+## Migration Tools
+
+### GPT-to-Skill Converter
+
+```bash
+# Convert GPT instructions to skill skeleton
+agentskills convert gpt \
+  --instructions "path/to/gpt-instructions.txt" \
+  --output skills/my-skill/
+```
+
+### Prompt Analyzer
+
+```bash
+# Analyze existing prompts for skill structure
+agentskills analyze prompts/ \
+  --suggest-skills \
+  --output analysis-report.md
+```
+
+### Validation CLI
+
+```bash
+# Full validation suite
+agentskills validate skills/ \
+  --check-types \
+  --check-security \
+  --check-effects \
+  --report validation-report.json
+```
+
+---
+
+## Common Migration Patterns
+
+### Pattern 1: Wrapper Skills
+
+Wrap existing functionality without rewriting:
+
+```yaml
+name: legacy-api-wrapper
+level: 1
+operation: READ
+
+implementation:
+  type: http
+  url: "https://legacy-api.internal/endpoint"
+  method: POST
+  headers:
+    Authorization: "Bearer ${LEGACY_API_TOKEN}"
+```
+
+### Pattern 2: Gradual Replacement
+
+Run old and new in parallel, compare results:
+
+```python
+async def migrate_with_comparison(inputs):
+    # Run both
+    old_result = await legacy_system.execute(inputs)
+    new_result = await skill_runner.execute("new-skill", inputs)
+
+    # Compare
+    if not results_match(old_result, new_result):
+        log_discrepancy(old_result, new_result)
+        return old_result  # Fallback to old
+
+    return new_result
+```
+
+### Pattern 3: Feature Flag Rollout
+
+```yaml
+# config/rollout.yaml
+skills:
+  customer-lookup:
+    version: 2.0.0
+    rollout:
+      percentage: 25
+      canary_users:
+        - team-alpha@company.com
+      fallback: customer-lookup@1.0.0
+```
+
+---
+
+## Validation Checklist
+
+Before considering migration complete:
+
+### Tier 1 Complete
+- [ ] Skill validates without errors
+- [ ] Output matches legacy system (within tolerance)
+- [ ] Error handling works correctly
+- [ ] Metrics collection enabled
+
+### Tier 2 Complete
+- [ ] All L1 skills migrated
+- [ ] Composition validates type flow
+- [ ] End-to-end tests pass
+- [ ] Performance within SLA
+
+### Tier 3 Complete
+- [ ] State machine tested
+- [ ] Governance controls verified
+- [ ] Rollback procedure tested
+- [ ] Production monitoring active
+- [ ] Team trained on new system
+
+---
+
+## Support
+
+- **Documentation:** [Getting Started](getting-started-guide.mdx)
+- **Examples:** [Enterprise Use Cases](../examples/enterprise/)
+- **Community:** GitHub Discussions

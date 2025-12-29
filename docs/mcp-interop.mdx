@@ -1,0 +1,286 @@
+---
+title: "MCP Interoperability"
+description: "How skills relate to Model Context Protocol (MCP)"
+---
+
+# Skills and MCP: When to Use Each
+
+This document clarifies the relationship between **Agent Skills** and **Model Context Protocol (MCP)**.
+
+## The Short Version
+
+| Layer | What It Is | Example |
+|-------|-----------|---------|
+| **MCP** | Capability layer (WHAT actions are available) | `github.create_issue()` |
+| **Skills** | Knowledge layer (HOW to do things) | "Review PR: read diff, analyze, comment" |
+
+**MCP provides tools. Skills compose them into workflows.**
+
+### 12-Factor Agents Perspective
+
+This layering follows [12-Factor Agents](https://github.com/humanlayer/12-factor-agents) principles:
+
+- **Tools as structured outputs** (Factor 3) → MCP exposes atomic tools with typed parameters. Skills add validation contracts on top.
+- **Small, focused agents** (Factor 5) → L1 atomic skills wrap single MCP tools. They don't try to be clever.
+- **Compose, don't concatenate** → L2/L3 skills compose atomics declaratively. No string concatenation of tool calls.
+- **Portable across runtimes** (Factor 12) → Skills define *what* to compose; the runtime decides *how* to call MCP.
+
+**The key insight:** MCP standardises *tool access*. Skills standardise *workflow composition*. Together, they give you structured, type-safe, portable agent workflows.
+
+## Visual Mental Model
+
+```
+┌─────────────────────────────────────────────────────┐
+│                   Agent Runtime                      │
+├─────────────────────────────────────────────────────┤
+│  Skills Layer (Procedural Knowledge)                │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐ │
+│  │ pr-review   │  │ email-triage│  │ bug-fix     │ │
+│  │ (L3 workflow)  │ (L2 composite) │ (L2 composite)│
+│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘ │
+│         │                │                │        │
+│  ┌──────┴────────────────┴────────────────┴──────┐ │
+│  │              Skill Composition                 │ │
+│  └──────┬────────────────┬────────────────┬──────┘ │
+├─────────┼────────────────┼────────────────┼────────┤
+│  MCP Layer (Tool Capabilities)                     │
+│  ┌──────┴──────┐  ┌──────┴──────┐  ┌──────┴──────┐ │
+│  │ GitHub MCP  │  │ Gmail MCP   │  │ Slack MCP   │ │
+│  │ - read_pr   │  │ - search    │  │ - post_msg  │ │
+│  │ - comment   │  │ - send      │  │ - react     │ │
+│  │ - merge     │  │ - label     │  │ - thread    │ │
+│  └─────────────┘  └─────────────┘  └─────────────┘ │
+└─────────────────────────────────────────────────────┘
+```
+
+## When to Use Which
+
+### Use MCP When...
+
+- You need to **expose a capability** to agents
+- You're building **tool access** (API wrapper, system integration)
+- The operation is **atomic** (one action, one result)
+- You want **any agent** to call this functionality
+
+**Example:** Creating an MCP server for Jira
+
+```typescript
+// MCP server exposes tools
+server.tool("jira_create_issue", {
+  description: "Create a Jira issue",
+  parameters: {
+    project: { type: "string" },
+    summary: { type: "string" },
+    description: { type: "string" },
+  },
+  handler: async (params) => {
+    return await jiraClient.createIssue(params);
+  },
+});
+```
+
+### Use Skills When...
+
+- You need to **compose multiple tools** into a workflow
+- You want **type-safe** composition with validation
+- You need **safety classification** (READ/WRITE)
+- You're defining **procedural knowledge** (how to do X)
+
+**Example:** A skill that uses MCP tools
+
+```yaml
+name: bug-triage
+level: 2
+operation: WRITE
+
+description: |
+  Triages a bug report: reads from GitHub, creates Jira ticket,
+  notifies Slack channel.
+
+composes:
+  - github-issue-read     # L1: Wraps MCP github.read_issue
+  - jira-ticket-create    # L1: Wraps MCP jira.create_issue
+  - slack-notify          # L1: Wraps MCP slack.post_message
+
+inputs:
+  - name: github_issue_url
+    type: string
+    required: true
+
+outputs:
+  - name: jira_ticket_id
+    type: string
+  - name: slack_thread_url
+    type: string
+```
+
+## Wrapping MCP Tools as Skills
+
+L1 atomic skills can wrap MCP tools:
+
+```yaml
+# _atomic/github-issue-read/SKILL.md
+name: github-issue-read
+level: 1
+operation: READ
+
+description: |
+  Reads a GitHub issue. Wraps the MCP github.read_issue tool.
+
+mcp:
+  server: github
+  tool: read_issue
+
+inputs:
+  - name: repo
+    type: string
+    required: true
+  - name: issue_number
+    type: integer
+    required: true
+
+outputs:
+  - name: title
+    type: string
+  - name: body
+    type: string
+  - name: labels
+    type: array
+  - name: state
+    type: string
+```
+
+**Benefits of wrapping:**
+- Type validation on inputs/outputs
+- Safety classification (READ vs WRITE)
+- Composable with other skills
+- Consistent interface across different MCP servers
+
+## Common Patterns
+
+### Pattern 1: MCP Tool → L1 Skill → L2 Composition
+
+```
+MCP: github.read_pr()
+  ↓
+L1: pr-read (wraps MCP, adds types)
+  ↓
+L2: pr-review (composes pr-read + analyze + comment)
+```
+
+### Pattern 2: Multi-MCP Workflow
+
+```yaml
+name: cross-platform-sync
+level: 3
+operation: WORKFLOW
+
+description: |
+  Syncs issues between GitHub and Jira, notifies Slack.
+
+composes:
+  - github-issues-list    # MCP: github
+  - jira-issues-list      # MCP: jira
+  - sync-diff-calculate   # Pure computation
+  - jira-issue-create     # MCP: jira (for missing issues)
+  - slack-summary-post    # MCP: slack
+```
+
+### Pattern 3: Fallback Across MCP Servers
+
+```yaml
+name: reliable-notification
+level: 2
+operation: WRITE
+
+composes:
+  - notification-attempt:
+      skill: slack-notify
+      fallback: email-notify    # If Slack fails, try email
+      fallback: sms-notify      # If email fails, try SMS
+```
+
+## Interoperability Matrix
+
+| Feature | MCP | Skills | Combined |
+|---------|-----|--------|----------|
+| Tool discovery | ✅ Dynamic | ✅ Static | Both |
+| Type safety | ❌ Runtime | ✅ Validation | Skills add safety |
+| Composition | ❌ Manual | ✅ Declarative | Skills compose MCP |
+| Effect tracking | ❌ None | ✅ READ/WRITE | Skills classify |
+| Confirmation | ❌ Per-tool | ✅ Automatic | Skills enforce |
+| Testing | Tool-level | Composition | Skills test flows |
+
+## FAQ
+
+### Can I use skills without MCP?
+
+**Yes.** Skills are independent of MCP. They can:
+- Call MCP tools (via wrapper L1 skills)
+- Call direct APIs
+- Perform pure computation
+- Compose other skills
+
+### Can I use MCP without skills?
+
+**Yes.** MCP works standalone. Skills add:
+- Composition structure
+- Type validation
+- Safety classification
+- Workflow orchestration
+
+### Should every MCP tool have a skill wrapper?
+
+**Not necessarily.** Wrap when you need:
+- Type safety on inputs/outputs
+- To compose the tool with others
+- To classify as READ/WRITE
+- Consistent interface across tools
+
+### How do skills discover MCP servers?
+
+Skills reference MCP servers by name:
+
+```yaml
+mcp:
+  server: github          # Server name from MCP config
+  tool: read_issue        # Tool exposed by that server
+```
+
+The runtime resolves server names to connections.
+
+### What about MCP resources and prompts?
+
+MCP has three primitives:
+- **Tools** → L1 skills wrap these
+- **Resources** → Skills can reference as inputs
+- **Prompts** → Skills can embed in descriptions
+
+Example with resource:
+
+```yaml
+name: analyze-readme
+level: 1
+operation: READ
+
+mcp:
+  server: filesystem
+  resource: "file:///repo/README.md"  # MCP resource URI
+  tool: read_file
+
+inputs:
+  - name: analysis_type
+    type: string
+    enum: [structure, quality, completeness]
+```
+
+## Summary
+
+| Question | Answer |
+|----------|--------|
+| MCP or Skills? | **Both.** MCP provides tools, Skills compose them. |
+| Which first? | Start with **MCP** for capabilities, add **Skills** for workflows. |
+| Can they coexist? | **Yes.** L1 skills wrap MCP tools. |
+| Migration path? | Wrap MCP tools as L1 → Compose into L2 → Orchestrate with L3. |
+
+**The ecosystem works best when MCP handles capability exposure and Skills handle workflow composition.**

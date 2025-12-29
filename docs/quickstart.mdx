@@ -1,0 +1,217 @@
+---
+title: "Quickstart"
+description: "From zero to working composed skill in 10 minutes"
+---
+
+# Quickstart: Your First Composed Skill
+
+**Goal:** Run a working skill composition in under 10 minutes. Theory comes later.
+
+> **Why this architecture?** AgentSkills follows [12-Factor Agents](https://github.com/humanlayer/12-factor-agents) principles—the same thinking that transformed web services applies to AI agents. Instead of monolithic mega-prompts, we build **small, composable skills** with **strong contracts** and **clear safety boundaries**. Skills are portable across runtimes: the same definition works whether you're running locally, in Claude Code, or enterprise infrastructure.
+
+<details>
+<summary>**Design Principles (click to expand)**</summary>
+
+- **Own your context** → Skills declare their inputs/outputs explicitly
+- **Tools as structured outputs** → Type-safe contracts, not free-form text
+- **Small focused agents** → L1 atomic skills do one thing well
+- **Contact humans with tool calls** → WRITE operations require confirmation
+- **Compose, don't concatenate** → L2/L3 skills compose atomics cleanly
+
+</details>
+
+## 0-2 Minutes: Run Your First Skill
+
+```bash
+# Clone and enter the repository
+git clone https://github.com/agentskills/agentskills
+cd agentskills
+
+# Run the hello-world example
+python examples/quickstart/run_hello.py
+```
+
+**Output:**
+```
+✅ Skill loaded: hello-world
+✅ Input validation passed
+✅ Output: {"message": "Hello, World!", "timestamp": "2025-12-26T08:30:00Z"}
+```
+
+**What just happened?**
+- Loaded a skill definition from `SKILL.md`
+- Validated inputs against the schema
+- Executed the skill
+- Validated output
+
+## 2-5 Minutes: Compose Two Skills
+
+Now let's compose two skills together:
+
+```bash
+python examples/quickstart/run_composition.py
+```
+
+**Output:**
+```
+✅ Composing: fetch-weather → format-report
+✅ Step 1: fetch-weather
+   Input: {"location": "London"}
+   Output: {"temp": 12, "conditions": "cloudy"}
+✅ Step 2: format-report
+   Input: {"temp": 12, "conditions": "cloudy"}
+   Output: {"report": "London: 12°C, cloudy skies"}
+✅ Composition complete!
+```
+
+**Look at the composition:**
+
+```yaml
+# examples/quickstart/weather-report/SKILL.md
+name: weather-report
+level: 2                    # L2 = composite skill
+operation: READ             # Safe, no confirmation needed
+
+composes:
+  - fetch-weather           # L1: Get raw weather data
+  - format-report           # L1: Format into human-readable
+
+inputs:
+  - name: location
+    type: string
+    required: true
+
+outputs:
+  - name: report
+    type: string
+```
+
+**That's it.** Two skills composed with 4 lines of YAML.
+
+## 5-8 Minutes: Create Your Own Skill
+
+Create a new L1 skill:
+
+```bash
+mkdir -p examples/quickstart/my-skill
+```
+
+Create `examples/quickstart/my-skill/SKILL.md`:
+
+```yaml
+name: greet-user
+level: 1
+operation: READ
+
+description: |
+  Generates a personalized greeting.
+
+inputs:
+  - name: username
+    type: string
+    required: true
+  - name: formal
+    type: boolean
+    default: false
+
+outputs:
+  - name: greeting
+    type: string
+
+examples:
+  - input:
+      username: "Alice"
+      formal: false
+    output:
+      greeting: "Hey Alice! 👋"
+  - input:
+      username: "Dr. Smith"
+      formal: true
+    output:
+      greeting: "Good day, Dr. Smith."
+```
+
+Validate it:
+
+```bash
+python scripts/validate-skills.py examples/quickstart/my-skill/
+```
+
+**Output:**
+```
+✅ greet-user: Valid L1 skill
+   - 2 inputs defined
+   - 1 output defined
+   - 2 examples provided
+```
+
+## 8-10 Minutes: Add It to a Composition
+
+Now compose your skill with `format-report`:
+
+Create `examples/quickstart/personalized-weather/SKILL.md`:
+
+```yaml
+name: personalized-weather
+level: 2
+operation: READ
+
+composes:
+  - greet-user              # Your new skill
+  - fetch-weather
+  - format-report
+
+inputs:
+  - name: username
+    type: string
+    required: true
+  - name: location
+    type: string
+    required: true
+
+outputs:
+  - name: message
+    type: string
+```
+
+Run it:
+
+```bash
+python examples/quickstart/run_personalized.py Alice London
+```
+
+**Output:**
+```
+Hey Alice! 👋 London: 12°C, cloudy skies
+```
+
+## Done! What's Next?
+
+You just:
+- ✅ Ran a skill
+- ✅ Composed two skills
+- ✅ Created your own skill
+- ✅ Added it to a composition
+
+**Next steps:**
+
+| I want to... | Read... |
+|--------------|---------|
+| Understand the level system | [Two-Tier Design](two-tier-design.mdx) |
+| Learn about READ vs WRITE | [Safety Semantics](#safety-semantics) |
+| See real-world examples | [Showcases](../examples/_showcase/) |
+| Contribute a skill | [Contributing](contributing.mdx) |
+
+---
+
+## Reference: The 5 Things You Need
+
+Now that you've seen it work, here's the mental model:
+
+1. **Skills have inputs and outputs** → JSON Schema types
+2. **Compose with `composes:`** → List skills in order
+3. **Levels: L1 → L2 → L3** → Atomic → Composite → Workflow
+4. **READ is safe, WRITE confirms** → Effect classification
+5. **Validate before running** → `python scripts/validate-skills.py`
+
+Everything else is optional depth. Start building.
