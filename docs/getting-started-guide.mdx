@@ -1,0 +1,282 @@
+---
+title: "Getting Started"
+description: "A practical guide to using composable skills - no category theory required"
+---
+
+# Getting Started with Composable Skills
+
+This guide gets you building with composable skills in 10 minutes. No mathematics or category theory knowledge required.
+
+<Note>
+**Just want to use skills?** You don't need to understand the theory. This guide focuses on practical patterns.
+</Note>
+
+## The Simple Idea
+
+Skills are **building blocks**. Small pieces that snap together.
+
+```
+email-read  →  extract data  →  create-task
+   (L1)           (L2)            (L1)
+```
+
+That's it. Compose small skills into bigger ones.
+
+## Quick Start
+
+### 1. Use an Atomic Skill (Level 1)
+
+Atomic skills do one thing. They're the Lego bricks.
+
+```yaml
+# Read a pull request
+name: pr-read
+level: 1
+operation: READ
+
+inputs:
+  - name: pr_number
+    type: integer
+    required: true
+
+outputs:
+  - name: title
+    type: string
+  - name: description
+    type: string
+  - name: files_changed
+    type: array
+```
+
+**Using it:**
+```
+"Read PR #42 and give me the summary"
+→ Agent calls pr-read with pr_number: 42
+→ Gets back: title, description, files_changed
+```
+
+### 2. Compose into a Workflow (Level 2+)
+
+Composites combine atomics. They handle the orchestration.
+
+```yaml
+# Review a PR (uses multiple L1 skills)
+name: pr-review
+level: 2
+operation: READ
+
+composes:
+  - pr-read        # Get PR metadata
+  - pr-diff-read   # Get the actual changes
+  - code-analyze   # Check for issues
+
+outputs:
+  - name: review_summary
+    type: object
+```
+
+**The benefit:** You define what to compose. The framework handles:
+- Error propagation
+- Type checking between skills
+- Confirmation prompts for writes
+
+### 3. Safety is Automatic
+
+Skills are tagged by what they do:
+
+| Tag | Meaning | Confirmation |
+|-----|---------|--------------|
+| `READ` | Only reads data | None needed |
+| `WRITE` | Modifies something | User confirms |
+| `WORKFLOW` | Multi-step process | Confirms writes |
+
+**Compose freely within READ**—it's always safe. Mix in WRITE skills and confirmations appear automatically.
+
+## Three Patterns That Cover 80% of Use Cases
+
+### Pattern 1: Pipeline
+
+Chain skills in sequence. Output of one feeds into the next.
+
+```yaml
+name: email-to-task
+composes:
+  - email-read      # Get email content
+  - extract-action  # Find action items
+  - task-create     # Create tasks
+
+# Data flows: email → action items → tasks
+```
+
+### Pattern 2: Fan-Out
+
+One input, multiple parallel operations.
+
+```yaml
+name: research-topic
+composes:
+  - web-search      # Search the web
+  - doc-search      # Search internal docs
+  - slack-search    # Search Slack history
+
+# All three run in parallel, results combine
+```
+
+### Pattern 3: Conditional
+
+Branch based on conditions.
+
+```yaml
+name: respond-email
+composes:
+  - email-classify  # Is it urgent? Request? Info?
+  - email-urgent    # Handle urgent (if classified urgent)
+  - email-standard  # Handle standard (otherwise)
+
+# Only one branch executes
+```
+
+## Real Example: PR Review Workflow
+
+Here's a complete workflow from the Agent Orchestrator showcase:
+
+```yaml
+name: pr-review-complete
+level: 3
+operation: WORKFLOW
+
+description: |
+  Full PR review lifecycle with state management.
+  Handles initial review, feedback loops, and approval.
+
+composes:
+  - pr-review       # L2: Initial code review
+  - pr-respond      # L2: Handle reviewer feedback
+  - pr-improve      # L2: Make requested changes
+
+states:
+  - INITIAL_REVIEW
+  - AWAITING_CHANGES
+  - RE_REVIEWING
+  - APPROVED
+
+transitions:
+  - from: INITIAL_REVIEW
+    to: AWAITING_CHANGES
+    when: REQUEST_CHANGES submitted
+  - from: AWAITING_CHANGES
+    to: RE_REVIEWING
+    when: author pushes changes
+  - from: RE_REVIEWING
+    to: APPROVED
+    when: all concerns addressed
+```
+
+**What this gives you:**
+- Clear state machine for the process
+- Each sub-skill handles its domain
+- Testable at every level
+- Agent knows valid next actions
+
+## The Two-Tier Approach
+
+We designed this for two audiences:
+
+### Tier 1: Users (You, probably)
+
+**What you need to know:**
+- Skills have inputs and outputs
+- You compose them with `composes:`
+- READ is safe, WRITE needs confirmation
+- Higher levels use lower levels
+
+**What you don't need:**
+- Category theory
+- Formal type systems
+- Monad hierarchies
+
+### Tier 2: Framework Developers
+
+**The theory underneath:**
+- Skills form a category (associative composition, identity)
+- Type system ensures composability
+- Graded monad tracks effects
+
+**Why it matters for developers:**
+- Proves composition always works
+- Enables static analysis
+- Supports tooling and validation
+
+## How This Fits 12-Factor Agents Thinking
+
+This framework aligns with [12-Factor Agents](https://github.com/humanlayer/12-factor-agents) principles for building reliable AI systems:
+
+- **Small, focused agents** → L1 atomic skills do exactly one thing. No mega-skills that try to do everything.
+- **Tools as structured outputs** → Skills define typed contracts (inputs/outputs), not free-form text parsing.
+- **Own your context window** → Skills declare their dependencies explicitly. No hidden state pollution.
+- **Contact humans with tool calls** → WRITE operations pause for confirmation. The agent doesn't just act—it asks.
+- **Stateless reducers** → Skills are pure transformations. State lives in the orchestration layer, not scattered across skills.
+
+This isn't just theory—it's why compositions are reliable. Each principle solves a real failure mode in AI agent systems.
+
+## Five-Minute Exercises
+
+### Exercise 1: Read the PR Showcase
+
+```bash
+cd examples/_showcase/agent-orchestrator/
+cat _workflows/pr-review-complete/SKILL.md
+```
+
+Notice how it references L2 skills in `composes:`.
+
+### Exercise 2: Trace the Hierarchy
+
+```bash
+# L3 workflow uses:
+cat _composite/pr-review/SKILL.md
+
+# Which uses L1 atomics:
+cat _atomic/pr-read/SKILL.md
+cat _atomic/pr-diff-read/SKILL.md
+```
+
+See how each level gets more specific.
+
+### Exercise 3: Run the Tests
+
+```bash
+pytest examples/_showcase/agent-orchestrator/tests/ -v
+```
+
+Tests validate structure, types, and composition references.
+
+## Common Questions
+
+**Q: Do I need to understand category theory?**
+
+No. Use skills like Lego bricks. The theory ensures they fit together correctly.
+
+**Q: What if I compose incompatible skills?**
+
+The framework catches this. Type mismatches fail at validation time, not runtime.
+
+**Q: Can I create skills without SKILL.md files?**
+
+Yes, but you lose validation. SKILL.md is the contract that enables composition checking.
+
+**Q: How do skills integrate with my existing tools?**
+
+L1 atomics wrap your tools. Once wrapped, they compose with everything else.
+
+## Next Steps
+
+1. **Browse showcases**: `examples/_showcase/` has four complete domains
+2. **Read the spec**: `docs/specification.mdx` for full SKILL.md format
+3. **Check architecture**: `docs/architecture.mdx` for deeper theory (optional)
+
+---
+
+<Card title="Need Help?" icon="question">
+  Open an issue or check existing discussions. We're building this together.
+</Card>
