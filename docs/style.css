@@ -101,6 +101,32 @@ body:has(#enable-section-numbers) {
 
 
 
+/* Logo carousel */
+.logo-carousel {
+  overflow: hidden;
+  width: 100%;
+}
+
+.logo-carousel-track {
+  display: flex;
+  align-items: center;
+  width: max-content;
+  gap: 3rem;
+  padding: 0.75rem 0;
+  will-change: transform;
+}
+
+@keyframes logo-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-carousel-track { animation: none; }
+}
+
+
+
 /*** Page: schema reference ***/
 
 #schema-reference {
