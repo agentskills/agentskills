@@ -8,6 +8,7 @@
 */}
 export const LogoCarousel = () => {
   const logos = [
+    { name: "Gemini CLI", url: "https://geminicli.com", lightSrc: "/images/logos/gemini-cli/gemini-cli-logo_light.svg", darkSrc: "/images/logos/gemini-cli/gemini-cli-logo_dark.svg" },
     { name: "OpenCode", url: "https://opencode.ai/", lightSrc: "/images/logos/opencode/opencode-wordmark-light.svg", darkSrc: "/images/logos/opencode/opencode-wordmark-dark.svg" },
     { name: "Cursor", url: "https://cursor.com/", lightSrc: "/images/logos/cursor/LOCKUP_HORIZONTAL_2D_LIGHT.svg", darkSrc: "/images/logos/cursor/LOCKUP_HORIZONTAL_2D_DARK.svg" },
     { name: "Amp", url: "https://ampcode.com/", lightSrc: "/images/logos/amp/amp-logo-light.svg", darkSrc: "/images/logos/amp/amp-logo-dark.svg", width: "120px" },
