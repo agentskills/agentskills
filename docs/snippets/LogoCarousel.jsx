@@ -12,6 +12,7 @@ export const LogoCarousel = () => {
     { name: "Cursor", url: "https://cursor.com/", lightSrc: "/images/logos/cursor/LOCKUP_HORIZONTAL_2D_LIGHT.svg", darkSrc: "/images/logos/cursor/LOCKUP_HORIZONTAL_2D_DARK.svg" },
     { name: "Amp", url: "https://ampcode.com/", lightSrc: "/images/logos/amp/amp-logo-light.svg", darkSrc: "/images/logos/amp/amp-logo-dark.svg", width: "120px" },
     { name: "Letta", url: "https://www.letta.com/", lightSrc: "/images/logos/letta/Letta-logo-RGB_OffBlackonTransparent.svg", darkSrc: "/images/logos/letta/Letta-logo-RGB_GreyonTransparent.svg" },
+    { name: "Firebender", url: "https://firebender.com/", lightSrc: "/images/logos/firebender/firebender-wordmark-light.svg", darkSrc: "/images/logos/firebender/firebender-wordmark-dark.svg", width: "240px" },
     { name: "Goose", url: "https://block.github.io/goose/", lightSrc: "/images/logos/goose/goose-logo-black.png", darkSrc: "/images/logos/goose/goose-logo-white.png" },
     { name: "GitHub", url: "https://github.com/", lightSrc: "/images/logos/github/GitHub_Lockup_Dark.svg", darkSrc: "/images/logos/github/GitHub_Lockup_Light.svg" },
     { name: "VS Code", url: "https://code.visualstudio.com/", lightSrc: "/images/logos/vscode/vscode.svg", darkSrc: "/images/logos/vscode/vscode-alt.svg" },
