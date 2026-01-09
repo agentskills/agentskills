@@ -29,12 +29,14 @@ class TestToDict:
         )
         result = props.to_dict()
 
-        assert result["name"] == "my-skill"
-        assert result["description"] == "A test skill"
-        assert result["license"] == "MIT"
-        assert result["compatibility"] == "Python 3.11+"
-        assert result["allowed-tools"] == "Bash(git:*)"
-        assert result["metadata"] == {"author": "Test"}
+        assert result == {
+            "name": "my-skill",
+            "description": "A test skill",
+            "license": "MIT",
+            "compatibility": "Python 3.11+",
+            "allowed-tools": "Bash(git:*)",
+            "metadata": {"author": "Test"},
+        }
 
     def test_to_dict_required_fields_always_present(self):
         """Required fields (name, description) must always be in output."""
@@ -95,10 +97,14 @@ class TestToDict:
         )
         result = props.to_dict()
 
-        assert result["metadata"] == {
-            "author": "Test Author",
-            "version": "1.0.0",
-            "homepage": "https://example.com",
+        assert result == {
+            "name": "rich-skill",
+            "description": "Has rich metadata",
+            "metadata": {
+                "author": "Test Author",
+                "version": "1.0.0",
+                "homepage": "https://example.com",
+            },
         }
 
     def test_to_dict_unicode_values(self):
