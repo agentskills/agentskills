@@ -14,14 +14,15 @@
       "href": "https://github.com/agentskills/agentskills"
     }
   },
-  "navigation": {
-    "pages": [
-      "home",
-      "what-are-skills",
-      "specification",
-      "integrate-skills"
-    ]
-  },
+    "navigation": {
+      "pages": [
+        "home",
+        "what-are-skills",
+        "specification",
+        "integrate-skills",
+        "comparison-guide"
+      ]
+    },
   "contextual": {
     "options": [
       "copy",
