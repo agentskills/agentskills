@@ -1,0 +1,354 @@
+---
+title: "Type System"
+description: "How and when types are validated"
+---
+
+# Type System: Validation Lifecycle
+
+This document explains **when** and **how** type validation happens at each stage.
+
+<Note>
+**Design Note:** This implements [12-Factor Agents](https://github.com/humanlayer/12-factor-agents) principle #3: "Tools are structured outputs." Skills define explicit input/output contracts with JSON Schema types—no free-form text parsing. The LLM produces structured data that can be validated, and validation failures are caught early (at definition or composition time) rather than at runtime.
+</Note>
+
+## Validation Lifecycle Overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ 1. DEFINITION TIME (skill creation)                             │
+│    ├─ JSON Schema validation of SKILL.md                        │
+│    ├─ Input/output type declarations parsed                     │
+│    └─ Structural completeness checked                           │
+├─────────────────────────────────────────────────────────────────┤
+│ 2. COMPOSITION TIME (skills linked together)                    │
+│    ├─ Type flow analysis: can output of A satisfy input of B?   │
+│    ├─ Effect level propagation: max(READ, WRITE) → result       │
+│    └─ Level hierarchy: L2 only composes L1                      │
+├─────────────────────────────────────────────────────────────────┤
+│ 3. LOAD TIME (skill activated)                                  │
+│    ├─ All composed skills resolved                              │
+│    ├─ Dependency graph validated (no cycles)                    │
+│    └─ Resources and MCP connections verified                    │
+├─────────────────────────────────────────────────────────────────┤
+│ 4. EXECUTION TIME (skill runs)                                  │
+│    ├─ Input validated against declared schema                   │
+│    ├─ Output validated against declared schema                  │
+│    └─ Safety confirmations enforced for WRITE                   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## Stage 1: Definition Time
+
+**When:** You create or modify a SKILL.md file.
+
+**What's checked:**
+
+```yaml
+# Required fields
+name: string (required)
+level: 1|2|3 (required)
+operation: READ|WRITE|WORKFLOW (required for L2+)
+
+# Type definitions
+inputs:
+  - name: string (required)
+    type: string|integer|number|boolean|array|object (required)
+    required: boolean (optional, default false)
+    properties: object (for type: object)
+
+outputs:
+  - name: string (required)
+    type: string|integer|number|boolean|array|object (required)
+```
+
+**Example validation error:**
+
+```bash
+$ python scripts/validate-skills.py my-skill/
+
+ERROR: my-skill/SKILL.md
+  Line 3: Missing required field 'level'
+  Line 8: Input 'data' has type 'object' but no 'properties' defined
+```
+
+**Run manually:**
+
+```bash
+python scripts/validate-skills.py path/to/skill/
+```
+
+## Stage 2: Composition Time
+
+**When:** A skill declares `composes:` referencing other skills.
+
+**What's checked:**
+
+### 2a. Type Flow Analysis
+
+Can the output of skill A satisfy the input of skill B?
+
+```yaml
+# skill-a outputs:
+outputs:
+  - name: user
+    type: object
+    properties:
+      id: string
+      email: string
+
+# skill-b expects:
+inputs:
+  - name: user_id
+    type: string
+    required: true
+```
+
+**Validation:** ❌ FAIL - `skill-a` outputs `{id, email}` but `skill-b` expects `user_id: string`
+
+**Fix:** Either rename fields to match, or add a transformer skill.
+
+### 2b. Effect Level Propagation
+
+```yaml
+name: mixed-workflow
+composes:
+  - read-data      # operation: READ
+  - transform      # operation: READ
+  - write-result   # operation: WRITE
+
+# Computed effect: WRITE (max of all composed effects)
+```
+
+**Validation error if declared effect is lower than computed:**
+
+```
+ERROR: mixed-workflow declares READ but composes write-result (WRITE)
+```
+
+### 2c. Level Hierarchy
+
+```
+L1 composes: nothing (wraps primitives)
+L2 composes: L1 only
+L3 composes: L1 and L2
+```
+
+**Validation error for violation:**
+
+```
+ERROR: review-workflow (L2) composes notification-flow (L2)
+       L2 can only compose L1 skills
+```
+
+**Run manually:**
+
+```bash
+python scripts/validate-type-safety.py path/to/skills/
+```
+
+## Stage 3: Load Time
+
+**When:** A skill is loaded for execution.
+
+**What's checked:**
+
+### 3a. Dependency Resolution
+
+All skills in `composes:` must exist and be loadable.
+
+```
+ERROR: pr-review composes 'code-analyze' but skill not found
+       Searched: examples/_showcase/agent-orchestrator/_atomic/
+```
+
+### 3b. Cycle Detection
+
+```
+ERROR: Circular dependency detected:
+       skill-a → skill-b → skill-c → skill-a
+```
+
+### 3c. Resource Verification
+
+If skill references MCP or external resources:
+
+```yaml
+mcp:
+  server: github
+  tool: read_pr
+```
+
+**Validation:**
+
+```
+WARNING: MCP server 'github' not configured
+         Skill will fail at runtime if server unavailable
+```
+
+## Stage 4: Execution Time
+
+**When:** A skill is actually executed with real data.
+
+**What's checked:**
+
+### 4a. Input Validation
+
+```python
+# Skill expects:
+inputs:
+  - name: count
+    type: integer
+    required: true
+
+# Called with:
+skill.execute({"count": "five"})  # ❌ String, not integer
+
+# Error:
+ValidationError: Input 'count' expected integer, got string
+```
+
+### 4b. Output Validation
+
+```python
+# Skill declares:
+outputs:
+  - name: result
+    type: object
+    properties:
+      success: boolean
+
+# Skill returns:
+{"result": {"status": "ok"}}  # ❌ Missing 'success', has 'status'
+
+# Error:
+ValidationError: Output 'result' missing required property 'success'
+```
+
+### 4c. Safety Confirmation
+
+For WRITE skills with `confirmation_required: true`:
+
+```
+Agent: Ready to execute 'deploy-production'
+       This will deploy to: production-cluster
+
+       Proceed? [y/N]
+```
+
+## Type Compatibility Rules
+
+### Structural Subtyping
+
+A type A is compatible with type B if A has all required properties of B.
+
+```yaml
+# Type A (more specific):
+type: object
+properties:
+  id: string
+  email: string
+  name: string
+
+# Type B (less specific):
+type: object
+properties:
+  id: string
+  email: string
+
+# A → B: ✅ Compatible (A has all fields B needs)
+# B → A: ❌ Incompatible (B missing 'name')
+```
+
+### Covariance for Outputs
+
+Outputs can be more specific than declared:
+
+```yaml
+# Declared:
+outputs:
+  - name: result
+    type: object
+
+# Actual (more specific): ✅ OK
+{"result": {"id": "123", "status": "complete"}}
+```
+
+### Contravariance for Inputs
+
+Inputs can accept more general types:
+
+```yaml
+# Declared:
+inputs:
+  - name: id
+    type: string
+
+# Called with: ✅ OK (string is expected)
+skill.execute({"id": "abc123"})
+```
+
+## What Happens on Type Mismatch?
+
+| Stage | Behavior |
+|-------|----------|
+| Definition | Validation error, skill cannot be saved |
+| Composition | Validation error, composition rejected |
+| Load | Warning or error depending on severity |
+| Execution | Exception raised, execution halts |
+
+**Philosophy:** Catch errors as early as possible. Definition-time errors are cheapest to fix.
+
+## Validation Tools
+
+```bash
+# Full validation suite
+python scripts/validate-all.py
+
+# Definition-time checks
+python scripts/validate-skills.py path/to/skill/
+
+# Composition-time checks
+python scripts/validate-type-safety.py path/to/skills/
+
+# Verbose output for debugging
+python scripts/validate-skills.py --verbose path/to/skill/
+```
+
+## FAQ
+
+### Can I disable type checking?
+
+**No.** Type safety is a core guarantee. If you need flexibility, use broader types:
+
+```yaml
+inputs:
+  - name: data
+    type: object
+    additionalProperties: true  # Allow any properties
+```
+
+### What about runtime type coercion?
+
+**None.** Types are validated, not coerced. If you pass a string where integer is expected, it fails.
+
+### How do I handle optional fields?
+
+```yaml
+inputs:
+  - name: optional_field
+    type: string
+    required: false
+    default: "default_value"
+```
+
+### Can I use union types?
+
+Not directly. Use `oneOf` in the schema:
+
+```yaml
+inputs:
+  - name: id
+    oneOf:
+      - type: string
+      - type: integer
+```
