@@ -10,6 +10,7 @@ export const LogoCarousel = () => {
   const logos = [
     { name: "Gemini CLI", url: "https://geminicli.com", lightSrc: "/images/logos/gemini-cli/gemini-cli-logo_light.svg", darkSrc: "/images/logos/gemini-cli/gemini-cli-logo_dark.svg" },
     { name: "OpenCode", url: "https://opencode.ai/", lightSrc: "/images/logos/opencode/opencode-wordmark-light.svg", darkSrc: "/images/logos/opencode/opencode-wordmark-dark.svg" },
+    { name: "Mux", url: "https://mux.coder.com/", lightSrc: "/images/logos/mux/mux-editor-light.svg", darkSrc: "/images/logos/mux/mux-editor-dark.svg" },
     { name: "Cursor", url: "https://cursor.com/", lightSrc: "/images/logos/cursor/LOCKUP_HORIZONTAL_2D_LIGHT.svg", darkSrc: "/images/logos/cursor/LOCKUP_HORIZONTAL_2D_DARK.svg" },
     { name: "Amp", url: "https://ampcode.com/", lightSrc: "/images/logos/amp/amp-logo-light.svg", darkSrc: "/images/logos/amp/amp-logo-dark.svg", width: "120px" },
     { name: "Letta", url: "https://www.letta.com/", lightSrc: "/images/logos/letta/Letta-logo-RGB_OffBlackonTransparent.svg", darkSrc: "/images/logos/letta/Letta-logo-RGB_GreyonTransparent.svg" },
