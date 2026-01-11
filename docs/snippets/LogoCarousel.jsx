@@ -10,79 +10,19 @@
 }
 export const LogoCarousel = () => {
   const logos = [
-    {
-      name: "Autohand Code CLI",
-      url: "https://autohand.ai/",
-      lightSrc: "/images/logos/autohand/autohand-light.svg",
-      darkSrc: "/images/logos/autohand/autohand-light.svg",
-    },
-    {
-      name: "OpenCode",
-      url: "https://opencode.ai/",
-      lightSrc: "/images/logos/opencode/opencode-wordmark-light.svg",
-      darkSrc: "/images/logos/opencode/opencode-wordmark-dark.svg",
-    },
-    {
-      name: "Cursor",
-      url: "https://cursor.com/",
-      lightSrc: "/images/logos/cursor/LOCKUP_HORIZONTAL_2D_LIGHT.svg",
-      darkSrc: "/images/logos/cursor/LOCKUP_HORIZONTAL_2D_DARK.svg",
-    },
-    {
-      name: "Amp",
-      url: "https://ampcode.com/",
-      lightSrc: "/images/logos/amp/amp-logo-light.svg",
-      darkSrc: "/images/logos/amp/amp-logo-dark.svg",
-      width: "120px",
-    },
-    {
-      name: "Letta",
-      url: "https://www.letta.com/",
-      lightSrc: "/images/logos/letta/Letta-logo-RGB_OffBlackonTransparent.svg",
-      darkSrc: "/images/logos/letta/Letta-logo-RGB_GreyonTransparent.svg",
-    },
-    {
-      name: "Goose",
-      url: "https://block.github.io/goose/",
-      lightSrc: "/images/logos/goose/goose-logo-black.png",
-      darkSrc: "/images/logos/goose/goose-logo-white.png",
-    },
-    {
-      name: "GitHub",
-      url: "https://github.com/",
-      lightSrc: "/images/logos/github/GitHub_Lockup_Dark.svg",
-      darkSrc: "/images/logos/github/GitHub_Lockup_Light.svg",
-    },
-    {
-      name: "VS Code",
-      url: "https://code.visualstudio.com/",
-      lightSrc: "/images/logos/vscode/vscode.svg",
-      darkSrc: "/images/logos/vscode/vscode-alt.svg",
-    },
-    {
-      name: "Claude Code",
-      url: "https://claude.ai/code",
-      lightSrc: "/images/logos/claude-code/Claude-Code-logo-Slate.svg",
-      darkSrc: "/images/logos/claude-code/Claude-Code-logo-Ivory.svg",
-    },
-    {
-      name: "Claude",
-      url: "https://claude.ai/",
-      lightSrc: "/images/logos/claude-ai/Claude-logo-Slate.svg",
-      darkSrc: "/images/logos/claude-ai/Claude-logo-Ivory.svg",
-    },
-    {
-      name: "OpenAI Codex",
-      url: "https://developers.openai.com/codex",
-      lightSrc: "/images/logos/oai-codex/OAI_Codex-Lockup_400px.svg",
-      darkSrc: "/images/logos/oai-codex/OAI_Codex-Lockup_400px_Darkmode.svg",
-    },
-    {
-      name: "Factory",
-      url: "https://factory.ai/",
-      lightSrc: "/images/logos/factory/factory-logo-light.svg",
-      darkSrc: "/images/logos/factory/factory-logo-dark.svg",
-    },
+    { name: "Autohand Code CLI", url: "https://autohand.ai", lightSrc: "/images/logos/autohand/autohand-light.svg", darkSrc: "/images/logos/autohand/autohand-dark.svg" },
+    { name: "Gemini CLI", url: "https://geminicli.com", lightSrc: "/images/logos/gemini-cli/gemini-cli-logo_light.svg", darkSrc: "/images/logos/gemini-cli/gemini-cli-logo_dark.svg" },
+    { name: "OpenCode", url: "https://opencode.ai/", lightSrc: "/images/logos/opencode/opencode-wordmark-light.svg", darkSrc: "/images/logos/opencode/opencode-wordmark-dark.svg" },
+    { name: "Cursor", url: "https://cursor.com/", lightSrc: "/images/logos/cursor/LOCKUP_HORIZONTAL_2D_LIGHT.svg", darkSrc: "/images/logos/cursor/LOCKUP_HORIZONTAL_2D_DARK.svg" },
+    { name: "Amp", url: "https://ampcode.com/", lightSrc: "/images/logos/amp/amp-logo-light.svg", darkSrc: "/images/logos/amp/amp-logo-dark.svg", width: "120px" },
+    { name: "Letta", url: "https://www.letta.com/", lightSrc: "/images/logos/letta/Letta-logo-RGB_OffBlackonTransparent.svg", darkSrc: "/images/logos/letta/Letta-logo-RGB_GreyonTransparent.svg" },
+    { name: "Goose", url: "https://block.github.io/goose/", lightSrc: "/images/logos/goose/goose-logo-black.png", darkSrc: "/images/logos/goose/goose-logo-white.png" },
+    { name: "GitHub", url: "https://github.com/", lightSrc: "/images/logos/github/GitHub_Lockup_Dark.svg", darkSrc: "/images/logos/github/GitHub_Lockup_Light.svg" },
+    { name: "VS Code", url: "https://code.visualstudio.com/", lightSrc: "/images/logos/vscode/vscode.svg", darkSrc: "/images/logos/vscode/vscode-alt.svg" },
+    { name: "Claude Code", url: "https://claude.ai/code", lightSrc: "/images/logos/claude-code/Claude-Code-logo-Slate.svg", darkSrc: "/images/logos/claude-code/Claude-Code-logo-Ivory.svg" },
+    { name: "Claude", url: "https://claude.ai/", lightSrc: "/images/logos/claude-ai/Claude-logo-Slate.svg", darkSrc: "/images/logos/claude-ai/Claude-logo-Ivory.svg" },
+    { name: "OpenAI Codex", url: "https://developers.openai.com/codex", lightSrc: "/images/logos/oai-codex/OAI_Codex-Lockup_400px.svg", darkSrc: "/images/logos/oai-codex/OAI_Codex-Lockup_400px_Darkmode.svg" },
+    { name: "Factory", url: "https://factory.ai/", lightSrc: "/images/logos/factory/factory-logo-light.svg", darkSrc: "/images/logos/factory/factory-logo-dark.svg" },
   ];
 
   /* Shuffle logos on component mount */
