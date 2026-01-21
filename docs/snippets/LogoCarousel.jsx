@@ -10,6 +10,7 @@ export const LogoCarousel = () => {
   const logos = [
     { name: "Gemini CLI", url: "https://geminicli.com", lightSrc: "/images/logos/gemini-cli/gemini-cli-logo_light.svg", darkSrc: "/images/logos/gemini-cli/gemini-cli-logo_dark.svg" },
     { name: "OpenCode", url: "https://opencode.ai/", lightSrc: "/images/logos/opencode/opencode-wordmark-light.svg", darkSrc: "/images/logos/opencode/opencode-wordmark-dark.svg" },
+    { name: "Mux", url: "https://mux.coder.com/", lightSrc: "/images/logos/mux/mux-editor-light.svg", darkSrc: "/images/logos/mux/mux-editor-dark.svg" },
     { name: "Cursor", url: "https://cursor.com/", lightSrc: "/images/logos/cursor/LOCKUP_HORIZONTAL_2D_LIGHT.svg", darkSrc: "/images/logos/cursor/LOCKUP_HORIZONTAL_2D_DARK.svg" },
     { name: "Amp", url: "https://ampcode.com/", lightSrc: "/images/logos/amp/amp-logo-light.svg", darkSrc: "/images/logos/amp/amp-logo-dark.svg", width: "120px" },
     { name: "Letta", url: "https://www.letta.com/", lightSrc: "/images/logos/letta/Letta-logo-RGB_OffBlackonTransparent.svg", darkSrc: "/images/logos/letta/Letta-logo-RGB_GreyonTransparent.svg" },
@@ -21,6 +22,9 @@ export const LogoCarousel = () => {
     { name: "OpenAI Codex", url: "https://developers.openai.com/codex", lightSrc: "/images/logos/oai-codex/OAI_Codex-Lockup_400px.svg", darkSrc: "/images/logos/oai-codex/OAI_Codex-Lockup_400px_Darkmode.svg" },
     { name: "Factory", url: "https://factory.ai/", lightSrc: "/images/logos/factory/factory-logo-light.svg", darkSrc: "/images/logos/factory/factory-logo-dark.svg" },
     { name: "Databricks", url: "https://databricks.com/", lightSrc: "/images/logos/databricks/databricks-logo-light.svg", darkSrc: "/images/logos/databricks/databricks-logo-dark.svg" },
+    { name: "Agentman", url: "https://agentman.ai/", lightSrc: "/images/logos/agentman/agentman-wordmark-light.svg", darkSrc: "/images/logos/agentman/agentman-wordmark-dark.svg" },
+    { name: "TRAE", url: "https://trae.ai/", lightSrc: "/images/logos/trae/trae-logo-lightmode.svg", darkSrc: "/images/logos/trae/trae-logo-darkmode.svg" },
+    { name: "Spring AI", url: "https://docs.spring.io/spring-ai/reference", lightSrc: "/images/logos/spring-ai/spring-ai-logo-light.svg", darkSrc: "/images/logos/spring-ai/spring-ai-logo-dark.svg" },
   ];
 
   /* Shuffle logos on component mount */
