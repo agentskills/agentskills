@@ -25,7 +25,7 @@ export const LogoCarousel = () => {
     { name: "Agentman", url: "https://agentman.ai/", lightSrc: "/images/logos/agentman/agentman-wordmark-light.svg", darkSrc: "/images/logos/agentman/agentman-wordmark-dark.svg" },
     { name: "TRAE", url: "https://trae.ai/", lightSrc: "/images/logos/trae/trae-logo-lightmode.svg", darkSrc: "/images/logos/trae/trae-logo-darkmode.svg" },
     { name: "Spring AI", url: "https://docs.spring.io/spring-ai/reference", lightSrc: "/images/logos/spring-ai/spring-ai-logo-light.svg", darkSrc: "/images/logos/spring-ai/spring-ai-logo-dark.svg" },
-    { name: "Mistral AI Vibe", url: "https://github.com/mistralai/mistral-vibe", lightSrc: "/images/logos/mistral-vibe/vibe-logo_white.svg", darkSrc: "/images/logos/mistral-vibe/vibe-logo_black.svg" },
+    { name: "Mistral AI Vibe", url: "https://github.com/mistralai/mistral-vibe", lightSrc: "/images/logos/mistral-vibe/vibe-logo_black.svg", darkSrc: "/images/logos/mistral-vibe/vibe-logo_white.svg" },
   ];
 
   /* Shuffle logos on component mount */
