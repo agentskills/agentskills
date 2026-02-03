@@ -12,6 +12,12 @@ Skills are folders of instructions, scripts, and resources that agents can disco
 
 This repo contains the specification, documentation, and reference SDK. Also see a list of example skills [here](https://github.com/anthropics/skills).
 
+To just use the tool:
+
+```sh
+uvx --from "git+https://github.com/agentskills/agentskills.git#subdirectory=skills-ref" skills-ref
+```
+
 ## About
 
 Agent Skills is an open format maintained by [Anthropic](https://anthropic.com) and open to contributions from the community.
