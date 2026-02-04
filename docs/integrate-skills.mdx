@@ -28,6 +28,10 @@ A skills-compatible agent needs to:
 
 Skills are folders containing a `SKILL.md` file. Your agent should scan configured directories for valid skills.
 
+### Default directories
+
+To keep skills portable across tools, use a shared default directory and a single override mechanism. See the [Skill directories](/skill-directories) page for the standard locations and discovery order.
+
 ## Loading metadata
 
 At startup, parse only the frontmatter of each `SKILL.md` file. This keeps initial context usage low.
