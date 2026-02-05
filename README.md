@@ -15,3 +15,7 @@ This repo contains the specification, documentation, and reference SDK. Also see
 ## About
 
 Agent Skills is an open format maintained by [Anthropic](https://anthropic.com) and open to contributions from the community.
+
+## License
+
+Code in this repository is licensed under [Apache 2.0](LICENSE). Documentation is licensed under [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/). See individual directories for details.
