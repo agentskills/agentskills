@@ -230,3 +230,35 @@ body:has(#schema-reference) {
     }
   }
 }
+
+
+
+/*** Mobile: GitHub CTA wraps (More actions sheet) ***/
+
+[data-headlessui-state] a[href^="https://github.com/"] > div {
+  height: auto;
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 0.5rem;
+  row-gap: 0.25rem;
+  align-items: flex-start;
+
+  /* Repo section */
+  & > div:first-child {
+    min-width: 0;
+    flex: 1 1 auto;
+
+    span {
+      min-width: 0;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+  }
+
+  /* Star section */
+  & > div:nth-child(2) {
+    margin-left: 0;
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+}
