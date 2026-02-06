@@ -34,6 +34,7 @@ export const LogoCarousel = () => {
     { name: "Command Code", url: "https://commandcode.ai/", lightSrc: "/images/logos/command-code/command-code-logo-for-light.svg", darkSrc: "/images/logos/command-code/command-code-logo-for-dark.svg", width: "200px" },
     { name: "Ona", url: "https://ona.com", lightSrc: "/images/logos/ona/ona-wordmark-light.svg", darkSrc: "/images/logos/ona/ona-wordmark-dark.svg", width: "120px" },
     { name: "VT Code", url: "https://github.com/vinhnx/vtcode", lightSrc: "/images/logos/vtcode/vt_code_light.svg", darkSrc: "/images/logos/vtcode/vt_code_dark.svg" },
+    { name: "StackGen Aiden", url: "https://aiden.stackgen.com", lightSrc: "/images/logos/aiden/aiden-logo-light.svg", darkSrc: "/images/logos/aiden/aiden-logo-dark.svg" },
   ];
 
   /* Shuffle logos on component mount */
