@@ -1,0 +1,91 @@
+---
+title: "Skill directories"
+description: "Standard locations and discovery rules for Agent Skills."
+---
+
+This page defines a universal default directory for skills so that a single set of skills can be shared across tools.
+
+## Why a universal directory
+
+A shared default location reduces duplicated skill installs and makes skills portable across agents and editors. It also simplifies setup for users: install once, use everywhere.
+
+## Default location
+
+All tools should use the same default skill root:
+
+- macOS and Linux: `~/.skills`
+- Windows: `%USERPROFILE%\.skills`
+
+The directory is user-scoped and does not require elevated permissions.
+
+## Overrides
+
+If the environment variable `AGENT_SKILLS_PATH` is set, tools should use it instead of the default root.
+
+- It is a list of directories, separated by the OS path separator.
+- POSIX separator: `:`
+- Windows separator: `;`
+
+Examples:
+
+```bash
+# POSIX
+export AGENT_SKILLS_PATH="$HOME/.skills:$HOME/work/skills"
+```
+
+```powershell
+# Windows PowerShell
+$env:AGENT_SKILLS_PATH = "$env:USERPROFILE\.skills;$env:USERPROFILE\work\skills"
+```
+
+## Discovery order
+
+Tools should discover skills in the following order:
+
+1. Tool-specific config or CLI flags (if provided)
+2. `AGENT_SKILLS_PATH` (if set)
+3. Default root (`~/.skills` or `%USERPROFILE%\.skills`)
+
+Pseudocode:
+
+```text
+if tool_config_paths:
+  use tool_config_paths
+else if AGENT_SKILLS_PATH is set:
+  split by OS separator and use those paths
+else:
+  use default_root
+```
+
+## Directory layout
+
+Each skill is a directory containing a `SKILL.md` file:
+
+```directory
+~/.skills/
+├── pdf-processing/
+│   └── SKILL.md
+└── data-analysis/
+    └── SKILL.md
+```
+
+## Migration guidance for existing tools
+
+If a tool already has a private skill directory, it should:
+
+- Continue to read the legacy directory for backward compatibility.
+- Encourage users to move or sync skills into `~/.skills`.
+- Prefer `~/.skills` (or `AGENT_SKILLS_PATH`) for new installs.
+
+Symlinking the old directory into `~/.skills` is also an acceptable migration path on macOS and Linux.
+
+## Error handling
+
+- Ignore missing directories.
+- Skip invalid skill folders that do not contain a valid `SKILL.md`.
+- Optionally warn users when `AGENT_SKILLS_PATH` points to a non-existent directory.
+
+## Non-goals
+
+- System-wide skill directories shared across users.
+- Networked or remote skill registries.
