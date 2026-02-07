@@ -1,0 +1,12 @@
+[
+  {
+    "name": "claude",
+    "config_dir": ".claude",
+    "skills_dir": ".claude/skills"
+  },
+  {
+    "name": "cursor",
+    "config_dir": ".cursor",
+    "skills_dir": ".cursor/skills"
+  }
+]
