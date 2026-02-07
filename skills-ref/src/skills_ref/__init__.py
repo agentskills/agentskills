@@ -5,6 +5,7 @@ from .models import SkillProperties
 from .parser import find_skill_md, read_properties
 from .prompt import to_prompt
 from .validator import validate
+from .management import create_skill, edit_skill, delete_skill, list_skills
 
 __all__ = [
     "SkillError",
@@ -15,6 +16,10 @@ __all__ = [
     "validate",
     "read_properties",
     "to_prompt",
+    "create_skill",
+    "edit_skill",
+    "delete_skill",
+    "list_skills"
 ]
 
 __version__ = "0.1.0"

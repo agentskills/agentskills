@@ -7,7 +7,9 @@ import strictyaml
 
 from .errors import ParseError, ValidationError
 from .models import SkillProperties
+from .utils import load_supporting_agents
 
+SUPPORTING_AGENTS = load_supporting_agents()
 
 def find_skill_md(skill_dir: Path) -> Optional[Path]:
     """Find the SKILL.md file in a skill directory.
@@ -110,3 +112,40 @@ def read_properties(skill_dir: Path) -> SkillProperties:
         allowed_tools=metadata.get("allowed-tools"),
         metadata=metadata.get("metadata"),
     )
+
+
+def find_skill_by_name(skill_name: str, parent_dir: str = Path.cwd()) -> list:
+    """
+    Method finds where the skill is located.
+
+    Args:
+        skill_name: The name of the skill  
+        parent_dir: Specifies where to look skill from (default: cwd)
+
+    Returns:
+        list of skill location.
+    """
+    result = {}
+    for agent in SUPPORTING_AGENTS:
+        if agent_path := Path(f'{parent_dir}/{agent.get("skills_dir")}').resolve():
+            skill_file = f'{agent_path}/{skill_name}/SKILL.md'
+            if Path(skill_file).is_file():
+                result[agent.get('name')] = skill_file
+    return result
+
+def get_local_supporting_agents():
+    """
+    Method to check the user's local agents that support agent skills.
+    """
+    root_dir = Path.home()
+    available_agents = {}
+    for agent in SUPPORTING_AGENTS:
+        config_dir = Path(f'{root_dir}/{agent.get("config_dir")}')
+        if config_dir.exists():
+            available_agents[agent.get('name')] = {
+                'exist': True,
+                'config_dir': config_dir
+            }
+
+    return available_agents
+
