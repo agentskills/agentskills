@@ -4,16 +4,16 @@ This directory contains the source code for the Agent Skills documentation site,
 
 ## Development
 
-Install the [Mintlify CLI](https://www.npmjs.com/package/mint) to preview your documentation changes locally. To install, use the following command:
+Install the [Mintlify CLI](https://www.npmjs.com/package/mint) to preview your documentation changes locally. To install, run the following from the `docs/` directory:
 
 ```
-npm i -g mint
+npm install
 ```
 
 Run the following command at the root of your documentation, where your `docs.json` is located:
 
 ```
-mint dev
+npm run dev
 ```
 
 View your local preview at `http://localhost:3000`.
