@@ -9,14 +9,14 @@ The Agent Skills documentation site, defined in the `docs/` directory, is built 
 ### Quick Start Commands
 
 ```bash
-# Install Mintlify CLI (required for local development)
-npm i -g mint
+# Install dependencies (run from /docs directory)
+cd docs && npm install
 
-# Run local development server (run from /docs directory)
-cd docs && mint dev
+# Run local development server
+npm run dev
 
 # Update Mintlify CLI if dev server issues occur
-mint update
+npm run update
 ```
 
 Local preview available at `http://localhost:3000`
