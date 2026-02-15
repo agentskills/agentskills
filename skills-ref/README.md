@@ -2,7 +2,8 @@
 
 Reference library for Agent Skills.
 
-> **Note:** This library is intended for demonstration purposes only. It is not meant to be used in production.
+> [!IMPORTANT]
+> This library is intended for demonstration purposes only. It is not meant to be used in production.
 
 ## Installation
 
