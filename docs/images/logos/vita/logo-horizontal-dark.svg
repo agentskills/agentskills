@@ -1,0 +1,39 @@
+<svg width="360" height="160" viewBox="0 0 180 80" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <style>
+    .petal { fill: #ee8aa5 }
+    .center { fill: white; stroke: white }
+    .stamen { fill: white; stroke: white }
+    .label { fill: #f1f5f9; font-family: 'Inter','Helvetica Neue',Arial,sans-serif; font-weight: 600 }
+  </style>
+  <defs>
+    <g id="s">
+      <circle cx="15.875" cy="-0.054" r="0.992" stroke-width="0.105"/>
+      <circle cx="14.103" cy="27.03" r="0.661" stroke-width="0.07"/>
+      <line x1="15.898" y1="0.001" x2="15.852" y2="15.915" stroke-width="0.529"/>
+      <line x1="14.118" y1="27.057" x2="15.902" y2="15.872" stroke-width="0.529"/>
+    </g>
+    <g id="h">
+      <circle cx="14.103" cy="27.03" r="0.661" stroke-width="0.07"/>
+      <line x1="14.118" y1="27.057" x2="15.902" y2="15.872" stroke-width="0.529"/>
+    </g>
+  </defs>
+  <svg x="4" y="5" width="74" height="70" viewBox="-1 -1 58 56">
+    <g transform="translate(-1.932,3.957)">
+      <path class="petal" d="M 28.989,-3.295 A 11.245,11.245 0 0 0 17.745,7.949 11.245,11.245 0 0 0 17.762,8.419 11.245,11.245 0 0 0 17.315,8.262 11.245,11.245 0 0 0 3.146,15.481 a 11.245,11.245 0 0 0 7.219,14.17 11.245,11.245 0 0 0 0.459,0.13 11.245,11.245 0 0 0 -0.295,0.375 11.245,11.245 0 0 0 2.488,15.707 11.245,11.245 0 0 0 15.707,-2.488 11.245,11.245 0 0 0 0.27,-0.39 11.245,11.245 0 0 0 0.261,0.39 11.245,11.245 0 0 0 15.707,2.488 11.245,11.245 0 0 0 2.488,-15.707 11.245,11.245 0 0 0 -0.295,-0.375 11.245,11.245 0 0 0 0.459,-0.13 A 11.245,11.245 0 0 0 54.833,15.481 11.245,11.245 0 0 0 40.664,8.262 11.245,11.245 0 0 0 40.216,8.426 11.245,11.245 0 0 0 40.234,7.949 11.245,11.245 0 0 0 28.989,-3.295 Z"/>
+      <circle class="center" cx="28.989" cy="23.879" r="2.249"/>
+      <g class="stamen">
+        <use href="#s" xlink:href="#s" transform="translate(13.088,7.896)"/>
+        <use href="#h" xlink:href="#h" transform="matrix(-1,0,0,1,44.797,7.896)"/>
+        <use href="#s" xlink:href="#s" transform="rotate(72,17.011,28.938)"/>
+        <use href="#h" xlink:href="#h" transform="matrix(-0.309,-0.951,-0.951,0.309,49.075,33.974)"/>
+        <use href="#s" xlink:href="#s" transform="rotate(144,21.162,22.057)"/>
+        <use href="#h" xlink:href="#h" transform="matrix(0.809,-0.588,-0.588,-0.809,25.595,46.101)"/>
+        <use href="#s" xlink:href="#s" transform="rotate(-144,23.728,17.804)"/>
+        <use href="#h" xlink:href="#h" transform="matrix(0.809,0.588,0.588,-0.809,6.806,27.517)"/>
+        <use href="#s" xlink:href="#s" transform="rotate(-72,27.879,10.923)"/>
+        <use href="#h" xlink:href="#h" transform="matrix(-0.309,0.951,0.951,0.309,18.674,3.906)"/>
+      </g>
+    </g>
+  </svg>
+  <text class="label" x="90" y="55" font-size="48" letter-spacing="-1">Vita</text>
+</svg>
