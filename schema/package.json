@@ -1,0 +1,10 @@
+{
+  "private": true,
+  "description": "Tests for the Agent Skills SKILL.md frontmatter JSON Schema",
+  "scripts": {
+    "test": "node --test test_schema.mjs"
+  },
+  "devDependencies": {
+    "ajv": "^8.17.0"
+  }
+}
