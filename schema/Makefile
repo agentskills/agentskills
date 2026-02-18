@@ -4,8 +4,18 @@ SHELL := /bin/bash
 # ==============================================================================
 # Agent Skills JSON Schema — Development targets
 # ==============================================================================
+#
+# Quick start:
+#   make test                                    # run schema tests
+#   make validate SKILL=path/to/my-skill         # validate a SKILL.md
+#
+# Without make (npx / bunx):
+#   cd schema && npx --yes -p ajv -p yaml node validate.mjs path/to/SKILL.md
+#   cd schema && npm install && npm test
+#
+# ==============================================================================
 
-.PHONY: help install test clean
+.PHONY: help install test validate clean
 
 help: ## Show available commands
 	@grep -E '^[a-zA-Z_/-]+:.*##' $(MAKEFILE_LIST) | \
@@ -19,6 +29,13 @@ node_modules: package.json
 
 test: node_modules ## Run schema tests
 	npm test
+
+validate: node_modules ## Validate a SKILL.md (usage: make validate SKILL=path/to/skill)
+	@if [ -z "$(SKILL)" ]; then \
+		echo "Usage: make validate SKILL=path/to/skill-name"; \
+		exit 1; \
+	fi
+	node validate.mjs "$(SKILL)"
 
 clean: ## Remove node_modules
 	rm -rf node_modules

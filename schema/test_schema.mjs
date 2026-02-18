@@ -5,7 +5,10 @@
  * invalid frontmatter, matching the constraints from the specification at
  * https://agentskills.io/specification
  *
- * Run: npm test (or: node --test test_schema.mjs)
+ * Run:
+ *   make test
+ *   npm test
+ *   node --test test_schema.mjs
  */
 
 import { describe, it } from "node:test";
