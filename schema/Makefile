@@ -7,6 +7,7 @@ SHELL := /bin/bash
 #
 # Quick start:
 #   make test                                    # run schema tests
+#   make test/samples                            # validate sample skills
 #   make validate SKILL=path/to/my-skill         # validate a SKILL.md
 #
 # Without make (npx / bunx):
@@ -15,13 +16,13 @@ SHELL := /bin/bash
 #
 # ==============================================================================
 
-.PHONY: help install test validate clean
+SAMPLES := $(wildcard samples/*/SKILL.md)
+
+.PHONY: help test test/samples validate clean
 
 help: ## Show available commands
 	@grep -E '^[a-zA-Z_/-]+:.*##' $(MAKEFILE_LIST) | \
 		awk 'BEGIN {FS = ":.*## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
-
-install: node_modules ## Install dependencies
 
 node_modules: package.json
 	npm install
@@ -29,6 +30,11 @@ node_modules: package.json
 
 test: node_modules ## Run schema tests
 	npm test
+
+test/samples: node_modules ## Validate sample skills (from anthropics/skills)
+	@for skill in $(SAMPLES); do \
+		node validate.mjs "$$skill" || exit 1; \
+	done
 
 validate: node_modules ## Validate a SKILL.md (usage: make validate SKILL=path/to/skill)
 	@if [ -z "$(SKILL)" ]; then \
