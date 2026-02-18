@@ -38,6 +38,9 @@ With optional fields:
 name: pdf-processing
 description: Extract text and tables from PDF files, fill forms, merge documents.
 license: Apache-2.0
+capabilities:
+  - shell
+  - filesystem
 metadata:
   author: example-org
   version: "1.0"
@@ -50,6 +53,7 @@ metadata:
 | `description` | Yes | Max 1024 characters. Non-empty. Describes what the skill does and when to use it. |
 | `license` | No | License name or reference to a bundled license file. |
 | `compatibility` | No | Max 500 characters. Indicates environment requirements (intended product, system packages, network access, etc.). |
+| `capabilities` | No | Array of capability strings declaring what system access the skill requires. See [capabilities field](#capabilities-field). |
 | `metadata` | No | Arbitrary key-value mapping for additional metadata. |
 | `allowed-tools` | No | Space-delimited list of pre-approved tools the skill may use. (Experimental) |
 
@@ -129,6 +133,41 @@ compatibility: Requires git, docker, jq, and access to the internet
 
 <Note>
 Most skills do not need the `compatibility` field.
+</Note>
+
+#### `capabilities` field
+
+The optional `capabilities` field:
+- An array of strings declaring what system access the skill requires
+- Enables users, registries, scanners, and agent runtimes to understand and enforce what a skill can do
+- Skills without `capabilities` should be treated as having an unknown capability profile
+
+Recognized values:
+
+| Capability | What it covers |
+|------------|----------------|
+| `shell` | Execute shell commands, spawn processes |
+| `filesystem` | Write, edit, or delete files |
+| `network` | Make outbound HTTP requests, fetch URLs |
+| `browser` | Browser automation, screenshots, page interaction |
+
+Implementations may define additional capability values. Unknown values should produce a validation warning but not block parsing, for forward compatibility.
+
+Examples:
+```yaml
+capabilities:
+  - shell
+  - network
+```
+```yaml
+capabilities:
+  - filesystem
+```
+
+A skill that does not require any system access (e.g. a pure knowledge skill that only provides instructions) can omit the field entirely.
+
+<Note>
+The `capabilities` field is complementary to `allowed-tools`. While `allowed-tools` lists implementation-specific tool names a skill may invoke, `capabilities` declares abstract categories of system access the skill requires. `capabilities` is implementation-agnostic and designed for security visibility and enforcement across platforms.
 </Note>
 
 #### `metadata` field

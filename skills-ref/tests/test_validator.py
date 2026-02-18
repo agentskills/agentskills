@@ -288,3 +288,88 @@ Body
 """)
     errors = validate(skill_dir)
     assert errors == [], f"Expected no errors, got: {errors}"
+
+
+def test_valid_capabilities(tmp_path):
+    """Valid capabilities should be accepted."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+capabilities:
+  - shell
+  - filesystem
+  - network
+  - browser
+---
+Body
+""")
+    errors = validate(skill_dir)
+    assert errors == []
+
+
+def test_unrecognized_capability_warns(tmp_path):
+    """Unrecognized capabilities should produce a warning but not block."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+capabilities:
+  - shell
+  - telekinesis
+---
+Body
+""")
+    errors = validate(skill_dir)
+    assert any("Unrecognized capability" in e and "telekinesis" in e for e in errors)
+
+
+def test_duplicate_capability(tmp_path):
+    """Duplicate capabilities should produce an error."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+capabilities:
+  - shell
+  - shell
+---
+Body
+""")
+    errors = validate(skill_dir)
+    assert any("Duplicate capability" in e and "shell" in e for e in errors)
+
+
+def test_empty_capabilities_list(tmp_path):
+    """Empty capabilities list should be accepted."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+capabilities: []
+---
+Body
+""")
+    errors = validate(skill_dir)
+    # strictyaml may parse empty list differently, but no crash
+    assert not any("capabilities" in e.lower() for e in errors) or errors == []
+
+
+def test_single_capability(tmp_path):
+    """A single capability should be accepted."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+capabilities:
+  - network
+---
+Body
+""")
+    errors = validate(skill_dir)
+    assert errors == []

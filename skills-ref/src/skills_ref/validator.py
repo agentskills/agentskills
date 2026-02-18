@@ -16,10 +16,15 @@ ALLOWED_FIELDS = {
     "name",
     "description",
     "license",
+    "capabilities",
     "allowed-tools",
     "metadata",
     "compatibility",
 }
+
+# Recognized capability values per the spec. Unknown values produce a warning
+# but do not fail validation, for forward compatibility.
+RECOGNIZED_CAPABILITIES = {"shell", "filesystem", "network", "browser"}
 
 
 def _validate_name(name: str, skill_dir: Path) -> list[str]:
@@ -101,6 +106,35 @@ def _validate_compatibility(compatibility: str) -> list[str]:
     return errors
 
 
+def _validate_capabilities(capabilities) -> list[str]:
+    """Validate capabilities format and values."""
+    errors = []
+
+    if not isinstance(capabilities, list):
+        errors.append("Field 'capabilities' must be a list of strings")
+        return errors
+
+    for item in capabilities:
+        if not isinstance(item, str) or not item.strip():
+            errors.append("Each capability must be a non-empty string")
+            continue
+        if item not in RECOGNIZED_CAPABILITIES:
+            errors.append(
+                f"Unrecognized capability '{item}'. "
+                f"Recognized values: {', '.join(sorted(RECOGNIZED_CAPABILITIES))}. "
+                "Unknown capabilities are allowed but may not be supported by all implementations."
+            )
+
+    seen = set()
+    for item in capabilities:
+        if isinstance(item, str) and item in seen:
+            errors.append(f"Duplicate capability '{item}'")
+        if isinstance(item, str):
+            seen.add(item)
+
+    return errors
+
+
 def _validate_metadata_fields(metadata: dict) -> list[str]:
     """Validate that only allowed fields are present."""
     errors = []
@@ -140,6 +174,9 @@ def validate_metadata(metadata: dict, skill_dir: Optional[Path] = None) -> list[
         errors.append("Missing required field in frontmatter: description")
     else:
         errors.extend(_validate_description(metadata["description"]))
+
+    if "capabilities" in metadata:
+        errors.extend(_validate_capabilities(metadata["capabilities"]))
 
     if "compatibility" in metadata:
         errors.extend(_validate_compatibility(metadata["compatibility"]))

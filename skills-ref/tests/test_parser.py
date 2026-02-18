@@ -186,3 +186,38 @@ Body
     # Verify to_dict outputs as "allowed-tools" (hyphenated)
     d = props.to_dict()
     assert d["allowed-tools"] == "Bash(jq:*) Bash(git:*)"
+
+
+def test_read_with_capabilities(tmp_path):
+    """capabilities should be parsed into SkillProperties."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+capabilities:
+  - shell
+  - network
+---
+Body
+""")
+    props = read_properties(skill_dir)
+    assert props.capabilities == ["shell", "network"]
+    d = props.to_dict()
+    assert d["capabilities"] == ["shell", "network"]
+
+
+def test_read_without_capabilities(tmp_path):
+    """Missing capabilities should result in None."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+---
+Body
+""")
+    props = read_properties(skill_dir)
+    assert props.capabilities is None
+    d = props.to_dict()
+    assert "capabilities" not in d
