@@ -1,5 +1,6 @@
 """Skill validation logic."""
 
+import re
 import unicodedata
 from pathlib import Path
 from typing import Optional
@@ -19,7 +20,12 @@ ALLOWED_FIELDS = {
     "allowed-tools",
     "metadata",
     "compatibility",
+    "credentials",
 }
+
+# Pattern for credential names: uppercase letters, digits, underscores; must start with a letter
+CREDENTIAL_NAME_PATTERN = re.compile(r"^[A-Z][A-Z0-9_]*$")
+CREDENTIAL_ENTRY_FIELDS = {"name", "description", "required"}
 
 
 def _validate_name(name: str, skill_dir: Path) -> list[str]:
@@ -143,6 +149,68 @@ def validate_metadata(metadata: dict, skill_dir: Optional[Path] = None) -> list[
 
     if "compatibility" in metadata:
         errors.extend(_validate_compatibility(metadata["compatibility"]))
+
+    if "credentials" in metadata:
+        errors.extend(_validate_credentials(metadata["credentials"]))
+
+    return errors
+
+
+def _validate_credentials(credentials) -> list[str]:
+    """Validate the credentials field."""
+    errors = []
+
+    if not isinstance(credentials, list):
+        errors.append("Field 'credentials' must be a list")
+        return errors
+
+    seen_names = set()
+    for i, entry in enumerate(credentials):
+        if not isinstance(entry, dict):
+            errors.append(f"Credential entry {i} must be a mapping")
+            continue
+
+        extra_fields = set(entry.keys()) - CREDENTIAL_ENTRY_FIELDS
+        if extra_fields:
+            errors.append(
+                f"Credential entry {i} has unexpected fields: "
+                f"{', '.join(sorted(extra_fields))}. "
+                f"Only {sorted(CREDENTIAL_ENTRY_FIELDS)} are allowed."
+            )
+
+        if "name" not in entry:
+            errors.append(f"Credential entry {i} is missing required field: name")
+        else:
+            name = entry["name"]
+            if not isinstance(name, str) or not name.strip():
+                errors.append(f"Credential entry {i} 'name' must be a non-empty string")
+            elif not CREDENTIAL_NAME_PATTERN.match(name):
+                errors.append(
+                    f"Credential name '{name}' must be uppercase letters, digits, "
+                    "and underscores only, starting with a letter "
+                    "(e.g. OPENAI_API_KEY)"
+                )
+            else:
+                if name in seen_names:
+                    errors.append(f"Duplicate credential name: {name}")
+                seen_names.add(name)
+
+        if "description" not in entry:
+            errors.append(
+                f"Credential entry {i} is missing required field: description"
+            )
+        elif (
+            not isinstance(entry["description"], str)
+            or not entry["description"].strip()
+        ):
+            errors.append(
+                f"Credential entry {i} 'description' must be a non-empty string"
+            )
+
+        if "required" in entry:
+            req = str(entry["required"]).lower()
+            if req not in ("true", "false"):
+                errors.append(f"Credential entry {i} 'required' must be true or false")
 
     return errors
 
