@@ -264,6 +264,129 @@ Body
     assert any("exceeds" in e and "500" in e for e in errors)
 
 
+def test_valid_credentials(tmp_path):
+    """Valid credentials field should be accepted."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+credentials:
+  - name: OPENAI_API_KEY
+    description: OpenAI API key for model access
+  - name: GITHUB_TOKEN
+    description: GitHub token with repo scope
+    required: false
+---
+Body
+""")
+    errors = validate(skill_dir)
+    assert errors == []
+
+
+def test_credential_invalid_name_format(tmp_path):
+    """Credential names must be SCREAMING_SNAKE_CASE."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+credentials:
+  - name: openai-api-key
+    description: Should be OPENAI_API_KEY
+---
+Body
+""")
+    errors = validate(skill_dir)
+    assert any("uppercase letters, digits, and underscores" in e for e in errors)
+
+
+def test_credential_missing_name(tmp_path):
+    """Credential entries must have a name."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+credentials:
+  - description: Missing the name field
+---
+Body
+""")
+    errors = validate(skill_dir)
+    assert any("missing required field: name" in e for e in errors)
+
+
+def test_credential_missing_description(tmp_path):
+    """Credential entries must have a description."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+credentials:
+  - name: OPENAI_API_KEY
+---
+Body
+""")
+    errors = validate(skill_dir)
+    assert any("missing required field: description" in e for e in errors)
+
+
+def test_credential_duplicate_names(tmp_path):
+    """Duplicate credential names should produce an error."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+credentials:
+  - name: OPENAI_API_KEY
+    description: First occurrence
+  - name: OPENAI_API_KEY
+    description: Duplicate
+---
+Body
+""")
+    errors = validate(skill_dir)
+    assert any("Duplicate credential name" in e for e in errors)
+
+
+def test_credential_unexpected_fields(tmp_path):
+    """Unexpected fields in credential entries should produce an error."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+credentials:
+  - name: OPENAI_API_KEY
+    description: OpenAI key
+    provider: openai
+---
+Body
+""")
+    errors = validate(skill_dir)
+    assert any("unexpected fields" in e.lower() for e in errors)
+
+
+def test_credential_single_entry(tmp_path):
+    """Single credential entry should be accepted."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+credentials:
+  - name: DEEPGRAM_API_KEY
+    description: Deepgram API key for speech-to-text
+---
+Body
+""")
+    errors = validate(skill_dir)
+    assert errors == []
+
+
 def test_nfkc_normalization(tmp_path):
     """Skill names are NFKC normalized before validation.
 

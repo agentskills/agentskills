@@ -6,7 +6,7 @@ from typing import Optional
 import strictyaml
 
 from .errors import ParseError, ValidationError
-from .models import SkillProperties
+from .models import Credential, SkillProperties
 
 
 def find_skill_md(skill_dir: Path) -> Optional[Path]:
@@ -102,11 +102,26 @@ def read_properties(skill_dir: Path) -> SkillProperties:
     if not isinstance(description, str) or not description.strip():
         raise ValidationError("Field 'description' must be a non-empty string")
 
+    credentials = None
+    raw_credentials = metadata.get("credentials")
+    if isinstance(raw_credentials, list):
+        credentials = []
+        for item in raw_credentials:
+            if isinstance(item, dict) and "name" in item and "description" in item:
+                credentials.append(
+                    Credential(
+                        name=str(item["name"]),
+                        description=str(item["description"]),
+                        required=str(item.get("required", "true")).lower() != "false",
+                    )
+                )
+
     return SkillProperties(
         name=name.strip(),
         description=description.strip(),
         license=metadata.get("license"),
         compatibility=metadata.get("compatibility"),
+        credentials=credentials,
         allowed_tools=metadata.get("allowed-tools"),
         metadata=metadata.get("metadata"),
     )

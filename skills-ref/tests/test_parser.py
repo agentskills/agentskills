@@ -186,3 +186,57 @@ Body
     # Verify to_dict outputs as "allowed-tools" (hyphenated)
     d = props.to_dict()
     assert d["allowed-tools"] == "Bash(jq:*) Bash(git:*)"
+
+
+def test_read_with_credentials(tmp_path):
+    """credentials should be parsed into SkillProperties."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+credentials:
+  - name: OPENAI_API_KEY
+    description: OpenAI API key for model access
+  - name: SLACK_WEBHOOK_URL
+    description: Slack webhook for notifications
+    required: false
+---
+Body
+""")
+    props = read_properties(skill_dir)
+    assert props.credentials is not None
+    assert len(props.credentials) == 2
+    assert props.credentials[0].name == "OPENAI_API_KEY"
+    assert props.credentials[0].description == "OpenAI API key for model access"
+    assert props.credentials[0].required is True
+    assert props.credentials[1].name == "SLACK_WEBHOOK_URL"
+    assert props.credentials[1].required is False
+    # Verify to_dict round-trip
+    d = props.to_dict()
+    assert len(d["credentials"]) == 2
+    assert d["credentials"][0] == {
+        "name": "OPENAI_API_KEY",
+        "description": "OpenAI API key for model access",
+    }
+    assert d["credentials"][1] == {
+        "name": "SLACK_WEBHOOK_URL",
+        "description": "Slack webhook for notifications",
+        "required": False,
+    }
+
+
+def test_read_without_credentials(tmp_path):
+    """Missing credentials should result in None."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+---
+Body
+""")
+    props = read_properties(skill_dir)
+    assert props.credentials is None
+    d = props.to_dict()
+    assert "credentials" not in d

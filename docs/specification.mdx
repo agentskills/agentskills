@@ -38,6 +38,10 @@ With optional fields:
 name: pdf-processing
 description: Extract text and tables from PDF files, fill forms, merge documents.
 license: Apache-2.0
+credentials:
+  - name: OPENAI_API_KEY
+    description: OpenAI API key for OCR-assisted extraction
+    required: false
 metadata:
   author: example-org
   version: "1.0"
@@ -51,6 +55,7 @@ metadata:
 | `license` | No | License name or reference to a bundled license file. |
 | `compatibility` | No | Max 500 characters. Indicates environment requirements (intended product, system packages, network access, etc.). |
 | `metadata` | No | Arbitrary key-value mapping for additional metadata. |
+| `credentials` | No | List of credentials the skill requires. Each entry has `name`, `description`, and optional `required` (defaults to `true`). |
 | `allowed-tools` | No | Space-delimited list of pre-approved tools the skill may use. (Experimental) |
 
 #### `name` field
@@ -144,6 +149,35 @@ metadata:
   author: example-org
   version: "1.0"
 ```
+
+#### `credentials` field
+
+The optional `credentials` field:
+- A list of credentials the skill needs to function
+- Each entry is a mapping with the following properties:
+
+| Property | Required | Description |
+|----------|----------|-------------|
+| `name` | Yes | Environment-variable-style identifier for the credential (e.g. `OPENAI_API_KEY`, `GITHUB_TOKEN`). Uppercase letters, digits, and underscores only. Must start with a letter. |
+| `description` | Yes | What the credential is for, including any scope or permission requirements. |
+| `required` | No | Whether the skill requires this credential to function. Defaults to `true`. |
+
+Credential names follow the environment variable convention that developers and SDKs already use (e.g. `OPENAI_API_KEY`, `STRIPE_SECRET_KEY`). This makes it natural for runtimes to resolve credentials from environment variables, vaults, or other secret stores without a translation layer.
+
+Example with multiple credentials:
+```yaml
+credentials:
+  - name: TRELLO_API_KEY
+    description: Trello API key for board access
+  - name: TRELLO_TOKEN
+    description: Trello member token with read/write scope
+  - name: SLACK_WEBHOOK_URL
+    description: Slack incoming webhook URL for posting notifications
+    required: false
+```
+
+The `credentials` field is declarative — it states what a skill needs, not how to provision it. Agent implementations and secret management systems (vaults, environment injection, etc.) decide how credentials are resolved and injected at runtime.
+
 
 #### `allowed-tools` field
 
