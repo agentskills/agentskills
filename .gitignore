@@ -4,3 +4,6 @@
 # IDEs
 .idea/
 .vscode/
+
+# Dependencies
+node_modules/
