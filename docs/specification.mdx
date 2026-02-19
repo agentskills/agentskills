@@ -225,4 +225,11 @@ Use the [skills-ref](https://github.com/agentskills/agentskills/tree/main/skills
 skills-ref validate ./my-skill
 ```
 
+Or run it without installation:
+
+```bash
+uvx --from skills-ref agentskills validate ./my-skill
+pipx run skills-ref validate ./my-skill
+```
+
 This checks that your `SKILL.md` frontmatter is valid and follows all naming conventions.
