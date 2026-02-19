@@ -90,10 +90,20 @@ For example:
 ```
 skills-ref validate <path>
 ```
+Or without installation:
+```
+uvx --from skills-ref agentskills validate <path>
+pipx run skills-ref validate <path>
+```
 
 **Generate `<available_skills>` XML for agent prompts:**
 ```
 skills-ref to-prompt <path>...
+```
+Or without installation:
+```
+uvx --from skills-ref agentskills to-prompt <path>...
+pipx run skills-ref to-prompt <path>...
 ```
 
 Use the library source code as a reference implementation.

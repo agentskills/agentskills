@@ -51,6 +51,27 @@ uv sync
 
 After installation, the `skills-ref` executable will be available on your `PATH` (within the activated virtual environment).
 
+### Run without local installation
+
+Using [uvx](https://docs.astral.sh/uv/guides/tools/):
+
+```bash
+uvx --from skills-ref agentskills validate path/to/skill
+```
+
+Using [pipx](https://pipx.pypa.io/) (single-line):
+
+```bash
+pipx run skills-ref validate path/to/skill
+```
+
+Install with `pipx` for repeated usage:
+
+```bash
+pipx install skills-ref
+agentskills validate path/to/skill
+```
+
 ## Usage
 
 ### CLI
@@ -64,6 +85,13 @@ skills-ref read-properties path/to/skill
 
 # Generate <available_skills> XML for agent prompts
 skills-ref to-prompt path/to/skill-a path/to/skill-b
+```
+
+`uvx`/`pipx run` can execute any command above without cloning this repository:
+
+```bash
+uvx --from skills-ref agentskills to-prompt path/to/skill-a path/to/skill-b
+pipx run skills-ref to-prompt path/to/skill-a path/to/skill-b
 ```
 
 ### Python API
