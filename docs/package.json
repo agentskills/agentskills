@@ -2,10 +2,6 @@
   "name": "agentskills-docs",
   "private": true,
   "scripts": {
-    "dev": "mint dev",
-    "update": "mint update"
-  },
-  "devDependencies": {
-    "mint": "^4.2.345"
+    "dev": "npx mint dev"
   }
 }
