@@ -1,0 +1,7 @@
+{
+  "name": "agentskills-docs",
+  "private": true,
+  "scripts": {
+    "dev": "npx mint dev"
+  }
+}
