@@ -28,6 +28,24 @@ A skills-compatible agent needs to:
 
 Skills are folders containing a `SKILL.md` file. Your agent should scan configured directories for valid skills.
 
+### Library skills
+
+Agents working on a programming environment such as Python or JavaScript (TypeScript) with access to installed libraries can scan those libraries to find skills to work with them, defined by them.
+
+Each library can define their own skills in a `.agents/skills/` directory inside of their own package.
+
+For example, a Python library like `fastapi` could include a skill at `fastapi/.agents/skills/fastapi/SKILL.md`.
+
+If the Python virtual environment being used is at `.venv`, the agent could find that skill in a directory like `.venv/lib64/python3.14/site-packages/fastapi/.agents/skills/fastapi/SKILL.md` (in this case using Python 3.14 and a 64-bit environment).
+
+A JavaScript library like `@tanstack/react-router` could include a skill at `@tanstack/react-router/.agents/skills/tanstack-router/SKILL.md`.
+
+The agent could find that skill in a directory like `node_modules/@tanstack/react-router/.agents/skills/tanstack-router/SKILL.md`.
+
+Libraries can provide their official skills instructing how to work with them this way. They can define multiple skills if needed.
+
+By using library skills, agents can make sure they follow the best practices defined by those libraries, up to date with their latest versions.
+
 ## Loading metadata
 
 At startup, parse only the frontmatter of each `SKILL.md` file. This keeps initial context usage low.
