@@ -18,6 +18,7 @@
     "pages": [
       "home",
       "what-are-skills",
+      "skill-authoring-best-practices",
       "specification",
       "integrate-skills"
     ]
