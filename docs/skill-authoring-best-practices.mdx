@@ -1,0 +1,97 @@
+---
+title: "Skill authoring best practices"
+sidebarTitle: "Authoring best practices"
+description: "How to write robust, discoverable, and context-efficient Agent Skills."
+---
+
+This guide focuses on writing high-quality skills that route correctly, stay concise in context, and execute reliably.
+
+## Start with the right structure
+
+Every skill needs a `SKILL.md` file. Keep optional folders flat and one level deep.
+
+```directory
+skill-name/
+├── SKILL.md       # Required: metadata + core workflow
+├── scripts/       # Optional: deterministic executable helpers
+├── references/    # Optional: supplemental docs loaded on demand
+└── assets/        # Optional: templates and static output resources
+```
+
+Use `SKILL.md` as the control plane for routing and workflow. Move bulky details to `references/`, reusable execution logic to `scripts/`, and output artifacts to `assets/`.
+
+## Optimize metadata for routing
+
+Agents discover skills from frontmatter, so `name` and `description` must be precise.
+
+- `name`: keep it valid per spec and identical to the skill directory name.
+- `description`: describe what the skill does, when it should trigger, and nearby cases where it should not trigger.
+
+Good descriptions are concrete and specific to domain terminology. Vague descriptions make the skill difficult to route.
+
+## Design for progressive disclosure
+
+Treat context like a scarce resource.
+
+1. Keep `SKILL.md` focused and generally under 500 lines.
+2. Link detailed material from `SKILL.md` into files in `references/`.
+3. Reference files directly from `SKILL.md` (avoid deep reference chains).
+4. Tell the agent exactly when to read each file.
+
+Example:
+
+```mdx
+For API error codes, read [references/errors.md](references/errors.md).
+For migration flags, read [references/migrations.md](references/migrations.md).
+```
+
+## Write instructions for agents, not humans
+
+Prefer deterministic, procedural instructions over prose.
+
+- Use numbered steps with clear sequencing.
+- Use explicit branch points (`if/then`) for decision paths.
+- Keep terminology consistent across the skill.
+- Prefer concrete templates in `assets/` over long descriptive text.
+
+## Use scripts for fragile or repetitive work
+
+If failure modes are costly or code is repeatedly regenerated, bundle a script in `scripts/`.
+
+- Keep scripts small and single-purpose.
+- Emit clear, actionable error messages.
+- Handle known edge cases so the agent can recover without user intervention.
+
+Avoid embedding large library-style code inside skills. Place durable libraries in normal project repositories and call them from scripts when needed.
+
+## Keep skills lean
+
+Skills are execution artifacts for agents. Avoid extra documents that bloat discovery and maintenance overhead.
+
+Do not add files like:
+- `README.md`
+- `CHANGELOG.md`
+- `INSTALLATION_GUIDE.md`
+
+If an instruction is redundant with baseline model capability, remove it.
+
+## Validate before publishing
+
+Validate both routing quality and execution quality.
+
+1. Discovery validation: test whether prompts that should trigger your skill do trigger, and near-neighbor prompts do not.
+2. Logic validation: simulate step-by-step execution and identify where instructions force guessing.
+3. Edge-case validation: stress unsupported configurations and failure paths.
+4. Refinement: move dense details out of `SKILL.md` and keep it focused on high-level control flow.
+
+You can also run the reference validator:
+
+```bash
+skills-ref validate ./my-skill
+```
+
+## Related docs
+
+- [Specification](/specification)
+- [What are skills?](/what-are-skills)
+- [Integrate skills into your agent](/integrate-skills)
