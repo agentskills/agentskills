@@ -4,13 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Documentation
 
-The Agent Skills documentation site, defined in the `docs/` directory, is built with [Mintlify](https://mintlify.com). 
+The Agent Skills documentation site, defined in the `docs/` directory, is built with [Mintlify](https://mintlify.com).
 
 ### Quick Start Commands
 
 ```bash
-# Run local development server (from /docs directory)
-cd docs && npx mint dev
+# Run local development server
+npm run dev
 ```
 
 Local preview available at `http://localhost:3000`

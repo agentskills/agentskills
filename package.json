@@ -1,0 +1,7 @@
+{
+  "name": "agentskills",
+  "private": true,
+  "scripts": {
+    "dev": "cd docs && npx mint dev"
+  }
+}
