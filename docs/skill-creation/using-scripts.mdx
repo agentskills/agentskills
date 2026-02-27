@@ -116,7 +116,7 @@ Then instruct the agent to run them:
 ````
 
 <Note>
-The same relative-path convention works in `references/*.md` files. Paths are always relative to the **skill directory root**, not the file's own location.
+The same relative-path convention works in support files like `references/*.md` — script execution paths (in code blocks) are relative to the **skill directory root**, because the agent runs commands from there.
 </Note>
 
 ## Self-contained scripts
@@ -275,14 +275,14 @@ Error: --format must be one of: json, csv, table.
 
 ### Use structured output
 
-Use a format with explicit field delimiters — JSON, CSV, TSV — rather than free-form text or column-aligned tables. Column-aligned tables rely on whitespace to separate fields, which becomes ambiguous with missing values or multi-word fields. Delimited formats have unambiguous field boundaries that both LLMs and standard tools (`jq`, `cut`, `awk`) can process reliably.
+Prefer structured formats — JSON, CSV, TSV — over free-form text. Structured formats can be consumed by both the agent and standard tools (`jq`, `cut`, `awk`), making your script composable in pipelines.
 
 ```
-# Field boundaries depend on whitespace alignment
+# Whitespace-aligned — hard to parse programmatically
 NAME          STATUS    CREATED
 my-service    running   2025-01-15
 
-# Field boundaries are explicit
+# Delimited — unambiguous field boundaries
 {"name": "my-service", "status": "running", "created": "2025-01-15"}
 ```
 
@@ -295,4 +295,4 @@ my-service    running   2025-01-15
 - **Dry-run support.** For destructive or stateful operations, a `--dry-run` flag lets the agent preview what will happen.
 - **Meaningful exit codes.** Use distinct exit codes for different failure types (not found, invalid arguments, auth failure) and document them in your `--help` output so the agent knows what each code means.
 - **Safe defaults.** Consider whether destructive operations should require explicit confirmation flags (`--confirm`, `--force`) or other safeguards appropriate to the risk level.
-- **Predictable output size.** Many agent harnesses automatically truncate tool output beyond a threshold (e.g., 10-30K characters), potentially losing critical information from the middle. If your script might produce large output, default to a summary or a reasonable limit, and support flags like `--limit` or `--verbose` so the agent can request more detail when needed.
+- **Predictable output size.** Many agent harnesses automatically truncate tool output beyond a threshold (e.g., 10-30K characters), potentially losing critical information. If your script might produce large output, default to a summary or a reasonable limit, and support flags like `--offset` so the agent can request more information when needed. Alternatively, if output is large and not amenable to pagination, require agents to pass an `--output` flag that specifies either an output file or `-` to explicitly opt in to stdout.
