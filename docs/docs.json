@@ -19,7 +19,18 @@
       "home",
       "what-are-skills",
       "specification",
-      "integrate-skills"
+      {
+        "group": "For skill creators",
+        "pages": [
+          "skill-creation/using-scripts"
+        ]
+      },
+      {
+        "group": "For client implementors",
+        "pages": [
+          "integrate-skills"
+        ]
+      }
     ]
   },
   "contextual": {
