@@ -5,6 +5,13 @@ description: "The complete format specification for Agent Skills."
 
 This document defines the Agent Skills format.
 
+## Skills location
+
+It's recommended that adopters of the standard automatically load skills 
+from `~/.agents/skills` (user scope) and/or `.agents/skills` (project scope). 
+An alternative could be to allow the users to configure where they want to load
+skills from.
+
 ## Directory structure
 
 A skill is a directory containing at minimum a `SKILL.md` file:
