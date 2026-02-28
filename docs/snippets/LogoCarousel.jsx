@@ -39,6 +39,7 @@ export const LogoCarousel = () => {
     { name: "Qodo", url: "https://www.qodo.ai/", lightSrc: "/images/logos/qodo/qodo-logo-light.png", darkSrc: "/images/logos/qodo/qodo-logo-dark.svg" },
     { name: "Laravel Boost", url: "https://github.com/laravel/boost", lightSrc: "/images/logos/laravel-boost/boost-light-mode.svg", darkSrc: "/images/logos/laravel-boost/boost-dark-mode.svg" },
     { name: "Emdash", url: "https://emdash.sh", lightSrc: "/images/logos/emdash/emdash-logo-light.svg", darkSrc: "/images/logos/emdash/emdash-logo-dark.svg" },
+    { name: "Snowflake", url: "https://docs.snowflake.com/en/user-guide/cortex-code/cortex-code", lightSrc: "/images/logos/snowflake/snowflake-logo-light.svg", darkSrc: "/images/logos/snowflake/snowflake-logo-dark.svg" },
   ];
 
   /* Shuffle logos on component mount */
