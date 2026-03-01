@@ -28,7 +28,7 @@
       {
         "group": "For client implementors",
         "pages": [
-          "integrate-skills"
+          "client-implementation/integrating-skills"
         ]
       }
     ]
@@ -44,5 +44,11 @@
       "cursor",
       "vscode"
     ]
-  }
+  },
+  "redirects": [
+    {
+      "source": "/integrate-skills",
+      "destination": "/client-implementation/integrating-skills"
+    }
+  ]
 }
