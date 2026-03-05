@@ -36,6 +36,7 @@ export const LogoCarousel = () => {
     { name: "Command Code", url: "https://commandcode.ai/", lightSrc: "/images/logos/command-code/command-code-logo-for-light.svg", darkSrc: "/images/logos/command-code/command-code-logo-for-dark.svg", width: "200px" },
     { name: "Ona", url: "https://ona.com", lightSrc: "/images/logos/ona/ona-wordmark-light.svg", darkSrc: "/images/logos/ona/ona-wordmark-dark.svg", width: "120px" },
     { name: "VT Code", url: "https://github.com/vinhnx/vtcode", lightSrc: "/images/logos/vtcode/vt_code_light.svg", darkSrc: "/images/logos/vtcode/vt_code_dark.svg" },
+    { name: "StackGen Aiden", url: "https://aiden.stackgen.com", lightSrc: "/images/logos/aiden/aiden-logo-light.svg", darkSrc: "/images/logos/aiden/aiden-logo-dark.svg" },
     { name: "Qodo", url: "https://www.qodo.ai/", lightSrc: "/images/logos/qodo/qodo-logo-light.png", darkSrc: "/images/logos/qodo/qodo-logo-dark.svg" },
     { name: "Laravel Boost", url: "https://github.com/laravel/boost", lightSrc: "/images/logos/laravel-boost/boost-light-mode.svg", darkSrc: "/images/logos/laravel-boost/boost-dark-mode.svg" },
     { name: "Emdash", url: "https://emdash.sh", lightSrc: "/images/logos/emdash/emdash-logo-light.svg", darkSrc: "/images/logos/emdash/emdash-logo-dark.svg" },
