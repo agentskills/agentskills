@@ -18,7 +18,7 @@ skill-name/
 You can optionally include [additional directories](#optional-directories) such as `scripts/`, `references/`, and `assets/` to support your skill.
 </Tip>
 
-## SKILL.md format
+## `SKILL.md` format
 
 The `SKILL.md` file must contain YAML frontmatter followed by Markdown content.
 
@@ -169,7 +169,7 @@ Note that the agent will load this entire file once it's decided to activate a s
 
 ## Optional directories
 
-### scripts/
+### `scripts/`
 
 Contains executable code that agents can run. Scripts should:
 - Be self-contained or clearly document dependencies
@@ -178,7 +178,7 @@ Contains executable code that agents can run. Scripts should:
 
 Supported languages depend on the agent implementation. Common options include Python, Bash, and JavaScript.
 
-### references/
+### `references/`
 
 Contains additional documentation that agents can read when needed:
 - `REFERENCE.md` - Detailed technical reference
@@ -187,7 +187,7 @@ Contains additional documentation that agents can read when needed:
 
 Keep individual [reference files](#file-references) focused. Agents load these on demand, so smaller files mean less use of context.
 
-### assets/
+### `assets/`
 
 Contains static resources:
 - Templates (document templates, configuration templates)
