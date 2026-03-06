@@ -21,7 +21,7 @@ Or using [uv](https://docs.astral.sh/uv/):
 
 ```bash
 uv sync
-source .venv/bin/activate
+uv pip install -e .
 ```
 
 ### Windows
