@@ -23,7 +23,7 @@ The `SKILL.md` file must contain YAML frontmatter followed by Markdown content.
 
 ### Frontmatter (required)
 
-```yaml
+```markdown SKILL.md
 ---
 name: skill-name
 description: A description of what this skill does and when to use it.
@@ -32,7 +32,7 @@ description: A description of what this skill does and when to use it.
 
 **With optional fields:**
 
-```yaml
+```markdown SKILL.md
 ---
 name: pdf-processing
 description: Extract text and tables from PDF files, fill forms, merge documents.
@@ -219,7 +219,7 @@ Keep your main `SKILL.md` under 500 lines. Move detailed reference material to s
 
 When referencing other files in your skill, use relative paths from the skill root:
 
-```markdown
+```markdown SKILL.md
 See [the reference guide](references/REFERENCE.md) for details.
 
 Run the extraction script:
