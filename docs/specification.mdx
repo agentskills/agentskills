@@ -21,7 +21,19 @@ skill-name/
 
 The `SKILL.md` file must contain YAML frontmatter followed by Markdown content.
 
-### Frontmatter (required)
+### Frontmatter
+
+| Field | Required | Constraints |
+|-------|----------|-------------|
+| `name` | Yes | Max 64 characters. Lowercase letters, numbers, and hyphens only. Must not start or end with a hyphen. |
+| `description` | Yes | Max 1024 characters. Non-empty. Describes what the skill does and when to use it. |
+| `license` | No | License name or reference to a bundled license file. |
+| `compatibility` | No | Max 500 characters. Indicates environment requirements (intended product, system packages, network access, etc.). |
+| `metadata` | No | Arbitrary key-value mapping for additional metadata. |
+| `allowed-tools` | No | Space-delimited list of pre-approved tools the skill may use. (Experimental) |
+
+<Card>
+**Minimal example:**
 
 ```markdown SKILL.md
 ---
@@ -30,7 +42,7 @@ description: A description of what this skill does and when to use it.
 ---
 ```
 
-**With optional fields:**
+**Example with optional fields:**
 
 ```markdown SKILL.md
 ---
@@ -42,15 +54,7 @@ metadata:
   version: "1.0"
 ---
 ```
-
-| Field | Required | Constraints |
-|-------|----------|-------------|
-| `name` | Yes | Max 64 characters. Lowercase letters, numbers, and hyphens only. Must not start or end with a hyphen. |
-| `description` | Yes | Max 1024 characters. Non-empty. Describes what the skill does and when to use it. |
-| `license` | No | License name or reference to a bundled license file. |
-| `compatibility` | No | Max 500 characters. Indicates environment requirements (intended product, system packages, network access, etc.). |
-| `metadata` | No | Arbitrary key-value mapping for additional metadata. |
-| `allowed-tools` | No | Space-delimited list of pre-approved tools the skill may use. (Experimental) |
+</Card>
 
 #### `name` field
 
