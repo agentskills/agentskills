@@ -19,6 +19,7 @@ ALLOWED_FIELDS = {
     "allowed-tools",
     "metadata",
     "compatibility",
+    "features",
 }
 
 
@@ -143,6 +144,76 @@ def validate_metadata(metadata: dict, skill_dir: Optional[Path] = None) -> list[
 
     if "compatibility" in metadata:
         errors.extend(_validate_compatibility(metadata["compatibility"]))
+
+    if "features" in metadata:
+        errors.extend(_validate_features(metadata["features"]))
+
+    return errors
+
+
+def _validate_features(features: dict) -> list[str]:
+    """Validate features field structure and consistency."""
+    errors = []
+
+    if not isinstance(features, dict):
+        errors.append("Field 'features' must be a mapping")
+        return errors
+
+    if "default" not in features:
+        errors.append("Field 'features.default' is required when 'features' is present")
+    if "available" not in features:
+        errors.append("Field 'features.available' is required when 'features' is present")
+        return errors
+
+    available = features.get("available", {})
+    if not isinstance(available, dict):
+        errors.append("Field 'features.available' must be a mapping")
+        return errors
+
+    # Validate each feature definition
+    for feat_name, feat_def in available.items():
+        if not isinstance(feat_def, dict):
+            errors.append(f"Feature '{feat_name}' definition must be a mapping")
+            continue
+
+        if "description" not in feat_def:
+            errors.append(f"Feature '{feat_name}' is missing required field 'description'")
+        if "section" not in feat_def:
+            errors.append(f"Feature '{feat_name}' is missing required field 'section'")
+
+        requires = feat_def.get("requires", [])
+        if isinstance(requires, str):
+            requires = [requires]
+        if not isinstance(requires, list):
+            errors.append(f"Feature '{feat_name}.requires' must be a list")
+        else:
+            for dep in requires:
+                if dep not in available:
+                    errors.append(
+                        f"Feature '{feat_name}' requires unknown feature '{dep}'"
+                    )
+
+    # Validate defaults reference known features
+    default = features.get("default", [])
+    if isinstance(default, str):
+        default = [default]
+    if isinstance(default, list):
+        for d in default:
+            if d not in available:
+                errors.append(f"Default feature '{d}' is not defined in 'features.available'")
+
+    # Validate conflicts reference known features
+    conflicts = features.get("conflicts", [])
+    if isinstance(conflicts, list):
+        for conflict_set in conflicts:
+            if not isinstance(conflict_set, list):
+                errors.append("Each entry in 'features.conflicts' must be a list")
+                continue
+            for c in conflict_set:
+                if c not in available:
+                    errors.append(
+                        f"Conflict references unknown feature '{c}'"
+                    )
 
     return errors
 

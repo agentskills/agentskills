@@ -6,7 +6,7 @@ from typing import Optional
 import strictyaml
 
 from .errors import ParseError, ValidationError
-from .models import SkillProperties
+from .models import FeatureDefinition, Features, SkillProperties
 
 
 def find_skill_md(skill_dir: Path) -> Optional[Path]:
@@ -102,11 +102,78 @@ def read_properties(skill_dir: Path) -> SkillProperties:
     if not isinstance(description, str) or not description.strip():
         raise ValidationError("Field 'description' must be a non-empty string")
 
+    features = None
+    if "features" in metadata:
+        features = _parse_features(metadata["features"])
+
     return SkillProperties(
         name=name.strip(),
         description=description.strip(),
         license=metadata.get("license"),
         compatibility=metadata.get("compatibility"),
         allowed_tools=metadata.get("allowed-tools"),
+        features=features,
         metadata=metadata.get("metadata"),
     )
+
+
+def _parse_features(raw: dict) -> Features:
+    """Parse features field from frontmatter into Features model.
+
+    Args:
+        raw: Raw features dict from YAML parsing
+
+    Returns:
+        Features dataclass
+
+    Raises:
+        ValidationError: If features structure is invalid
+    """
+    if not isinstance(raw, dict):
+        raise ValidationError("Field 'features' must be a mapping")
+
+    if "default" not in raw:
+        raise ValidationError("Field 'features.default' is required")
+    if "available" not in raw:
+        raise ValidationError("Field 'features.available' is required")
+
+    default = raw["default"]
+    if isinstance(default, str):
+        default = [default]
+    if not isinstance(default, list):
+        raise ValidationError("Field 'features.default' must be a list")
+
+    available_raw = raw["available"]
+    if not isinstance(available_raw, dict):
+        raise ValidationError("Field 'features.available' must be a mapping")
+
+    available = {}
+    for feat_name, feat_def in available_raw.items():
+        if not isinstance(feat_def, dict):
+            raise ValidationError(
+                f"Feature '{feat_name}' definition must be a mapping"
+            )
+        if "description" not in feat_def:
+            raise ValidationError(
+                f"Feature '{feat_name}' is missing required field 'description'"
+            )
+        if "section" not in feat_def:
+            raise ValidationError(
+                f"Feature '{feat_name}' is missing required field 'section'"
+            )
+
+        requires = feat_def.get("requires", [])
+        if isinstance(requires, str):
+            requires = [requires]
+
+        available[feat_name] = FeatureDefinition(
+            description=feat_def["description"],
+            section=feat_def["section"],
+            requires=requires,
+        )
+
+    conflicts = raw.get("conflicts", [])
+    if not isinstance(conflicts, list):
+        raise ValidationError("Field 'features.conflicts' must be a list")
+
+    return Features(default=default, available=available, conflicts=conflicts)

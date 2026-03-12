@@ -29,6 +29,7 @@ The `SKILL.md` file must contain YAML frontmatter followed by Markdown content.
 | `license` | No | License name or reference to a bundled license file. |
 | `compatibility` | No | Max 500 characters. Indicates environment requirements (intended product, system packages, network access, etc.). |
 | `metadata` | No | Arbitrary key-value mapping for additional metadata. |
+| `features` | No | Feature flags for context-aware loading. See [Feature flags](#feature-flags). |
 | `allowed-tools` | No | Space-delimited list of pre-approved tools the skill may use. (Experimental) |
 
 <Card>
@@ -169,6 +170,82 @@ The optional `allowed-tools` field:
 allowed-tools: Bash(git:*) Bash(jq:*) Read
 ```
 </Card>
+
+#### `features` field
+
+The optional `features` field enables context-aware skill loading by declaring sub-capabilities within a skill. Consumers can activate only the relevant subset, reducing context window cost while maintaining a single source of truth.
+
+The `features` field is a mapping with the following sub-fields:
+
+| Sub-field | Required | Description |
+|-----------|----------|-------------|
+| `default` | Yes (if `features` present) | List of feature names activated when none are explicitly selected |
+| `available` | Yes (if `features` present) | Map of feature name to feature definition |
+| `conflicts` | No | List of mutually exclusive feature sets |
+
+Each feature definition in `available` has:
+
+| Sub-field | Required | Description |
+|-----------|----------|-------------|
+| `description` | Yes | Human-readable description of the feature |
+| `section` | Yes | Markdown heading that starts this feature's content (e.g., `"## App Router"`) |
+| `requires` | No | List of other feature names that must also be activated |
+
+<Card>
+**Example with feature flags:**
+
+```markdown SKILL.md
+---
+name: pdf-processing
+description: Extract PDF text, fill forms, merge files. Use when handling PDFs.
+features:
+  default:
+    - extraction
+    - forms
+  available:
+    extraction:
+      description: Extract text and tables from PDF files
+      section: "## Extraction"
+    forms:
+      description: Fill and flatten PDF form fields
+      section: "## Forms"
+    merging:
+      description: Combine multiple PDFs into one
+      section: "## Merging"
+    ocr:
+      description: OCR scanned PDFs into searchable text
+      section: "## OCR"
+      requires:
+        - extraction
+---
+
+# PDF Processing
+
+General setup and configuration...
+
+## Extraction
+<!-- feature: extraction -->
+Text and table extraction instructions...
+
+## Forms
+<!-- feature: forms -->
+Form filling instructions...
+
+## Merging
+<!-- feature: merging -->
+PDF merging instructions...
+
+## OCR
+<!-- feature: ocr -->
+OCR processing instructions...
+```
+</Card>
+
+**Content demarcation:** Each feature maps to a heading-delimited section in the body. Content before any feature section is always included (preamble). An optional HTML comment (`<!-- feature: name -->`) can make boundaries explicit.
+
+**Feature resolution:** When activating features, consumers should: (1) start with explicitly selected features or `default`, (2) recursively add `requires` dependencies, (3) check for `conflicts` violations, (4) extract corresponding sections plus preamble.
+
+**Backward compatibility:** Skills without `features` work exactly as before. Agents that don't understand feature flags load the full SKILL.md as-is — the HTML comments are invisible in markdown rendering.
 
 ### Body content
 
