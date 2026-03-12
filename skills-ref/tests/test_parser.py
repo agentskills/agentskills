@@ -170,6 +170,24 @@ description: A test skill
     assert props.description == "A test skill"
 
 
+def test_read_with_product_version(tmp_path):
+    """product-version should be parsed into SkillProperties."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+product-version: "6.0.105"
+---
+Body
+""")
+    props = read_properties(skill_dir)
+    assert props.product_version == "6.0.105"
+    # Verify to_dict outputs as "product-version" (hyphenated)
+    d = props.to_dict()
+    assert d["product-version"] == "6.0.105"
+
+
 def test_read_with_allowed_tools(tmp_path):
     """allowed-tools should be parsed into SkillProperties."""
     skill_dir = tmp_path / "my-skill"

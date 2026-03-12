@@ -264,6 +264,52 @@ Body
     assert any("exceeds" in e and "500" in e for e in errors)
 
 
+def test_valid_product_version(tmp_path):
+    """product-version field should be accepted."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+product-version: "6.0.105"
+---
+Body
+""")
+    errors = validate(skill_dir)
+    assert errors == []
+
+
+def test_product_version_platform(tmp_path):
+    """product-version with 'platform' value should be accepted."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+product-version: platform
+---
+Body
+""")
+    errors = validate(skill_dir)
+    assert errors == []
+
+
+def test_product_version_too_long(tmp_path):
+    """product-version exceeding 64 chars should fail."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    long_version = "x" * 70
+    (skill_dir / "SKILL.md").write_text(f"""---
+name: my-skill
+description: A test skill
+product-version: {long_version}
+---
+Body
+""")
+    errors = validate(skill_dir)
+    assert any("exceeds" in e and "64" in e for e in errors)
+
+
 def test_nfkc_normalization(tmp_path):
     """Skill names are NFKC normalized before validation.
 

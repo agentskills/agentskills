@@ -28,6 +28,7 @@ The `SKILL.md` file must contain YAML frontmatter followed by Markdown content.
 | `description` | Yes | Max 1024 characters. Non-empty. Describes what the skill does and when to use it. |
 | `license` | No | License name or reference to a bundled license file. |
 | `compatibility` | No | Max 500 characters. Indicates environment requirements (intended product, system packages, network access, etc.). |
+| `product-version` | No | Max 64 characters. The version of the external product or library this skill was written for. Follows semver when the product does. Use `"platform"` for products without versioned releases. |
 | `metadata` | No | Arbitrary key-value mapping for additional metadata. |
 | `allowed-tools` | No | Space-delimited list of pre-approved tools the skill may use. (Experimental) |
 
@@ -48,6 +49,7 @@ description: A description of what this skill does and when to use it.
 name: pdf-processing
 description: Extract PDF text, fill forms, merge files. Use when handling PDFs.
 license: Apache-2.0
+product-version: "3.2.1"
 metadata:
   author: example-org
   version: "1.0"
@@ -139,6 +141,29 @@ compatibility: Requires git, docker, jq, and access to the internet
 
 <Note>
 Most skills do not need the `compatibility` field.
+</Note>
+
+#### `product-version` field
+
+The optional `product-version` field:
+- Must be 1-64 characters if provided
+- Indicates the version of the external product or library this skill was written for
+- Follows semver when the upstream product does
+- Use `"platform"` for products without versioned releases (e.g. cloud platforms)
+- Distinct from `metadata.version`, which tracks the skill's own revision history
+
+<Card>
+**Examples:**
+```yaml
+product-version: "6.0.105"
+```
+```yaml
+product-version: "platform"
+```
+</Card>
+
+<Note>
+`product-version` enables automated staleness detection. Tooling can compare this value against the latest published version of the upstream product to flag skills that may need updating.
 </Note>
 
 #### `metadata` field

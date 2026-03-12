@@ -10,6 +10,7 @@ from .parser import find_skill_md, parse_frontmatter
 MAX_SKILL_NAME_LENGTH = 64
 MAX_DESCRIPTION_LENGTH = 1024
 MAX_COMPATIBILITY_LENGTH = 500
+MAX_PRODUCT_VERSION_LENGTH = 64
 
 # Allowed frontmatter fields per Agent Skills Spec
 ALLOWED_FIELDS = {
@@ -19,6 +20,7 @@ ALLOWED_FIELDS = {
     "allowed-tools",
     "metadata",
     "compatibility",
+    "product-version",
 }
 
 
@@ -101,6 +103,23 @@ def _validate_compatibility(compatibility: str) -> list[str]:
     return errors
 
 
+def _validate_product_version(product_version: str) -> list[str]:
+    """Validate product-version format."""
+    errors = []
+
+    if not isinstance(product_version, str):
+        errors.append("Field 'product-version' must be a string")
+        return errors
+
+    if len(product_version) > MAX_PRODUCT_VERSION_LENGTH:
+        errors.append(
+            f"Product version exceeds {MAX_PRODUCT_VERSION_LENGTH} character limit "
+            f"({len(product_version)} chars)"
+        )
+
+    return errors
+
+
 def _validate_metadata_fields(metadata: dict) -> list[str]:
     """Validate that only allowed fields are present."""
     errors = []
@@ -143,6 +162,9 @@ def validate_metadata(metadata: dict, skill_dir: Optional[Path] = None) -> list[
 
     if "compatibility" in metadata:
         errors.extend(_validate_compatibility(metadata["compatibility"]))
+
+    if "product-version" in metadata:
+        errors.extend(_validate_product_version(metadata["product-version"]))
 
     return errors
 

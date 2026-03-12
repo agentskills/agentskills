@@ -107,6 +107,7 @@ def read_properties(skill_dir: Path) -> SkillProperties:
         description=description.strip(),
         license=metadata.get("license"),
         compatibility=metadata.get("compatibility"),
+        product_version=metadata.get("product-version"),
         allowed_tools=metadata.get("allowed-tools"),
         metadata=metadata.get("metadata"),
     )

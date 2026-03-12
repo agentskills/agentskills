@@ -13,6 +13,7 @@ class SkillProperties:
         description: What the skill does and when the model should use it (required)
         license: License for the skill (optional)
         compatibility: Compatibility information for the skill (optional)
+        product_version: Version of the external product/library the skill targets (optional)
         allowed_tools: Tool patterns the skill requires (optional, experimental)
         metadata: Key-value pairs for client-specific properties (defaults to
             empty dict; omitted from to_dict() output when empty)
@@ -22,6 +23,7 @@ class SkillProperties:
     description: str
     license: Optional[str] = None
     compatibility: Optional[str] = None
+    product_version: Optional[str] = None
     allowed_tools: Optional[str] = None
     metadata: dict[str, str] = field(default_factory=dict)
 
@@ -32,6 +34,8 @@ class SkillProperties:
             result["license"] = self.license
         if self.compatibility is not None:
             result["compatibility"] = self.compatibility
+        if self.product_version is not None:
+            result["product-version"] = self.product_version
         if self.allowed_tools is not None:
             result["allowed-tools"] = self.allowed_tools
         if self.metadata:
