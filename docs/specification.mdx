@@ -28,7 +28,7 @@ The `SKILL.md` file must contain YAML frontmatter followed by Markdown content.
 | `description` | Yes | Max 1024 characters. Non-empty. Describes what the skill does and when to use it. |
 | `license` | No | License name or reference to a bundled license file. |
 | `compatibility` | No | Max 500 characters. Indicates environment requirements (intended product, system packages, network access, etc.). |
-| `product-version` | No | Max 64 characters. The version of the external product or library this skill was written for. Follows semver when the product does. Use `"platform"` for products without versioned releases. |
+| `product-version` | No | Max 64 characters. The version of the external product or library this skill was written for (e.g. a semver string). |
 | `metadata` | No | Arbitrary key-value mapping for additional metadata. |
 | `allowed-tools` | No | Space-delimited list of pre-approved tools the skill may use. (Experimental) |
 
@@ -147,9 +147,7 @@ Most skills do not need the `compatibility` field.
 
 The optional `product-version` field:
 - Must be 1-64 characters if provided
-- Indicates the version of the external product or library this skill was written for
-- Follows semver when the upstream product does
-- Use `"platform"` for products without versioned releases (e.g. cloud platforms)
+- Records the version of the external product or library this skill was written for
 - Distinct from `metadata.version`, which tracks the skill's own revision history
 
 <Card>
@@ -158,12 +156,12 @@ The optional `product-version` field:
 product-version: "6.0.105"
 ```
 ```yaml
-product-version: "platform"
+product-version: "3.x"
 ```
 </Card>
 
 <Note>
-`product-version` enables automated staleness detection. Tooling can compare this value against the latest published version of the upstream product to flag skills that may need updating.
+Most skills do not need the `product-version` field. It is useful when a skill's instructions are specific to a particular release of an external product.
 </Note>
 
 #### `metadata` field
