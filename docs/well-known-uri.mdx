@@ -1,0 +1,181 @@
+---
+title: "Well-Known URI"
+description: "Discover and publish skills at a predictable URL using the `.well-known/agent-skills/` URI prefix."
+---
+
+Organizations can publish skills at a well-known URL, giving agents and tooling a single, predictable location to discover them without prior configuration. This mechanism uses the `.well-known` URI path prefix defined in [RFC 8615](https://datatracker.ietf.org/doc/html/rfc8615).
+
+## Endpoint
+
+Publishers host a discovery index at:
+
+```
+https://example.com/.well-known/agent-skills/index.json
+```
+
+The index enumerates all available skills, enabling clients to discover them in a single request.
+
+## Index format
+
+```json /.well-known/agent-skills/index.json
+{
+  "$schema": "https://schemas.agentskills.io/discovery/0.2.0/schema.json",
+  "skills": [
+    {
+      "name": "code-review",
+      "type": "skill-md",
+      "description": "Review code for bugs, security issues, and best practices.",
+      "url": "/.well-known/agent-skills/code-review/SKILL.md",
+      "digest": "sha256:c4d5e6f7..."
+    },
+    {
+      "name": "wrangler",
+      "type": "archive",
+      "description": "Deploy and manage Cloudflare Workers projects.",
+      "url": "/.well-known/agent-skills/wrangler.tar.gz",
+      "digest": "sha256:a1b2c3d4..."
+    }
+  ]
+}
+```
+
+**Top-level fields:**
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `$schema` | Yes | URI identifying the index schema version. See [Versioning](#versioning). |
+| `skills` | Yes | Array of skill entries. |
+
+**Skill entry fields:**
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `name` | Yes | Skill identifier. Should match the `name` in the skill's `SKILL.md` frontmatter. |
+| `description` | Yes | What the skill does and when to use it. Should match the `description` in the skill's `SKILL.md` frontmatter. |
+| `type` | Yes | `"skill-md"` (single `SKILL.md` file) or `"archive"` (bundled archive — see [Archive distribution](#archive-distribution) ). |
+| `url` | Yes | URL to the skill artifact. For `"skill-md"`, points to the `SKILL.md` file. For `"archive"`, points to the archive file. See [URL resolution](#url-resolution). |
+| `digest` | Yes | SHA-256 content digest of the artifact, formatted as `sha256:{hex}` (64 lowercase hex characters). See [Integrity and verification](#integrity-and-verification). |
+
+Clients should ignore unrecognized fields and skip entries with an unrecognized `type` value.
+
+### Versioning
+
+The index must include a `$schema` field containing a URI that identifies the schema version. The current schema URI is:
+
+```
+https://schemas.agentskills.io/discovery/0.2.0/schema.json
+```
+
+The `$schema` URI is an opaque identifier — clients match it against known schema URIs to determine how to process the index. It is not guaranteed to be a resolvable URL.
+
+Clients encountering an unrecognized or absent `$schema` should warn the user and should not process the index.
+
+### URL resolution
+
+The `url` field specifies where to fetch the skill artifact. URLs are resolved per [RFC 3986 Section 5](https://datatracker.ietf.org/doc/html/rfc3986#section-5) using the index URL as the base URI:
+
+- **Relative** (resolved against the index URL directory): `code-review/SKILL.md`
+- **Path-absolute** (resolved against the origin): `/.well-known/agent-skills/code-review/SKILL.md`
+- **Absolute** (fully qualified): `https://cdn.example.com/v2/skills/code-review/SKILL.md`
+
+The `url` field allows skills to be hosted at any location (e.g., on a CDN or at a versioned path).
+
+## Archive distribution
+
+Skills with supporting files (scripts, references, assets) are distributed as archives (`"type": "archive"` in the index). The archive contains the contents of the [skill directory](/specification#directory-structure) — `SKILL.md` and all supporting resources. Skills consisting of only `SKILL.md` should use `"type": "skill-md"` instead.
+
+### Supported formats
+
+Archives should be `.tar.gz` (gzip-compressed tar) or `.zip`. Clients must support both.
+
+- **`.tar.gz`**: Robust support for UNIX file permissions and symlinks.
+- **`.zip`**: Limited support for UNIX file permissions and symlinks (varies by implementation). Supports partial file retrieval via HTTP range requests.
+
+Clients should determine the archive format from the server's `Content-Type` header, falling back to the URL file extension if the header is absent or generic (e.g., `application/octet-stream`).
+
+### Archive structure
+
+Archive contents represent the skill directory — files are placed at the root, not nested inside a wrapper directory:
+
+```
+wrangler.tar.gz
+├── SKILL.md
+├── scripts/
+│   ├── deploy.sh
+│   └── init.sh
+├── references/
+│   ├── COMMANDS.md
+│   └── CONFIGURATION.md
+└── assets/
+    └── wrangler.toml.template
+```
+
+- The archive must contain `SKILL.md` at the root.
+- The archive must not contain path traversal sequences (`..`) or absolute paths.
+
+### Archive safety
+
+After verifying the archive's digest, clients unpacking an archive must:
+
+1. Reject archives containing path traversal sequences (`..`) or absolute paths.
+2. Reject archives containing symlinks or hard links that resolve outside the skill directory.
+3. Enforce a reasonable limit on total unpacked size to prevent denial-of-service via decompression bombs.
+
+## Integrity and verification
+
+Each skill entry includes a `digest` field containing the SHA-256 hash of the artifact's raw bytes, formatted as:
+
+```
+sha256:{hex}
+```
+
+where `{hex}` is 64 lowercase hexadecimal characters.
+
+For `"type": "skill-md"`, the artifact is the `SKILL.md` file. For `"type": "archive"`, the artifact is the archive file.
+
+Clients must verify downloaded content against the `digest` in the index. A mismatch indicates the content is corrupted or tampered with — clients must not use unverified content.
+
+Digests also enable efficient caching: compare a skill's `digest` against a locally cached value to determine whether the artifact has changed without re-downloading it.
+
+## HTTP requirements
+
+**Servers must:**
+
+- Serve `index.json` with `application/json` content type
+- Serve `SKILL.md` files with `text/markdown` or `text/plain` content type
+- Serve `.tar.gz` archives with `application/gzip` and `.zip` archives with `application/zip`
+- Support `GET` and `HEAD` methods
+- Return `404` for skills or files that do not exist
+
+**Servers should:**
+
+- Set appropriate `Cache-Control` headers
+- Include CORS headers if skills are intended for browser-based clients
+
+**Clients must:**
+
+- Follow redirects (3xx responses)
+- Respect cache headers
+
+## Client implementation
+
+Clients discovering skills from a well-known endpoint should follow these steps:
+
+1. **Fetch the index.** Retrieve `/.well-known/agent-skills/index.json`.
+
+2. **Check the schema version.** Match `$schema` against known URIs. If unrecognized or absent, warn the user and stop.
+
+3. **Use digests for caching.** Compare each skill's `digest` against locally cached values. Skip re-downloading unchanged skills.
+
+4. **Fetch and verify artifacts.** For `"type": "skill-md"`, download the `SKILL.md` file and verify its SHA-256 against `digest`. For `"type": "archive"`, download the archive, verify its SHA-256, then unpack and validate the archive structure (see [Archive safety](#archive-safety)).
+
+For guidance on what to do with skills after fetching — progressive disclosure, activation, and context management — see [Adding skills support](/client-implementation/adding-skills-support).
+
+### Security considerations
+
+- **Trust**: Skills from remote origins contain instructions and potentially executable code. Clients should only use skills from trusted origins.
+- **Digest verification**: Clients must verify artifact digests after download. A mismatch means the content may have been tampered with or is stale.
+- **Archive safety**: Clients must validate archive contents before unpacking. See [Archive safety](#archive-safety).
+- **Script execution**: Do not execute scripts from skill archives by default. Only execute scripts when explicitly allowed by the user or client configuration.
+
+The security considerations from [RFC 8615 Section 4](https://datatracker.ietf.org/doc/html/rfc8615#section-4) also apply.
