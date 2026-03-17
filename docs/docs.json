@@ -22,6 +22,7 @@
       {
         "group": "For skill creators",
         "pages": [
+          "skill-creation/quickstart",
           "skill-creation/best-practices",
           "skill-creation/optimizing-descriptions",
           "skill-creation/evaluating-skills",
