@@ -1,0 +1,34 @@
+---
+title: "Ecosystem tools"
+description: "Community-built tools for building, distributing, and validating Agent Skills."
+---
+
+The Agent Skills specification defines the format. These tools help you work with skills at scale.
+
+## Build tools
+
+Build tools compile or generate SKILL.md files from higher-level configuration, enabling skill composition and multi-agent pipeline management.
+
+| Tool | What it does |
+|------|-------------|
+| [skillfold](https://github.com/byronxlg/skillfold) | Compiles YAML config into SKILL.md files. Handles skill composition, typed state schemas, and team execution flows with orchestrator generation. |
+
+## Distribution tools
+
+Distribution tools help package and discover skills across projects and package managers.
+
+| Tool | What it does |
+|------|-------------|
+| [npm-agentskills](https://github.com/onmax/npm-agentskills) | Scans `node_modules` for packages declaring skills via an `agentskills` field in `package.json`. CLI for listing and exporting skills to agent-specific directories. |
+
+## Validation tools
+
+Validation tools check that skills conform to the Agent Skills specification.
+
+| Tool | What it does |
+|------|-------------|
+| [skills-ref](https://github.com/agentskills/agentskills/tree/main/skills-ref) | Reference library for validating SKILL.md files and generating prompt XML. Ships with this repository. |
+
+<Note>
+Know of a tool that should be listed here? [Open an issue](https://github.com/agentskills/agentskills/issues) or submit a PR.
+</Note>
