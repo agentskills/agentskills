@@ -56,7 +56,7 @@ The index enumerates all available skills, enabling clients to discover them in 
 | `url` | Yes | URL to the skill artifact. For `"skill-md"`, points to the `SKILL.md` file. For `"archive"`, points to the archive file. See [URL resolution](#url-resolution). |
 | `digest` | Yes | SHA-256 content digest of the artifact, formatted as `sha256:{hex}` (64 lowercase hex characters). See [Integrity and verification](#integrity-and-verification). |
 
-Clients should ignore unrecognized fields and skip entries with an unrecognized `type` value.
+Clients should ignore unrecognized fields. Clients should skip entries with an unrecognized `type` value and warn the user.
 
 ### Versioning
 
@@ -167,15 +167,16 @@ Clients discovering skills from a well-known endpoint should follow these steps:
 
 3. **Use digests for caching.** Compare each skill's `digest` against locally cached values. Skip re-downloading unchanged skills.
 
-4. **Fetch and verify artifacts.** For `"type": "skill-md"`, download the `SKILL.md` file and verify its SHA-256 against `digest`. For `"type": "archive"`, download the archive, verify its SHA-256, then unpack and validate the archive structure (see [Archive safety](#archive-safety)).
+4. **Fetch and verify artifacts.** For `"type": "skill-md"`, download the `SKILL.md` file and verify its SHA-256 against `digest`. For `"type": "archive"`, download the archive, verify its SHA-256, then unpack and validate the archive structure (see [Archive safety](#archive-safety)). For an unrecognized `type`, skip the skill entry and warn the user.
 
 For guidance on what to do with skills after fetching — progressive disclosure, activation, and context management — see [Adding skills support](/client-implementation/adding-skills-support).
 
 ### Security considerations
 
-- **Trust**: Skills from remote origins contain instructions and potentially executable code. Clients should only use skills from trusted origins.
+- **Trust**: Skills from remote origins run in the agent's context with access to the user's environment. Clients should only use skills from trusted origins.
+- **Prompt injection**: Skill content is loaded into agent context and can contain instructions that alter agent behavior.
+- **Script execution**: Do not execute scripts from skill archives by default. Only execute scripts when explicitly allowed by the user or client configuration.
 - **Digest verification**: Clients must verify artifact digests after download. A mismatch means the content may have been tampered with or is stale.
 - **Archive safety**: Clients must validate archive contents before unpacking. See [Archive safety](#archive-safety).
-- **Script execution**: Do not execute scripts from skill archives by default. Only execute scripts when explicitly allowed by the user or client configuration.
 
 The security considerations from [RFC 8615 Section 4](https://datatracker.ietf.org/doc/html/rfc8615#section-4) also apply.
