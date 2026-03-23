@@ -8,6 +8,10 @@
     "dark": "#404040"
   },
   "favicon": "/favicon.svg",
+  "banner": {
+    "content": "Agent Skills now has an official [Discord server](https://discord.gg/MKPE9g8aUy). See the [announcement](https://github.com/agentskills/agentskills/discussions/273) for details.",
+    "dismissible": true
+  },
   "navbar": {
     "primary": {
       "type": "github",

@@ -6,9 +6,10 @@ Skills are folders of instructions, scripts, and resources that agents can disco
 
 ## Getting Started
 
-- [Documentation](https://agentskills.io) - Guides and tutorials
-- [Specification](https://agentskills.io/specification) - Format details
-- [Example Skills](https://github.com/anthropics/skills) - See what's possible
+- **[Documentation](https://agentskills.io)** — Guides and tutorials
+- **[Specification](https://agentskills.io/specification)** — Format details
+- **[Example Skills](https://github.com/anthropics/skills)** — See what's possible
+- **[Discord](https://discord.gg/MKPE9g8aUy)** — Join the discussion!
 
 This repo contains the specification, documentation, and reference SDK. Also see a list of example skills [here](https://github.com/anthropics/skills).
 
