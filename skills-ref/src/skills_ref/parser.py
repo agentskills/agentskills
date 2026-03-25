@@ -102,11 +102,19 @@ def read_properties(skill_dir: Path) -> SkillProperties:
     if not isinstance(description, str) or not description.strip():
         raise ValidationError("Field 'description' must be a non-empty string")
 
+    raw_disable = metadata.get("disable-model-invocation")
+    disable_model_invocation = None
+    if raw_disable is not None:
+        disable_model_invocation = str(raw_disable).lower() in ("true", "yes", "1")
+
     return SkillProperties(
         name=name.strip(),
         description=description.strip(),
-        license=metadata.get("license"),
+        argument_hint=metadata.get("argument-hint"),
         compatibility=metadata.get("compatibility"),
+        disable_model_invocation=disable_model_invocation,
+        license=metadata.get("license"),
+        model=metadata.get("model"),
         allowed_tools=metadata.get("allowed-tools"),
         metadata=metadata.get("metadata"),
     )

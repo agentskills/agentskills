@@ -11,14 +11,17 @@ MAX_SKILL_NAME_LENGTH = 64
 MAX_DESCRIPTION_LENGTH = 1024
 MAX_COMPATIBILITY_LENGTH = 500
 
-# Allowed frontmatter fields per Agent Skills Spec
+# Allowed frontmatter fields per Agent Skills Spec + Claude Code extensions
 ALLOWED_FIELDS = {
-    "name",
-    "description",
-    "license",
     "allowed-tools",
-    "metadata",
+    "argument-hint",
     "compatibility",
+    "description",
+    "disable-model-invocation",
+    "license",
+    "metadata",
+    "model",
+    "name",
 }
 
 

@@ -264,6 +264,69 @@ Body
     assert any("exceeds" in e and "500" in e for e in errors)
 
 
+def test_model_field_accepted(tmp_path):
+    """Claude Code 'model' frontmatter field should be accepted."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+model: sonnet
+---
+Body
+""")
+    errors = validate(skill_dir)
+    assert errors == []
+
+
+def test_argument_hint_field_accepted(tmp_path):
+    """Claude Code 'argument-hint' frontmatter field should be accepted."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+argument-hint: "[ticket-key]"
+---
+Body
+""")
+    errors = validate(skill_dir)
+    assert errors == []
+
+
+def test_disable_model_invocation_field_accepted(tmp_path):
+    """Claude Code 'disable-model-invocation' frontmatter field should be accepted."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+disable-model-invocation: true
+---
+Body
+""")
+    errors = validate(skill_dir)
+    assert errors == []
+
+
+def test_all_claude_code_fields_accepted(tmp_path):
+    """All Claude Code frontmatter fields should be accepted together."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+model: sonnet
+argument-hint: "[ticket-key]"
+disable-model-invocation: true
+allowed-tools: Read, Grep
+---
+Body
+""")
+    errors = validate(skill_dir)
+    assert errors == []
+
+
 def test_nfkc_normalization(tmp_path):
     """Skill names are NFKC normalized before validation.
 

@@ -170,6 +170,29 @@ description: A test skill
     assert props.description == "A test skill"
 
 
+def test_read_with_claude_code_fields(tmp_path):
+    """Claude Code fields (model, argument-hint, disable-model-invocation) should be parsed."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+model: sonnet
+argument-hint: "[ticket-key]"
+disable-model-invocation: true
+---
+Body
+""")
+    props = read_properties(skill_dir)
+    assert props.model == "sonnet"
+    assert props.argument_hint == "[ticket-key]"
+    assert props.disable_model_invocation is True
+    d = props.to_dict()
+    assert d["model"] == "sonnet"
+    assert d["argument-hint"] == "[ticket-key]"
+    assert d["disable-model-invocation"] is True
+
+
 def test_read_with_allowed_tools(tmp_path):
     """allowed-tools should be parsed into SkillProperties."""
     skill_dir = tmp_path / "my-skill"
