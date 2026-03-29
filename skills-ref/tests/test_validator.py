@@ -162,6 +162,73 @@ Body
     assert errors == []
 
 
+def test_allowed_tools_inline_list_accepted(tmp_path):
+    """allowed-tools inline list syntax should be accepted."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+allowed-tools: [Read, Write, Edit, Bash]
+---
+Body
+""")
+    errors = validate(skill_dir)
+    assert errors == []
+
+
+def test_allowed_tools_block_list_accepted(tmp_path):
+    """allowed-tools block list syntax should be accepted."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+allowed-tools:
+  - Read
+  - Bash
+  - Grep
+---
+Body
+""")
+    errors = validate(skill_dir)
+    assert errors == []
+
+
+def test_allowed_tools_list_items_must_be_strings(tmp_path):
+    """allowed-tools list entries must be strings."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+allowed-tools:
+  - Read
+  - 123
+---
+Body
+""")
+    errors = validate(skill_dir)
+    assert any("list items must all be strings" in e for e in errors)
+
+
+def test_allowed_tools_invalid_scalar_type_rejected(tmp_path):
+    """allowed-tools scalar must be a string."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+allowed-tools: 123
+---
+Body
+""")
+    errors = validate(skill_dir)
+    assert any(
+        "must be either a string or a list of strings" in e for e in errors
+    )
+
+
 def test_i18n_chinese_name(tmp_path):
     """Chinese characters are allowed in skill names."""
     skill_dir = tmp_path / "技能"

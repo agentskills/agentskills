@@ -186,3 +186,56 @@ Body
     # Verify to_dict outputs as "allowed-tools" (hyphenated)
     d = props.to_dict()
     assert d["allowed-tools"] == "Bash(jq:*) Bash(git:*)"
+
+
+def test_read_with_allowed_tools_inline_list(tmp_path):
+    """allowed-tools inline YAML sequence should be accepted and normalized."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+allowed-tools: [Read, Write, Bash]
+---
+Body
+""")
+    props = read_properties(skill_dir)
+    assert props.allowed_tools == "Read Write Bash"
+    d = props.to_dict()
+    assert d["allowed-tools"] == "Read Write Bash"
+
+
+def test_read_with_allowed_tools_block_list(tmp_path):
+    """allowed-tools block YAML sequence should be accepted and normalized."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+allowed-tools:
+  - Read
+  - Bash
+  - Grep
+---
+Body
+""")
+    props = read_properties(skill_dir)
+    assert props.allowed_tools == "Read Bash Grep"
+
+
+def test_read_with_allowed_tools_invalid_type(tmp_path):
+    """allowed-tools must be either a string or a list of strings."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+allowed-tools: 123
+---
+Body
+""")
+    with pytest.raises(
+        ValidationError,
+        match="allowed-tools' must be either a string or a list of strings",
+    ):
+        read_properties(skill_dir)

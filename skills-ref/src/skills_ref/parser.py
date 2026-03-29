@@ -1,12 +1,33 @@
 """YAML frontmatter parsing for SKILL.md files."""
 
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import strictyaml
 
 from .errors import ParseError, ValidationError
 from .models import SkillProperties
+
+
+def _normalize_allowed_tools(value: Any) -> Optional[str]:
+    """Normalize allowed-tools to a space-delimited string.
+
+    Accepts either:
+    - scalar string: "Read Write Bash"
+    - YAML sequence of strings: ["Read", "Write", "Bash"]
+    """
+    if value is None:
+        return None
+
+    if isinstance(value, str):
+        return value
+
+    if isinstance(value, list) and all(isinstance(item, str) for item in value):
+        return " ".join(value)
+
+    raise ValidationError(
+        "Field 'allowed-tools' must be either a string or a list of strings"
+    )
 
 
 def find_skill_md(skill_dir: Path) -> Optional[Path]:
@@ -107,6 +128,6 @@ def read_properties(skill_dir: Path) -> SkillProperties:
         description=description.strip(),
         license=metadata.get("license"),
         compatibility=metadata.get("compatibility"),
-        allowed_tools=metadata.get("allowed-tools"),
+        allowed_tools=_normalize_allowed_tools(metadata.get("allowed-tools")),
         metadata=metadata.get("metadata"),
     )

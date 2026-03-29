@@ -101,6 +101,24 @@ def _validate_compatibility(compatibility: str) -> list[str]:
     return errors
 
 
+def _validate_allowed_tools(allowed_tools) -> list[str]:
+    """Validate allowed-tools format."""
+    errors = []
+
+    if isinstance(allowed_tools, str):
+        return errors
+
+    if isinstance(allowed_tools, list):
+        if not all(isinstance(item, str) for item in allowed_tools):
+            errors.append(
+                "Field 'allowed-tools' list items must all be strings"
+            )
+        return errors
+
+    errors.append("Field 'allowed-tools' must be either a string or a list of strings")
+    return errors
+
+
 def _validate_metadata_fields(metadata: dict) -> list[str]:
     """Validate that only allowed fields are present."""
     errors = []
@@ -143,6 +161,9 @@ def validate_metadata(metadata: dict, skill_dir: Optional[Path] = None) -> list[
 
     if "compatibility" in metadata:
         errors.extend(_validate_compatibility(metadata["compatibility"]))
+
+    if "allowed-tools" in metadata:
+        errors.extend(_validate_allowed_tools(metadata["allowed-tools"]))
 
     return errors
 
