@@ -322,28 +322,26 @@ export const LogoCarousel = () => {
     <>
       <div className="logo-carousel">
         <div className="logo-carousel-track" style={{ animation: 'logo-scroll 50s linear infinite' }}>
-          {row1Doubled.map((logo, i) => {
-            const imgStyle = { width: 150 * (logo.scale || 1), maxWidth: "100%" };
-            return (
-              <a key={`${logo.name}-${i}`} href={logo.url} style={{ textDecoration: 'none', border: 'none' }}>
-                <img className="block dark:hidden object-contain" style={imgStyle} src={logo.lightSrc} alt={logo.name} noZoom />
-                <img className="hidden dark:block object-contain" style={imgStyle} src={logo.darkSrc} alt={logo.name} noZoom />
+          {row1Doubled.map((logo, i) => (
+            <div key={`${logo.name}-${i}`} style={{ width: 150 * (logo.scale || 1), maxWidth: "100%" }}>
+              <a href={logo.url} className="block no-underline border-none w-full h-full">
+                <img className="block dark:hidden object-contain w-full h-full" src={logo.lightSrc} alt={logo.name} noZoom />
+                <img className="hidden dark:block object-contain w-full h-full" src={logo.darkSrc} alt={logo.name} noZoom />
               </a>
-            );
-          })}
+            </div>
+          ))}
         </div>
       </div>
       <div className="logo-carousel">
         <div className="logo-carousel-track" style={{ animation: 'logo-scroll 60s linear infinite reverse' }}>
-          {row2Doubled.map((logo, i) => {
-            const imgStyle = { width: 150 * (logo.scale || 1), maxWidth: "100%" };
-            return (
-              <a key={`${logo.name}-${i}`} href={logo.url} style={{ textDecoration: 'none', border: 'none' }}>
-                <img className="block dark:hidden object-contain" style={imgStyle} src={logo.lightSrc} alt={logo.name} noZoom />
-                <img className="hidden dark:block object-contain" style={imgStyle} src={logo.darkSrc} alt={logo.name} noZoom />
+          {row2Doubled.map((logo, i) => (
+            <div key={`${logo.name}-${i}`} style={{ width: 150 * (logo.scale || 1), maxWidth: "100%" }}>
+              <a href={logo.url} className="block no-underline border-none w-full h-full">
+                <img className="block dark:hidden object-contain w-full h-full" src={logo.lightSrc} alt={logo.name} noZoom />
+                <img className="hidden dark:block object-contain w-full h-full" src={logo.darkSrc} alt={logo.name} noZoom />
               </a>
-            );
-          })}
+            </div>
+          ))}
         </div>
       </div>
     </>
