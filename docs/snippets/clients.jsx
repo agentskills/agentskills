@@ -16,7 +16,7 @@ export const clients = [
   },
   {
     name: "Gemini CLI",
-    description: "An open-source AI agent that brings the power of Gemini directly into your terminal.",
+    description: "Gemini CLI is an open-source AI agent that brings the power of Gemini directly into your terminal.",
     url: "https://geminicli.com",
     lightSrc: "/images/logos/gemini-cli/gemini-cli-logo_light.svg",
     darkSrc: "/images/logos/gemini-cli/gemini-cli-logo_dark.svg",
@@ -63,7 +63,7 @@ export const clients = [
   },
   {
     name: "Cursor",
-    description: "Built to make you extraordinarily productive, Cursor is the best way to code with AI.",
+    description: "Cursor is an AI editor and coding agent. Use it to understand your codebase, plan and build features, fix bugs, review changes, and work with the tools you already use.",
     url: "https://cursor.com/",
     lightSrc: "/images/logos/cursor/LOCKUP_HORIZONTAL_2D_LIGHT.svg",
     darkSrc: "/images/logos/cursor/LOCKUP_HORIZONTAL_2D_DARK.svg",
@@ -97,7 +97,7 @@ export const clients = [
   },
   {
     name: "Goose",
-    description: "An open source, extensible AI agent that goes beyond code suggestions — install, execute, edit, and test with any LLM.",
+    description: "Goose is an open source, extensible AI agent that goes beyond code suggestions — install, execute, edit, and test with any LLM.",
     url: "https://block.github.io/goose/",
     lightSrc: "/images/logos/goose/goose-logo-black.png",
     darkSrc: "/images/logos/goose/goose-logo-white.png",
@@ -105,7 +105,7 @@ export const clients = [
     sourceCodeUrl: "https://github.com/block/goose",
   },
   {
-    name: "GitHub",
+    name: "GitHub Copilot",
     description: "GitHub Copilot works alongside you directly in your editor, suggesting whole lines or entire functions for you.",
     url: "https://github.com/",
     lightSrc: "/images/logos/github/GitHub_Lockup_Dark.svg",
@@ -149,18 +149,18 @@ export const clients = [
   },
   {
     name: "Piebald",
-    description: "The ultimate agentic AI control experience for developers.",
+    description: "Piebald is a desktop & web app that makes it easier than ever to do agentic development, while at the same time giving you complete control over the configuration, context, and flow.",
     url: "https://piebald.ai",
     lightSrc: "/images/logos/piebald/Piebald_wordmark_light.svg",
     darkSrc: "/images/logos/piebald/Piebald_wordmark_dark.svg",
   },
   {
     name: "Factory",
-    description: "Build faster with AI coding agents. Factory Droids automate coding, testing, and deployment for startups and enterprises.",
+    description: "Factory is an AI-native software development platform that works everywhere you do. From IDE to CI/CD — delegate complete tasks like refactors, incident response, and migrations to Droids without changing your tools, models, or workflow.",
     url: "https://factory.ai/",
     lightSrc: "/images/logos/factory/factory-logo-light.svg",
     darkSrc: "/images/logos/factory/factory-logo-dark.svg",
-    instructionsUrl: "https://docs.factory.ai/cli/configuration/skills.md",
+    instructionsUrl: "https://docs.factory.ai/cli/configuration/skills",
   },
   {
     name: "pi",
@@ -173,7 +173,7 @@ export const clients = [
     sourceCodeUrl: "https://github.com/badlogic/pi-mono",
   },
   {
-    name: "Databricks",
+    name: "Databricks Genie Code",
     description: "Genie Code is an autonomous AI partner purpose-built for data work in Databricks.",
     url: "https://databricks.com/",
     lightSrc: "/images/logos/databricks/databricks-logo-light.svg",
@@ -182,7 +182,7 @@ export const clients = [
   },
   {
     name: "Agentman",
-    description: "AI agents that run your entire medical practice back office with no EHR integration — eligibility, claims, prior authorization, denial recovery, inbox management, patient communications, Rx refills — so doctors and staff can focus on patients.",
+    description: "Agentman is an agentic healthcare platform. It automates revenue cycle workflows using AI agents without sacrificing control. Every action is testable, traceable, and auditable.",
     url: "https://agentman.ai/",
     lightSrc: "/images/logos/agentman/agentman-wordmark-light.svg",
     darkSrc: "/images/logos/agentman/agentman-wordmark-dark.svg",
@@ -199,7 +199,7 @@ export const clients = [
   },
   {
     name: "Spring AI",
-    description: "The Spring AI project aims to streamline the development of applications that incorporate artificial intelligence functionality without unnecessary complexity.",
+    description: "Spring AI aims to streamline the development of applications that incorporate artificial intelligence functionality without unnecessary complexity.",
     url: "https://docs.spring.io/spring-ai/reference",
     lightSrc: "/images/logos/spring-ai/spring-ai-logo-light.svg",
     darkSrc: "/images/logos/spring-ai/spring-ai-logo-dark.svg",
@@ -236,7 +236,7 @@ export const clients = [
   },
   {
     name: "Ona",
-    description: "Run a team of AI software engineers in the cloud. Orchestrated, governed, secured at the kernel.",
+    description: "Ona is a platform for background agents. Run a team of AI software engineers in the cloud. Orchestrated, governed, secured at the kernel.",
     url: "https://ona.com",
     lightSrc: "/images/logos/ona/ona-wordmark-light.svg",
     darkSrc: "/images/logos/ona/ona-wordmark-dark.svg",
@@ -279,7 +279,7 @@ export const clients = [
     sourceCodeUrl: "https://github.com/generalaction/emdash",
   },
   {
-    name: "Snowflake",
+    name: "Snowflake Cortex Code",
     description: "Cortex Code is an AI-driven intelligent agent integrated into the Snowflake platform, optimized for complex data engineering, analytics, machine learning, and agent-building tasks.",
     url: "https://docs.snowflake.com/en/user-guide/cortex-code/cortex-code",
     lightSrc: "/images/logos/snowflake/snowflake-logo-light.svg",
