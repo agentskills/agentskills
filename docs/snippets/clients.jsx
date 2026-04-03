@@ -235,6 +235,15 @@ export const clients = [
     instructionsUrl: "https://commandcode.ai/docs/skills",
   },
   {
+    name: "nanobot",
+    description: "nanobot is an ultra-lightweight personal AI assistant inspired by OpenClaw. It delivers core agent functionality with 99% fewer lines of code and supports multiple chat platforms including Telegram, Discord, Slack, and WeChat.",
+    url: "https://github.com/HKUDS/nanobot",
+    lightSrc: "/images/logos/nanobot/nanobot-logo-light.png",
+    darkSrc: "/images/logos/nanobot/nanobot-logo-dark.png",
+    instructionsUrl: "https://github.com/HKUDS/nanobot/tree/main/nanobot/skills",
+    sourceCodeUrl: "https://github.com/HKUDS/nanobot",
+  },
+  {
     name: "Ona",
     description: "Ona is a platform for background agents. Run a team of AI software engineers in the cloud. Orchestrated, governed, secured at the kernel.",
     url: "https://ona.com",
