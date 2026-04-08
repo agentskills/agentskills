@@ -294,4 +294,13 @@ export const clients = [
     darkSrc: "/images/logos/kiro/kiro-logo-dark.svg",
     instructionsUrl: "https://kiro.dev/docs/skills/",
   },
+  {
+    name: "LaraClaude",
+    description: "LaraClaude is a comprehensive Laravel toolkit with 27 specialized agent skills for analyzing, debugging, scaffolding, and optimizing Laravel applications.",
+    url: "https://github.com/edulazaro/laraclaude",
+    lightSrc: "/images/logos/laraclaude/laraclaude-light.svg",
+    darkSrc: "/images/logos/laraclaude/laraclaude-dark.svg",
+    instructionsUrl: "https://github.com/edulazaro/laraclaude#skills",
+    sourceCodeUrl: "https://github.com/edulazaro/laraclaude",
+  },
 ];
