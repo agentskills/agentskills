@@ -294,4 +294,13 @@ export const clients = [
     darkSrc: "/images/logos/kiro/kiro-logo-dark.svg",
     instructionsUrl: "https://kiro.dev/docs/skills/",
   },
+  {
+    name: "fast-agent",
+    description: "fast-agent is a simple, extendable way to interact with LLMs. Excellent for coding, evals, automation and workflow Development.",
+    url: "https://fast-agent.ai/",
+    lightSrc: "/images/logos/fast-agent/fast-agent-light.svg",
+    darkSrc: "/images/logos/fast-agent/fast-agent-dark.svg",
+    instructionsUrl: "https://fast-agent.ai/agents/skills/",
+    sourceCodeUrl: "https://github.com/evalstate/fast-agent",
+  },  
 ];
