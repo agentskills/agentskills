@@ -323,11 +323,12 @@ export const clients = [
   },
   {
     name: "fast-agent",
-    description: "fast-agent is a simple, extendable way to interact with LLMs. Excellent for coding, evals, automation and workflow Development.",
+    description: "fast-agent is a simple, extendable way to interact with LLMs. Excellent for Coding, Evals, ACPX and Skills development.",
     url: "https://fast-agent.ai/",
     lightSrc: "/images/logos/fast-agent/fast-agent-light.svg",
     darkSrc: "/images/logos/fast-agent/fast-agent-dark.svg",
-    instructionsUrl: "https://fast-agent.ai/agents/skills/",
+    scale: 1.8,
+    instructionsUrl: "https://fast-agent.ai/",
     sourceCodeUrl: "https://github.com/evalstate/fast-agent",
   },  
 ];
