@@ -30,7 +30,7 @@ If your product or platform has implemented Agent Skills compatibility, you can 
 Submit a pull request with:
 
 1. **Logo files** — SVG preferred; PNG acceptable (min 200×200px). Provide light and dark variants and follow the existing format in `docs/images/logos/`.
-2. **A carousel entry** — Add your logo to the array in [`docs/snippets/LogoCarousel.jsx`](docs/snippets/LogoCarousel.jsx).
+2. **A client entry** — Add your product to the array in [`docs/snippets/clients.jsx`](docs/snippets/clients.jsx).
 3. **Product information** — In your PR description, include your product name, a link to your product, and a link to documentation showing your Skills implementation.
 
 We may ask for a demo or screenshot to verify the implementation. Logo requests are reviewed by the Anthropic team.

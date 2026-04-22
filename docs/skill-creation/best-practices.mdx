@@ -87,7 +87,7 @@ Overly comprehensive skills can hurt more than they help — the agent struggles
 
 The [specification](/specification#progressive-disclosure) recommends keeping `SKILL.md` under 500 lines and 5,000 tokens — just the core instructions the agent needs on every run. When a skill legitimately needs more content, move detailed reference material to separate files in `references/` or similar directories.
 
-The key is telling the agent *when* to load each file. "Read `references/api-errors.md` if the API returns a non-200 status code" is more useful than a generic "see references/ for details." This lets the agent load context on demand rather than up front, which is how [progressive disclosure](/what-are-skills#how-skills-work) is designed to work.
+The key is telling the agent *when* to load each file. "Read `references/api-errors.md` if the API returns a non-200 status code" is more useful than a generic "see references/ for details." This lets the agent load context on demand rather than up front, which is how [progressive disclosure](/specification#progressive-disclosure) is designed to work.
 
 ## Calibrating control
 
@@ -161,6 +161,28 @@ This doesn't mean skills can't include specific details — output format templa
 ## Patterns for effective instructions
 
 These are reusable techniques for structuring skill content. Not every skill needs all of them — use the ones that fit your task.
+
+### Gotchas sections
+
+The highest-value content in many skills is a list of gotchas — environment-specific facts that defy reasonable assumptions. These aren't general advice ("handle errors appropriately") but concrete corrections to mistakes the agent will make without being told otherwise:
+
+````markdown
+## Gotchas
+
+- The `users` table uses soft deletes. Queries must include
+  `WHERE deleted_at IS NULL` or results will include deactivated accounts.
+- The user ID is `user_id` in the database, `uid` in the auth service,
+  and `accountId` in the billing API. All three refer to the same value.
+- The `/health` endpoint returns 200 as long as the web server is running,
+  even if the database connection is down. Use `/ready` to check full
+  service health.
+````
+
+Keep gotchas in `SKILL.md` where the agent reads them before encountering the situation. A separate reference file works if you tell the agent when to load it, but for non-obvious issues, the agent may not recognize the trigger.
+
+<Tip>
+When an agent makes a mistake you have to correct, add the correction to the gotchas section. This is one of the most direct ways to improve a skill iteratively (see [Refine with real execution](#refine-with-real-execution)).
+</Tip>
 
 ### Templates for output format
 

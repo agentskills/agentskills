@@ -94,7 +94,6 @@ body:has(#enable-section-numbers) {
   align-items: center;
   width: max-content;
   gap: 3rem;
-  padding: 0.75rem 0;
   will-change: transform;
 }
 

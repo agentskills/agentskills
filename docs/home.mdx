@@ -1,77 +1,74 @@
 ---
-title: "Overview"
-description: "A simple, open format for giving agents new capabilities and expertise."
+title: "Agent Skills Overview"
+sidebarTitle: "Overview"
+description: "A standardized way to give AI agents new capabilities and expertise."
 ---
 
+import { clients } from '/snippets/clients.jsx';
 import { LogoCarousel } from '/snippets/LogoCarousel.jsx';
 
-Agent Skills are folders of instructions, scripts, and resources that agents can discover and use to do things more accurately and efficiently.
+## What are Agent Skills?
+
+Agent Skills are a lightweight, open format for extending AI agent capabilities with specialized knowledge and workflows.
+
+At its core, a skill is a folder containing a `SKILL.md` file. This file includes metadata (`name` and `description`, at minimum) and instructions that tell an agent how to perform a specific task. Skills can also bundle scripts, reference materials, templates, and other resources.
+
+```
+my-skill/
+├── SKILL.md          # Required: metadata + instructions
+├── scripts/          # Optional: executable code
+├── references/       # Optional: documentation
+├── assets/           # Optional: templates, resources
+└── ...               # Any additional files or directories
+```
 
 ## Why Agent Skills?
 
-Agents are increasingly capable, but often don't have the context they need to do real work reliably. Skills solve this by giving agents access to procedural knowledge and company-, team-, and user-specific context they can load on demand. Agents with access to a set of skills can extend their capabilities based on the task they're working on.
+Agents are increasingly capable, but often don't have the context they need to do real work reliably. Skills solve this by packaging procedural knowledge and company-, team-, and user-specific context into portable, version-controlled folders that agents load on demand. This gives agents:
 
-**For skill authors**: Build capabilities once and deploy them across multiple agent products.
+- **Domain expertise**: Capture specialized knowledge — from legal review processes to data analysis pipelines to presentation formatting — as reusable instructions and resources.
+- **Repeatable workflows**: Turn multi-step tasks into consistent, auditable procedures.
+- **Cross-product reuse**: Build a skill once and use it across any skills-compatible agent.
 
-**For compatible agents**: Support for skills lets end users give agents new capabilities out of the box.
+## How do Agent Skills work?
 
-**For teams and enterprises**: Capture organizational knowledge in portable, version-controlled packages.
+Agents load skills through **progressive disclosure**, in three stages:
 
-## What can Agent Skills enable?
+1. **Discovery**: At startup, agents load only the name and description of each available skill, just enough to know when it might be relevant.
 
-- **Domain expertise**: Package specialized knowledge into reusable instructions, from legal review processes to data analysis pipelines.
-- **New capabilities**: Give agents new capabilities (e.g. creating presentations, building MCP servers, analyzing datasets).
-- **Repeatable workflows**: Turn multi-step tasks into consistent and auditable workflows.
-- **Interoperability**: Reuse the same skill across different skills-compatible agent products.
+2. **Activation**: When a task matches a skill's description, the agent reads the full `SKILL.md` instructions into context.
 
-## Adoption
+3. **Execution**: The agent follows the instructions, optionally executing bundled code or loading referenced files as needed.
 
-Agent Skills are supported by leading AI development tools.
+Full instructions load only when a task calls for them, so agents can keep many skills on hand with only a small context footprint.
 
-<LogoCarousel />
+## Where can I use Agent Skills?
+
+Agent Skills are supported by a large number of AI tools and agentic clients — see the [Client Showcase](/clients) to explore some of them!
+
+<LogoCarousel clients={clients} />
 
 ## Open development
 
 The Agent Skills format was originally developed by [Anthropic](https://www.anthropic.com/), released as an open standard, and has been adopted by a growing number of agent products. The standard is open to contributions from the broader ecosystem.
 
-[View on GitHub](https://github.com/agentskills/agentskills)
+Come join the discussion on [GitHub](https://github.com/agentskills/agentskills) or [Discord](https://discord.gg/MKPE9g8aUy)!
 
-## Get started
+## Get started with Agent Skills
 
-<CardGroup cols={3}>
+<CardGroup cols={2}>
   <Card
-    title="What are skills?"
-    icon="lightbulb"
-    href="/what-are-skills"
+    title="Quickstart"
+    icon="rocket"
+    href="/skill-creation/quickstart"
   >
-    Learn about skills, how they work, and why they matter.
+    Create your first Agent Skill and see it in action.
   </Card>
   <Card
     title="Specification"
     icon="file-code"
     href="/specification"
   >
-    The complete format specification for SKILL.md files.
-  </Card>
-  <Card
-    title="Add skills support"
-    icon="gear"
-    href="/client-implementation/adding-skills-support"
-  >
-    Add skills support to your agent or tool.
-  </Card>
-  <Card
-    title="Example skills"
-    icon="code"
-    href="https://github.com/anthropics/skills"
-  >
-    Browse example skills on GitHub.
-  </Card>
-  <Card
-    title="Reference library"
-    icon="wrench"
-    href="https://github.com/agentskills/agentskills/tree/main/skills-ref"
-  >
-    Validate skills and generate prompt XML.
+    The complete format specification for Agent Skills.
   </Card>
 </CardGroup>
