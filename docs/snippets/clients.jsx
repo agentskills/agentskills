@@ -333,7 +333,7 @@ export const clients = [
   },
   {
     name: "Vita",
-    description: "Vita provides autonomous AI agents with virtual desktop environments to execute complex workflows just like a human.",
+    description: "Vita provides autonomous digital workers with virtual desktops to execute complex workflows. It learns your intent to automate end-to-end tasks like creating and posting engaging social media content.",
     url: "https://www.vita-ai.net",
     lightSrc: "/images/logos/vita/logo-horizontal-light.svg",
     darkSrc: "/images/logos/vita/logo-horizontal-dark.svg",
