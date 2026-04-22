@@ -7,3 +7,17 @@ import { clients } from '/snippets/clients.jsx';
 import { ClientShowcase } from '/snippets/ClientShowcase.jsx';
 
 <ClientShowcase clients={clients} />
+
+## Adopters
+
+A text list of agent products that support the Agent Skills format, for users and LLMs that cannot render the logo showcase above. Entries are kept in sync with the showcase.
+
+<ul>
+  {clients.toSorted((a, b) => a.name.localeCompare(b.name)).map((c) => (
+    <li key={c.name}>
+      <a href={c.url}><strong>{c.name}</strong></a> — {c.description}
+      {c.instructionsUrl && <> (<a href={c.instructionsUrl}>setup instructions</a>)</>}
+      {c.sourceCodeUrl && <> (<a href={c.sourceCodeUrl}>source code</a>)</>}
+    </li>
+  ))}
+</ul>
