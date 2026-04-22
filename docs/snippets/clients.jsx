@@ -331,4 +331,12 @@ export const clients = [
     instructionsUrl: "https://fast-agent.ai/agents/skills/",
     sourceCodeUrl: "https://github.com/evalstate/fast-agent",
   },
+  {
+    name: "Vita",
+    description: "Vita provides autonomous digital workers with virtual desktops to execute complex workflows. It learns your intent to automate end-to-end tasks like creating and posting engaging social media content.",
+    url: "https://www.vita-ai.net",
+    lightSrc: "/images/logos/vita/logo-horizontal-light.svg",
+    darkSrc: "/images/logos/vita/logo-horizontal-dark.svg",
+    instructionsUrl: "https://www.vita-ai.net/docs/features/agent-skills",
+  },
 ];
