@@ -1,0 +1,12 @@
+{
+  "private": true,
+  "description": "JSON Schema and validation tools for Agent Skills SKILL.md frontmatter",
+  "scripts": {
+    "test": "node --test test_schema.mjs",
+    "validate": "node validate.mjs"
+  },
+  "dependencies": {
+    "ajv": "^8.17.0",
+    "yaml": "^2.7.0"
+  }
+}
