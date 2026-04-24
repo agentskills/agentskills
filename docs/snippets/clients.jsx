@@ -331,4 +331,13 @@ export const clients = [
     instructionsUrl: "https://fast-agent.ai/agents/skills/",
     sourceCodeUrl: "https://github.com/evalstate/fast-agent",
   },
+  {
+    name: "bub",
+    description: "Bub is a lightweight, hook-first Python framework for channel-native agents that live alongside people.",
+    url: "https://bubbuild.bub/",
+    lightSrc: "/images/logos/bub/bub-light.svg",
+    darkSrc: "/images/logos/bub/bub-dark.svg",
+    instructionsUrl: "https://bub.build/docs/guides/skills/",
+    sourceCodeUrl: "https://github.com/bubbuild/bub",
+  },
 ];
