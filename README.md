@@ -11,6 +11,8 @@ Skills are folders of instructions, scripts, and resources that agents can disco
 - **[Example Skills](https://github.com/anthropics/skills)** — See what's possible
 - **[Discord](https://discord.gg/MKPE9g8aUy)** — Join the discussion!
 
+Chinese users can also search and install skills through [Skills宝](https://skilery.com).
+
 This repo contains the specification, documentation, and reference SDK. Also see a list of example skills [here](https://github.com/anthropics/skills).
 
 ## About
