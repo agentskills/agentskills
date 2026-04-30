@@ -331,4 +331,12 @@ export const clients = [
     instructionsUrl: "https://fast-agent.ai/agents/skills/",
     sourceCodeUrl: "https://github.com/evalstate/fast-agent",
   },
+  {
+    name: "Tabnine",
+    description: "Tabnine is an AI engineering platform that combines code assistants, agentic workflows, and enterprise context to help development teams build, review, and maintain software with context-aware AI—while keeping code private, secure, and fully under your control.",
+    url: "https://www.tabnine.com/",
+    lightSrc: "/images/logos/tabnine/tabnine-logo-light.svg",
+    darkSrc: "/images/logos/tabnine/tabnine-logo-dark.svg",
+    instructionsUrl: "https://docs.tabnine.com/main/getting-started/tabnine-cli/features/agent-skills",
+  },
 ];
