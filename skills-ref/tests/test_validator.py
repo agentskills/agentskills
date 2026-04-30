@@ -264,6 +264,56 @@ Body
     assert any("exceeds" in e and "500" in e for e in errors)
 
 
+def test_extra_allowed_fields_accepted(tmp_path):
+    """Extra fields specified via parameter are not flagged."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+user-invocable: true
+model: opus
+---
+Body
+""")
+    errors = validate(skill_dir, extra_allowed_fields={"user-invocable", "model"})
+    assert errors == []
+
+
+def test_extra_allowed_fields_still_rejects_unknown(tmp_path):
+    """Fields not in base set OR extra set are still rejected."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+user-invocable: true
+totally-bogus: wat
+---
+Body
+""")
+    errors = validate(skill_dir, extra_allowed_fields={"user-invocable"})
+    assert len(errors) == 1
+    assert "Unexpected fields in frontmatter: totally-bogus" in errors[0]
+    assert "user-invocable" in errors[0]
+
+
+def test_extra_allowed_fields_none_backward_compatible(tmp_path):
+    """Passing None (default) preserves original strict behavior."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+user-invocable: true
+---
+Body
+""")
+    errors = validate(skill_dir)
+    assert len(errors) == 1
+    assert "Unexpected fields in frontmatter: user-invocable" in errors[0]
+
+
 def test_nfkc_normalization(tmp_path):
     """Skill names are NFKC normalized before validation.
 
