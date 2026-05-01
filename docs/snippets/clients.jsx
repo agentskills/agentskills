@@ -331,4 +331,12 @@ export const clients = [
     instructionsUrl: "https://fast-agent.ai/agents/skills/",
     sourceCodeUrl: "https://github.com/evalstate/fast-agent",
   },
+  {
+    name: "pool",
+    description: "pool is Poolside's coding agent that runs in your terminal or integrates with any ACP-compatible editor.",
+    instructionsUrl: "https://github.com/poolsideai/pool",
+    lightSrc: "/images/logos/pool/poolside-logo-light.svg",
+    darkSrc: "/images/logos/pool/poolside-logo-dark.svg",
+    scale: 1.33,
+  },
 ];
