@@ -83,6 +83,66 @@ csv-analyzer-workspace/
 
 The main file you author by hand is `evals/evals.json`. The other JSON files (`grading.json`, `timing.json`, `benchmark.json`) are produced during the eval process — by the agent, by scripts, or by you.
 
+### Eval artifact contract
+
+Use stable artifact names so eval runners, reports, and future tools can read results without custom adapters. Treat these files as append-only records of what happened in one iteration.
+
+| Path | Produced by | Purpose |
+| --- | --- | --- |
+| `evals/evals.json` | Skill author | Test case definitions for the skill |
+| `<workspace>/iteration-N/<eval-id>/<run>/outputs/` | Agent run | Files created by the agent for one test case |
+| `<workspace>/iteration-N/<eval-id>/<run>/timing.json` | Eval runner | Token and duration measurements |
+| `<workspace>/iteration-N/<eval-id>/<run>/grading.json` | Grader | Assertion results and evidence |
+| `<workspace>/iteration-N/benchmark.json` | Eval runner | Aggregated results for the full iteration |
+
+Use `with_skill` for the candidate skill run and `without_skill` for the no-skill baseline. When comparing two versions of the same skill, use descriptive run names like `new_skill` and `old_skill` instead.
+
+Each `evals/evals.json` file should contain:
+
+```json evals/evals.json
+{
+  "skill_name": "csv-analyzer",
+  "evals": [
+    {
+      "id": "top-months-chart",
+      "prompt": "Create a chart from evals/files/sales_2025.csv",
+      "expected_output": "A bar chart showing the top 3 months by revenue",
+      "files": ["evals/files/sales_2025.csv"],
+      "assertions": ["The chart has labeled axes"]
+    }
+  ]
+}
+```
+
+Each `timing.json` should include:
+
+```json timing.json
+{
+  "total_tokens": 84852,
+  "duration_ms": 23332
+}
+```
+
+Each `grading.json` should include assertion-level results and a summary:
+
+```json grading.json
+{
+  "assertion_results": [
+    {
+      "text": "The chart has labeled axes",
+      "passed": true,
+      "evidence": "The X-axis is labeled Month and the Y-axis is labeled Revenue."
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 0,
+    "total": 1,
+    "pass_rate": 1.0
+  }
+}
+```
+
 ### Spawning runs
 
 Each eval run should start with a clean context — no leftover state from previous runs or from the skill development process. This ensures the agent follows only what the `SKILL.md` tells it. In environments that support subagents (Claude Code, for example), this isolation comes naturally: each child task starts fresh. Without subagents, use a separate session for each run.
