@@ -83,6 +83,17 @@ csv-analyzer-workspace/
 
 The main file you author by hand is `evals/evals.json`. The other JSON files (`grading.json`, `timing.json`, `benchmark.json`) are produced during the eval process — by the agent, by scripts, or by you.
 
+### Community eval runners
+
+You can run this workflow manually, with your own scripts, or with community tools. One option is [`agent-skills-eval`](https://github.com/darkrishabh/agent-skills-eval), an open-source SDK and CLI that reads `SKILL.md` and `evals/evals.json`, runs with-skill and baseline evals, grades assertions with a judge model, and writes reports using the workspace structure above.
+
+```bash
+npx agent-skills-eval ./skills/csv-analyzer \
+  --target gpt-4o-mini \
+  --judge gpt-4o-mini \
+  --baseline
+```
+
 ### Spawning runs
 
 Each eval run should start with a clean context — no leftover state from previous runs or from the skill development process. This ensures the agent follows only what the `SKILL.md` tells it. In environments that support subagents (Claude Code, for example), this isolation comes naturally: each child task starts fresh. Without subagents, use a separate session for each run.
