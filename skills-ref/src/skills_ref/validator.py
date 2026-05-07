@@ -1,5 +1,6 @@
 """Skill validation logic."""
 
+import json
 import unicodedata
 from pathlib import Path
 from typing import Optional
@@ -10,6 +11,7 @@ from .parser import find_skill_md, parse_frontmatter
 MAX_SKILL_NAME_LENGTH = 64
 MAX_DESCRIPTION_LENGTH = 1024
 MAX_COMPATIBILITY_LENGTH = 500
+EVALS_PATH = Path("evals") / "evals.json"
 
 # Allowed frontmatter fields per Agent Skills Spec
 ALLOWED_FIELDS = {
@@ -147,11 +149,94 @@ def validate_metadata(metadata: dict, skill_dir: Optional[Path] = None) -> list[
     return errors
 
 
-def validate(skill_dir: Path) -> list[str]:
+def _validate_string_field(value: object, path: str) -> list[str]:
+    """Validate a required non-empty string field."""
+    if not isinstance(value, str) or not value.strip():
+        return [f"Field '{path}' must be a non-empty string"]
+    return []
+
+
+def _validate_string_list(value: object, path: str) -> list[str]:
+    """Validate an optional list of non-empty strings."""
+    errors = []
+    if not isinstance(value, list):
+        return [f"Field '{path}' must be a list of strings"]
+
+    for index, item in enumerate(value):
+        if not isinstance(item, str) or not item.strip():
+            errors.append(f"Field '{path}[{index}]' must be a non-empty string")
+
+    return errors
+
+
+def validate_evals(skill_dir: Path) -> list[str]:
+    """Validate evals/evals.json for a skill directory.
+
+    Args:
+        skill_dir: Path to the skill directory
+
+    Returns:
+        List of validation error messages. Empty list means valid.
+    """
+    evals_path = Path(skill_dir) / EVALS_PATH
+    if not evals_path.exists():
+        return [f"Missing optional evals file requested for validation: {EVALS_PATH}"]
+
+    try:
+        data = json.loads(evals_path.read_text())
+    except json.JSONDecodeError as e:
+        return [f"Invalid JSON in {EVALS_PATH}: {e.msg} at line {e.lineno}, column {e.colno}"]
+
+    errors = []
+    if not isinstance(data, dict):
+        return [f"{EVALS_PATH} must contain a JSON object"]
+
+    errors.extend(_validate_string_field(data.get("skill_name"), "skill_name"))
+
+    evals = data.get("evals")
+    if not isinstance(evals, list) or not evals:
+        errors.append("Field 'evals' must be a non-empty list")
+        return errors
+
+    seen_ids = set()
+    for index, eval_case in enumerate(evals):
+        prefix = f"evals[{index}]"
+        if not isinstance(eval_case, dict):
+            errors.append(f"Field '{prefix}' must be an object")
+            continue
+
+        eval_id = eval_case.get("id")
+        if not isinstance(eval_id, (str, int)) or isinstance(eval_id, bool) or not str(eval_id).strip():
+            errors.append(f"Field '{prefix}.id' must be a non-empty string or integer")
+        elif eval_id in seen_ids:
+            errors.append(f"Field '{prefix}.id' must be unique")
+        else:
+            seen_ids.add(eval_id)
+
+        errors.extend(_validate_string_field(eval_case.get("prompt"), f"{prefix}.prompt"))
+        errors.extend(
+            _validate_string_field(
+                eval_case.get("expected_output"), f"{prefix}.expected_output"
+            )
+        )
+
+        if "files" in eval_case:
+            errors.extend(_validate_string_list(eval_case["files"], f"{prefix}.files"))
+
+        if "assertions" in eval_case:
+            errors.extend(
+                _validate_string_list(eval_case["assertions"], f"{prefix}.assertions")
+            )
+
+    return errors
+
+
+def validate(skill_dir: Path, include_evals: bool = False) -> list[str]:
     """Validate a skill directory.
 
     Args:
         skill_dir: Path to the skill directory
+        include_evals: Whether to validate evals/evals.json
 
     Returns:
         List of validation error messages. Empty list means valid.
@@ -174,4 +259,8 @@ def validate(skill_dir: Path) -> list[str]:
     except ParseError as e:
         return [str(e)]
 
-    return validate_metadata(metadata, skill_dir)
+    errors = validate_metadata(metadata, skill_dir)
+    if include_evals:
+        errors.extend(validate_evals(skill_dir))
+
+    return errors

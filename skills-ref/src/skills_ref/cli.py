@@ -26,11 +26,18 @@ def main():
 
 @main.command("validate")
 @click.argument("skill_path", type=click.Path(exists=True, path_type=Path))
-def validate_cmd(skill_path: Path):
+@click.option(
+    "--evals",
+    "include_evals",
+    is_flag=True,
+    help="Also validate evals/evals.json.",
+)
+def validate_cmd(skill_path: Path, include_evals: bool):
     """Validate a skill directory.
 
     Checks that the skill has a valid SKILL.md with proper frontmatter,
-    correct naming conventions, and required fields.
+    correct naming conventions, and required fields. Pass --evals to also
+    validate evals/evals.json.
 
     Exit codes:
         0: Valid skill
@@ -39,7 +46,7 @@ def validate_cmd(skill_path: Path):
     if _is_skill_md_file(skill_path):
         skill_path = skill_path.parent
 
-    errors = validate(skill_path)
+    errors = validate(skill_path, include_evals=include_evals)
 
     if errors:
         click.echo(f"Validation failed for {skill_path}:", err=True)

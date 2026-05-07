@@ -1,6 +1,18 @@
 """Tests for validator module."""
 
-from skills_ref.validator import validate
+import json
+
+from skills_ref.validator import validate, validate_evals
+
+
+def write_valid_skill(skill_dir):
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+---
+# My Skill
+""")
 
 
 def test_valid_skill(tmp_path):
@@ -288,3 +300,101 @@ Body
 """)
     errors = validate(skill_dir)
     assert errors == [], f"Expected no errors, got: {errors}"
+
+
+def test_validate_evals_accepts_valid_evals_file(tmp_path):
+    skill_dir = tmp_path / "my-skill"
+    write_valid_skill(skill_dir)
+    evals_dir = skill_dir / "evals"
+    evals_dir.mkdir()
+    (evals_dir / "evals.json").write_text(json.dumps({
+        "skill_name": "my-skill",
+        "evals": [
+            {
+                "id": "chart",
+                "prompt": "Create a chart from sales.csv",
+                "expected_output": "A labeled chart",
+                "files": ["evals/files/sales.csv"],
+                "assertions": ["The chart has labeled axes"],
+            }
+        ],
+    }))
+
+    assert validate_evals(skill_dir) == []
+    assert validate(skill_dir, include_evals=True) == []
+
+
+def test_validate_does_not_require_evals_by_default(tmp_path):
+    skill_dir = tmp_path / "my-skill"
+    write_valid_skill(skill_dir)
+
+    assert validate(skill_dir) == []
+    assert validate(skill_dir, include_evals=True) == [
+        "Missing optional evals file requested for validation: evals/evals.json"
+    ]
+
+
+def test_validate_evals_rejects_invalid_json(tmp_path):
+    skill_dir = tmp_path / "my-skill"
+    write_valid_skill(skill_dir)
+    evals_dir = skill_dir / "evals"
+    evals_dir.mkdir()
+    (evals_dir / "evals.json").write_text("{")
+
+    errors = validate_evals(skill_dir)
+
+    assert len(errors) == 1
+    assert "Invalid JSON in evals/evals.json" in errors[0]
+
+
+def test_validate_evals_rejects_missing_required_fields(tmp_path):
+    skill_dir = tmp_path / "my-skill"
+    write_valid_skill(skill_dir)
+    evals_dir = skill_dir / "evals"
+    evals_dir.mkdir()
+    (evals_dir / "evals.json").write_text(json.dumps({
+        "skill_name": "",
+        "evals": [
+            {
+                "id": "",
+                "prompt": "",
+                "files": ["evals/files/input.csv", ""],
+                "assertions": "not a list",
+            }
+        ],
+    }))
+
+    errors = validate_evals(skill_dir)
+
+    assert "Field 'skill_name' must be a non-empty string" in errors
+    assert "Field 'evals[0].id' must be a non-empty string or integer" in errors
+    assert "Field 'evals[0].prompt' must be a non-empty string" in errors
+    assert "Field 'evals[0].expected_output' must be a non-empty string" in errors
+    assert "Field 'evals[0].files[1]' must be a non-empty string" in errors
+    assert "Field 'evals[0].assertions' must be a list of strings" in errors
+
+
+def test_validate_evals_rejects_duplicate_ids(tmp_path):
+    skill_dir = tmp_path / "my-skill"
+    write_valid_skill(skill_dir)
+    evals_dir = skill_dir / "evals"
+    evals_dir.mkdir()
+    (evals_dir / "evals.json").write_text(json.dumps({
+        "skill_name": "my-skill",
+        "evals": [
+            {
+                "id": 1,
+                "prompt": "First prompt",
+                "expected_output": "First output",
+            },
+            {
+                "id": 1,
+                "prompt": "Second prompt",
+                "expected_output": "Second output",
+            },
+        ],
+    }))
+
+    errors = validate_evals(skill_dir)
+
+    assert "Field 'evals[1].id' must be unique" in errors

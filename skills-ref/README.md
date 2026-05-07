@@ -59,6 +59,9 @@ After installation, the `skills-ref` executable will be available on your `PATH`
 # Validate a skill
 skills-ref validate path/to/skill
 
+# Also validate evals/evals.json
+skills-ref validate --evals path/to/skill
+
 # Read skill properties (outputs JSON)
 skills-ref read-properties path/to/skill
 
