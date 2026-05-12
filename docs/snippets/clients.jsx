@@ -331,4 +331,12 @@ export const clients = [
     instructionsUrl: "https://fast-agent.ai/agents/skills/",
     sourceCodeUrl: "https://github.com/evalstate/fast-agent",
   },
+  {
+    name: "Superconductor",
+    description: "Superconductor is a multiplayer workspace for your team and coding agents. Run many agents in the cloud, build together in shared sessions, and ship faster with live app previews and guided code review.",
+    url: "https://superconductor.com/",
+    lightSrc: "/images/logos/superconductor/superconductor-wordmark-light.svg",
+    darkSrc: "/images/logos/superconductor/superconductor-wordmark-dark.svg",
+    instructionsUrl: "https://superconductor.com/docs/project/mcp-and-skills",
+  },
 ];
