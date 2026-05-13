@@ -144,11 +144,22 @@ The `version` field on a skill entry is optional and carries a [semantic version
 
 ### Versioned index paths
 
-Publishers that want clients to be able to fetch or pin a specific version should serve immutable index snapshots at a predictable versioned path alongside the mutable latest:
+Publishers that want clients to be able to fetch or pin a specific version should serve immutable index snapshots at a predictable versioned path alongside the mutable latest, and a `versions.json` file enumerating all available versions:
 
 ```
 https://example.com/.well-known/agent-skills/index.json          ← latest (mutable)
+https://example.com/.well-known/agent-skills/versions.json       ← version list (mutable)
 https://example.com/.well-known/agent-skills/v0.1.1/index.json   ← pinned snapshot (immutable)
+https://example.com/.well-known/agent-skills/v0.2.0/index.json   ← pinned snapshot (immutable)
+```
+
+`versions.json` allows clients to discover which versions are available without probing paths blindly — the same problem solved by [npm's packument](https://github.com/npm/registry/blob/main/docs/REGISTRY-API.md) (`versions` object listing all published versions) and [Cargo's registry index](https://doc.rust-lang.org/cargo/reference/registry-index.html) (one file per crate listing every version as a JSON line).
+
+```json /.well-known/agent-skills/versions.json
+{
+  "latest": "0.2.0",
+  "versions": ["0.1.0", "0.1.1", "0.2.0"]
+}
 ```
 
 A versioned index has the same shape as the canonical index. Skill `url` values are resolved per [RFC 3986 Section 5](https://datatracker.ietf.org/doc/html/rfc3986#section-5) using the versioned index URL as the base URI, so relative URLs resolve correctly within the versioned path.
