@@ -331,4 +331,13 @@ export const clients = [
     instructionsUrl: "https://fast-agent.ai/agents/skills/",
     sourceCodeUrl: "https://github.com/evalstate/fast-agent",
   },
+  {
+    name: "Implexa",
+    description: "Implexa records workflows as Agent Skills by demonstration. Run /implexa:record in Claude Code, do the workflow normally, and a post-demo interview locks the decision rationale into a SKILL.md you can run, share with your team, or fork from a public library — with outcome attribution showing which skills actually moved the needle.",
+    url: "https://implexa.ai",
+    lightSrc: "/images/logos/implexa/implexa-logo-light.svg",
+    darkSrc: "/images/logos/implexa/implexa-logo-dark.svg",
+    instructionsUrl: "https://github.com/Implexa-Inc/implexa-claude-plugin#readme",
+    sourceCodeUrl: "https://github.com/Implexa-Inc/implexa-claude-plugin",
+  },
 ];

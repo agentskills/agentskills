@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 120" width="480" height="120">
+  <g font-family="Inter, system-ui, sans-serif" font-weight="600" font-size="64" letter-spacing="-2">
+    <text x="40" y="80" fill="#FAFAF8">ı</text>
+    <circle cx="55" cy="34" r="7" fill="#34D399"/>
+    <text x="68" y="80" fill="#FAFAF8">mple</text>
+    <text x="220" y="80" fill="#FAFAF8">x</text>
+    <circle cx="241" cy="62" r="7" fill="#FF5722"/>
+    <text x="258" y="80" fill="#FAFAF8">a</text>
+  </g>
+</svg>
