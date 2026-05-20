@@ -334,10 +334,10 @@ export const clients = [
   {
     name: "bub",
     description: "Bub is a lightweight, hook-first Python framework for channel-native agents that live alongside people.",
-    url: "https://bubbuild.bub/",
+    url: "https://bub.build/",
     lightSrc: "/images/logos/bub/bub-light.svg",
     darkSrc: "/images/logos/bub/bub-dark.svg",
-    instructionsUrl: "https://bub.build/docs/guides/skills/",
+    instructionsUrl: "https://bub.build/docs/build/skills/",
     sourceCodeUrl: "https://github.com/bubbuild/bub",
   },
 ];
