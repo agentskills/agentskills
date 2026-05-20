@@ -340,4 +340,20 @@ export const clients = [
     instructionsUrl: "https://bub.build/docs/build/skills/",
     sourceCodeUrl: "https://github.com/bubbuild/bub",
   },
+  {
+    name: "Tabnine",
+    description: "Tabnine is an AI engineering platform that combines code assistants, agentic workflows, and enterprise context to help development teams build, review, and maintain software with context-aware AI—while keeping code private, secure, and fully under your control.",
+    url: "https://www.tabnine.com/",
+    lightSrc: "/images/logos/tabnine/tabnine-logo-light.svg",
+    darkSrc: "/images/logos/tabnine/tabnine-logo-dark.svg",
+    instructionsUrl: "https://docs.tabnine.com/main/getting-started/tabnine-cli/features/agent-skills",
+  },
+  {
+    name: "Vita",
+    description: "Vita provides autonomous digital workers with virtual desktops to execute complex workflows. It learns your intent to automate end-to-end tasks like creating and posting engaging social media content.",
+    url: "https://www.vita-ai.net",
+    lightSrc: "/images/logos/vita/logo-horizontal-light.svg",
+    darkSrc: "/images/logos/vita/logo-horizontal-dark.svg",
+    instructionsUrl: "https://www.vita-ai.net/docs/features/agent-skills",
+  },
 ];
