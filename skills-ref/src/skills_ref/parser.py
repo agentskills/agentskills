@@ -86,7 +86,7 @@ def read_properties(skill_dir: Path) -> SkillProperties:
     if skill_md is None:
         raise ParseError(f"SKILL.md not found in {skill_dir}")
 
-    content = skill_md.read_text()
+    content = skill_md.read_text(encoding="utf-8")
     metadata, _ = parse_frontmatter(content)
 
     if "name" not in metadata:
