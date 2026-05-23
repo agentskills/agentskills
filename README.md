@@ -50,6 +50,16 @@ Agent Skills are supported by a large number of AI tools and agentic clients —
 - **[Example Skills](https://github.com/anthropics/skills)** — See what's possible
 - **[Discord](https://discord.gg/MKPE9g8aUy)** — Share what you're building!
 
+## Community Skills
+
+Skills built by the community that are compatible with any Agent Skills-enabled agent (Claude Code, Codex CLI, OpenCode, and more).
+
+| Skill | Author | Description |
+|-------|--------|-------------|
+| [flowhunt-skill](https://github.com/heyneuron/flowhunt-skill) | [heyneuron](https://github.com/heyneuron) | Automation discovery audit — walks through a 5-question workflow intake and audits Gmail, Calendar, Slack, and task trackers to identify automation opportunities |
+
+Install with `npx skills add heyneuron/flowhunt-skill`.
+
 ## Open development
 
 The Agent Skills format was originally developed by [Anthropic](https://www.anthropic.com/), released as an open standard, and has been adopted by a growing number of agent products. The standard is open to contributions from the broader ecosystem — see [`CONTRIBUTING.md`](CONTRIBUTING.md) for how to get involved.
