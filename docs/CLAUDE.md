@@ -1,23 +1,23 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository. The project defines an open format for teaching AI agents specialized workflows through SKILL.md files.
+このファイルは、Claude Code (claude.ai/code) がこのリポジトリで作業する際のガイダンスです。このプロジェクトは、SKILL.md ファイルを通じて AI エージェントに特化ワークフローを教えるためのオープンフォーマットを定義しています。
 
-## Documentation
+## ドキュメント
 
-The Agent Skills documentation site, defined in the `docs/` directory, is built with [Mintlify](https://mintlify.com).
+`docs/` ディレクトリで定義される Agent Skills ドキュメントサイトは、[Mintlify](https://mintlify.com) で構築されています。
 
-### Quick Start Commands
+### クイックスタートコマンド
 
 ```bash
-# Run local development server
+# ローカル開発サーバーを起動
 npm run dev
 ```
 
-Local preview available at `http://localhost:3000`
+ローカルプレビュー: `http://localhost:3000`
 
-### Development Notes
+### 開発メモ
 
-- **Navigation**: Defined in `docs/docs.json` under `navigation.pages` array
-- **Adding pages**: Create new `.mdx` file in `/docs`, add filename (without extension) to navigation
-- **Deployment**: Automatic on push to `main` branch
-- **Troubleshooting**: If page shows 404, ensure you're running `mint dev` from directory containing `docs.json`
+- **ナビゲーション**: `docs/docs.json` の `navigation.pages` 配列で定義
+- **ページ追加**: `/docs` に新しい `.mdx` ファイルを作成し、拡張子なしファイル名をナビゲーションに追加
+- **デプロイ**: `main` ブランチへの push で自動実行
+- **トラブルシュート**: ページが 404 の場合、`docs.json` を含むディレクトリで `mint dev` を実行しているか確認

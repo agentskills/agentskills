@@ -1,17 +1,17 @@
-# Development
+# 開発
 
-## Code Quality
+## コード品質
 
-Format and lint with ruff:
+`ruff` でフォーマットと lint を実行:
 
 ```bash
 uv run ruff format .
 uv run ruff check --fix .
 ```
 
-## Testing
+## テスト
 
-Run tests with pytest:
+`pytest` でテスト実行:
 
 ```bash
 uv run pytest

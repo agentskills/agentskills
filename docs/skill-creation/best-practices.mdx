@@ -1,58 +1,59 @@
 ---
-title: "Best practices for skill creators"
-sidebarTitle: "Best practices"
-description: "How to write skills that are well-scoped and calibrated to the task."
+title: "スキル作成のベストプラクティス"
+sidebarTitle: "ベストプラクティス"
+description: "適切なスコープでタスクに合ったスキルを書く方法。"
 ---
 
-## Start from real expertise
+## 実務知識から始める
 
-A common pitfall in skill creation is asking an LLM to generate a skill without providing domain-specific context — relying solely on the LLM's general training knowledge. The result is vague, generic procedures ("handle errors appropriately," "follow best practices for authentication") rather than the specific API patterns, edge cases, and project conventions that make a skill valuable.
+スキル作成でよくある失敗は、ドメイン固有の文脈を与えずに LLM に作成させることです。一般学習知識だけに依存すると、「エラーを適切に処理」「認証のベストプラクティスに従う」といった曖昧な手順になり、価値の核となる API パターン、エッジケース、プロジェクト規約が抜け落ちます。
 
-Effective skills are grounded in real expertise. The key is feeding domain-specific context into the creation process.
+有効なスキルは実務知識に根ざしています。鍵は、作成プロセスにドメイン固有の文脈を投入することです。
 
-### Extract from a hands-on task
+### 実作業から抽出する
 
-Complete a real task in conversation with an agent, providing context, corrections, and preferences along the way. Then extract the reusable pattern into a skill. Pay attention to:
+エージェントとの対話で実際のタスクを完了しながら、文脈・修正・好みを与えます。その後、再利用できるパターンをスキル化します。次の点に注目します。
 
-- **Steps that worked** — the sequence of actions that led to success
-- **Corrections you made** — places where you steered the agent's approach (e.g., "use library X instead of Y," "check for edge case Z")
-- **Input/output formats** — what the data looked like going in and coming out
-- **Context you provided** — project-specific facts, conventions, or constraints the agent didn't already know
+- **うまくいった手順** — 成功につながった行動の順序
+- **加えた修正** — エージェント方針を補正した箇所（例: 「YではなくXライブラリを使う」「Zのエッジケースを確認する」）
+- **入出力フォーマット** — 入力データと出力データの形
+- **与えた文脈** — エージェントが元々知らないプロジェクト固有情報・規約・制約
 
-### Synthesize from existing project artifacts
+### 既存成果物から合成する
 
-When you have a body of existing knowledge, you can feed it into an LLM and ask it to synthesize a skill. A data-pipeline skill synthesized from your team's actual incident reports and runbooks will outperform one synthesized from a generic "data engineering best practices" article, because it captures *your* schemas, failure modes, and recovery procedures. The key is project-specific material, not generic references.
+既存知識が蓄積されているなら、LLM に入力してスキルを合成できます。たとえば、汎用的な「データエンジニアリングのベストプラクティス」記事より、チームの実インシデント報告や runbook から合成したデータパイプラインスキルの方が高性能です。理由は、_自分たちの_ スキーマ、障害モード、復旧手順を含められるためです。重要なのは汎用資料ではなく、プロジェクト固有資料です。
 
-Good source material includes:
+良いソース例:
 
-- Internal documentation, runbooks, and style guides
-- API specifications, schemas, and configuration files
-- Code review comments and issue trackers (captures recurring concerns and reviewer expectations)
-- Version control history, especially patches and fixes (reveals patterns through what actually changed)
-- Real-world failure cases and their resolutions
+- 社内ドキュメント、runbook、スタイルガイド
+- API 仕様、スキーマ、設定ファイル
+- コードレビューコメントと issue tracker（繰り返し指摘と期待値が分かる）
+- バージョン管理履歴、とくに修正パッチ（実際に変わった箇所からパターンが見える）
+- 実障害ケースと解決手順
 
-## Refine with real execution
+## 実行結果で磨く
 
-The first draft of a skill usually needs refinement. Run the skill against real tasks, then feed the results — all of them, not just failures — back into the creation process. Ask: what triggered false positives? What was missed? What could be cut?
+スキル初稿は通常そのままでは不十分です。実タスクで実行し、失敗だけでなく全結果を作成プロセスに戻して改善します。誤発火の原因、取りこぼし、削れる説明を確認します。
 
-Even a single pass of execute-then-revise noticeably improves quality, and complex domains often benefit from several.
+実行→改訂を1回行うだけでも品質は目に見えて向上し、複雑な領域では複数回の反復が有効です。
 
 <Tip>
-Read agent execution traces, not just final outputs. If the agent wastes time on unproductive steps, common causes include instructions that are too vague (the agent tries several approaches before finding one that works), instructions that don't apply to the current task (the agent follows them anyway), or too many options presented without a clear default.
+  最終出力だけでなく実行トレースを確認してください。非生産的な手順に時間を使う場合、原因は「指示が曖昧」「現在タスクに不要な指示を実行」「既定方針なしで選択肢が多すぎる」のいずれかであることが多いです。
 </Tip>
 
-For a more structured approach to iteration, including test cases, assertions, and grading, see [Evaluating skill output quality](/skill-creation/evaluating-skills).
+テストケース、アサーション、採点を含む構造的な改善方法は [スキル出力品質の評価](/skill-creation/evaluating-skills) を参照してください。
 
-## Spending context wisely
+## コンテキストを節約する
 
-Once a skill activates, its full `SKILL.md` body loads into the agent's context window alongside conversation history, system context, and other active skills. Every token in your skill competes for the agent's attention with everything else in that window.
+スキルが有効化されると、`SKILL.md` 全文が会話履歴・システム文脈・他スキルと同じコンテキストに入ります。スキル内の各トークンは、他情報と注意資源を奪い合います。
 
-### Add what the agent lacks, omit what it knows
+### 知らないことだけ足し、既知は省く
 
-Focus on what the agent *wouldn't* know without your skill: project-specific conventions, domain-specific procedures, non-obvious edge cases, and the particular tools or APIs to use. You don't need to explain what a PDF is, how HTTP works, or what a database migration does.
+スキルがないとエージェントが*知らない*ことに集中してください。プロジェクト規約、ドメイン手順、非自明なエッジケース、使うべきツール/API が対象です。PDF の定義、HTTP の仕組み、DB マイグレーションの一般論は通常不要です。
 
 ````markdown
 <!-- Too verbose — the agent already knows what PDFs are -->
+
 ## Extract PDF text
 
 PDF (Portable Document Format) files are a common file format that contains
@@ -60,6 +61,7 @@ text, images, and other content. To extract text from a PDF, you'll need to
 use a library. pdfplumber is recommended because it handles most cases well.
 
 <!-- Better — jumps straight to what the agent wouldn't know on its own -->
+
 ## Extract PDF text
 
 Use pdfplumber for text extraction. For scanned documents, fall back to
@@ -73,29 +75,29 @@ with pdfplumber.open("file.pdf") as pdf:
 ```
 ````
 
-Ask yourself about each piece of content: "Would the agent get this wrong without this instruction?" If the answer is no, cut it. If you're unsure, test it. And if the agent already handles the entire task well without the skill, the skill may not be adding value. See [Evaluating skill output quality](/skill-creation/evaluating-skills) for how to test this systematically.
+各記述について「この指示がないと誤るか？」を自問してください。答えが no なら削除候補です。迷うならテストします。スキルなしでも十分に処理できるなら、そのスキルは価値を追加していない可能性があります。体系的検証は [スキル出力品質の評価](/skill-creation/evaluating-skills) を参照してください。
 
-### Design coherent units
+### 一貫した単位で設計する
 
-Deciding what a skill should cover is like deciding what a function should do: you want it to encapsulate a coherent unit of work that composes well with other skills. Skills scoped too narrowly force multiple skills to load for a single task, risking overhead and conflicting instructions. Skills scoped too broadly become hard to activate precisely. A skill for querying a database and formatting the results may be one coherent unit, while a skill that also covers database administration is probably trying to do too much.
+スキル範囲の設計は関数設計に似ています。他スキルと組み合わせやすい一貫した作業単位をカプセル化するのが理想です。狭すぎると1タスクで複数スキル読み込みが必要になり、オーバーヘッドや指示衝突が起きます。広すぎると正確に発火しづらくなります。DB 問い合わせ＋結果整形は一単位になり得ますが、DB 運用管理まで含めると広すぎる可能性があります。
 
-### Aim for moderate detail
+### 詳細度は中程度を狙う
 
-Overly comprehensive skills can hurt more than they help — the agent struggles to extract what's relevant and may pursue unproductive paths triggered by instructions that don't apply to the current task. Concise, stepwise guidance with a working example tends to outperform exhaustive documentation. When you find yourself covering every edge case, consider whether most are better handled by the agent's own judgment.
+過度に網羅的なスキルは逆効果になり得ます。現在タスクに不要な指示に引っ張られ、関連情報の抽出が難しくなるためです。動く例付きの簡潔な手順は、網羅的説明より高性能になりやすいです。すべてのエッジケースを書きたくなったら、多くはエージェントの判断に任せるべきか再検討してください。
 
-### Structure large skills with progressive disclosure
+### 大きなスキルは段階的開示で分割する
 
-The [specification](/specification#progressive-disclosure) recommends keeping `SKILL.md` under 500 lines and 5,000 tokens — just the core instructions the agent needs on every run. When a skill legitimately needs more content, move detailed reference material to separate files in `references/` or similar directories.
+[仕様](/specification#progressive-disclosure) では、`SKILL.md` は500行・5000トークン未満を推奨しています。毎回必要な中核手順だけを残し、追加情報は `references/` などへ分離します。
 
-The key is telling the agent *when* to load each file. "Read `references/api-errors.md` if the API returns a non-200 status code" is more useful than a generic "see references/ for details." This lets the agent load context on demand rather than up front, which is how [progressive disclosure](/specification#progressive-disclosure) is designed to work.
+重要なのは「いつ読み込むか」を明示することです。"詳細は references を見て" より、"API が非200を返したら `references/api-errors.md` を読む" の方が有効です。これにより、段階的開示の設計どおり必要時読み込みができます。
 
-## Calibrating control
+## 指示強度の調整
 
-Not every part of a skill needs the same level of prescriptiveness. Match the specificity of your instructions to the fragility of the task.
+スキル内の全項目に同じ厳密さは不要です。タスクの壊れやすさに応じて指示の具体度を調整します。
 
-### Match specificity to fragility
+### 壊れやすさに合わせて具体度を決める
 
-**Give the agent freedom** when multiple approaches are valid and the task tolerates variation. For flexible instructions, explaining *why* can be more effective than rigid directives — an agent that understands the purpose behind an instruction makes better context-dependent decisions. A code review skill can describe what to look for without prescribing exact steps:
+**自由度を与える** のは、複数アプローチが有効で結果許容幅がある場合です。柔軟な指示では、厳命より「なぜ」を示す方が有効です。目的を理解したエージェントは文脈依存でより良い判断ができます。コードレビューなら、厳密手順より観点提示が有効です。
 
 ```markdown
 ## Code review process
@@ -106,7 +108,7 @@ Not every part of a skill needs the same level of prescriptiveness. Match the sp
 4. Confirm error messages don't leak internal details
 ```
 
-**Be prescriptive** when operations are fragile, consistency matters, or a specific sequence must be followed:
+**厳密に指示する** のは、操作が壊れやすい、再現性が重要、手順順序が必須な場合です。
 
 ````markdown
 ## Database migration
@@ -120,17 +122,19 @@ python scripts/migrate.py --verify --backup
 Do not modify the command or add additional flags.
 ````
 
-Most skills have a mix. Calibrate each part independently.
+多くのスキルは両者の混在です。部分ごとに個別調整してください。
 
-### Provide defaults, not menus
+### メニュー列挙ではなく既定値を示す
 
-When multiple tools or approaches could work, pick a default and mention alternatives briefly rather than presenting them as equal options.
+複数手段が使える場合、同列に並べるより既定手段を明示し、代替は短く補足します。
 
 ````markdown
 <!-- Too many options -->
+
 You can use pypdf, pdfplumber, PyMuPDF, or pdf2image...
 
 <!-- Clear default with escape hatch -->
+
 Use pdfplumber for text extraction:
 
 ```python
@@ -140,33 +144,35 @@ import pdfplumber
 For scanned PDFs requiring OCR, use pdf2image with pytesseract instead.
 ````
 
-### Favor procedures over declarations
+### 宣言より手順を重視する
 
-A skill should teach the agent *how to approach* a class of problems, not *what to produce* for a specific instance. Compare:
+スキルは特定ケースの答えではなく、問題群への*アプローチ方法*を教えるべきです。
 
 ```markdown
 <!-- Specific answer — only useful for this exact task -->
+
 Join the `orders` table to `customers` on `customer_id`, filter where
 `region = 'EMEA'`, and sum the `amount` column.
 
 <!-- Reusable method — works for any analytical query -->
+
 1. Read the schema from `references/schema.yaml` to find relevant tables
 2. Join tables using the `_id` foreign key convention
 3. Apply any filters from the user's request as WHERE clauses
 4. Aggregate numeric columns as needed and format as a markdown table
 ```
 
-This doesn't mean skills can't include specific details — output format templates (see [Templates for output format](#templates-for-output-format)), constraints like "never output PII," and tool-specific instructions are all valuable. The point is that the *approach* should generalize even when individual details are specific.
+これは具体情報を排除する意味ではありません。出力テンプレート（[出力テンプレート](#templates-for-output-format)）、"PII を出力しない" のような制約、ツール固有指示は有効です。要点は、個別情報が具体でも*アプローチ*は汎化可能であることです。
 
-## Patterns for effective instructions
+## 効果的な指示パターン
 
-These are reusable techniques for structuring skill content. Not every skill needs all of them — use the ones that fit your task.
+以下はスキル構成の再利用可能テクニックです。すべてを使う必要はなく、タスクに合うものを選びます。
 
-### Gotchas sections
+### Gotchas セクション
 
-The highest-value content in many skills is a list of gotchas — environment-specific facts that defy reasonable assumptions. These aren't general advice ("handle errors appropriately") but concrete corrections to mistakes the agent will make without being told otherwise:
+多くのスキルで最も価値が高いのは gotchas（環境固有で見落としやすい事実）です。これは一般論ではなく、指示しないと起こる誤りへの具体的補正です。
 
-````markdown
+```markdown
 ## Gotchas
 
 - The `users` table uses soft deletes. Queries must include
@@ -176,17 +182,18 @@ The highest-value content in many skills is a list of gotchas — environment-sp
 - The `/health` endpoint returns 200 as long as the web server is running,
   even if the database connection is down. Use `/ready` to check full
   service health.
-````
+```
 
-Keep gotchas in `SKILL.md` where the agent reads them before encountering the situation. A separate reference file works if you tell the agent when to load it, but for non-obvious issues, the agent may not recognize the trigger.
+gotchas は遭遇前に読める `SKILL.md` に置くのが基本です。別ファイル化する場合は読み込み条件を明示してください。非自明な問題では、トリガーをエージェントが自力認識できないことがあります。
 
 <Tip>
-When an agent makes a mistake you have to correct, add the correction to the gotchas section. This is one of the most direct ways to improve a skill iteratively (see [Refine with real execution](#refine-with-real-execution)).
+  エージェントの誤りを修正したら、その修正内容を gotchas
+  に追加してください。これは反復改善の最短経路の1つです（[実行結果で磨く](#refine-with-real-execution)）。
 </Tip>
 
-### Templates for output format
+### 出力テンプレート
 
-When you need the agent to produce output in a specific format, provide a template. This is more reliable than describing the format in prose, because agents pattern-match well against concrete structures. Short templates can live inline in `SKILL.md`; for longer templates, or templates only needed in certain cases, store them in `assets/` and reference them from `SKILL.md` so they only load when needed.
+出力形式を固定したい場合はテンプレートを提示してください。文章説明より再現性が高く、エージェントは具体構造へのパターン一致が得意です。短いテンプレートは `SKILL.md` に直接書き、長いものや条件付きで必要なものは `assets/` に置いて `SKILL.md` から参照します。
 
 ````markdown
 ## Report structure
@@ -197,26 +204,30 @@ Use this template, adapting sections as needed for the specific analysis:
 # [Analysis Title]
 
 ## Executive summary
+
 [One-paragraph overview of key findings]
 
 ## Key findings
+
 - Finding 1 with supporting data
 - Finding 2 with supporting data
 
 ## Recommendations
+
 1. Specific actionable recommendation
 2. Specific actionable recommendation
 ```
 ````
 
-### Checklists for multi-step workflows
+### 複数ステップ作業のチェックリスト
 
-An explicit checklist helps the agent track progress and avoid skipping steps, especially when steps have dependencies or validation gates.
+明示的チェックリストは進捗追跡と手順漏れ防止に有効です。特に依存関係や検証ゲートがある場合に効果があります。
 
 ```markdown
 ## Form processing workflow
 
 Progress:
+
 - [ ] Step 1: Analyze the form (run `scripts/analyze_form.py`)
 - [ ] Step 2: Create field mapping (edit `fields.json`)
 - [ ] Step 3: Validate mapping (run `scripts/validate_fields.py`)
@@ -224,9 +235,9 @@ Progress:
 - [ ] Step 5: Verify output (run `scripts/verify_output.py`)
 ```
 
-### Validation loops
+### 検証ループ
 
-Instruct the agent to validate its own work before moving on. The pattern is: do the work, run a validator (a script, a reference checklist, or a self-check), fix any issues, and repeat until validation passes.
+次工程へ進む前に自己検証するよう指示します。基本パターンは「実行→バリデータ実行→修正→再検証」を合格まで繰り返すことです。
 
 ```markdown
 ## Editing workflow
@@ -240,11 +251,11 @@ Instruct the agent to validate its own work before moving on. The pattern is: do
 4. Only proceed when validation passes
 ```
 
-A reference document can also serve as the "validator" — instruct the agent to check its work against the reference before finalizing.
+参照ドキュメントをバリデータ代わりにすることも可能です。確定前に参照と照合するよう指示します。
 
 ### Plan-validate-execute
 
-For batch or destructive operations, have the agent create an intermediate plan in a structured format, validate it against a source of truth, and only then execute.
+バッチ処理や破壊的操作では、中間計画を構造化形式で作成し、正解ソースと照合してから実行させます。
 
 ```markdown
 ## PDF form filling
@@ -259,17 +270,17 @@ For batch or destructive operations, have the agent create an intermediate plan 
 5. Fill the form: `python scripts/fill_form.py input.pdf field_values.json output.pdf`
 ```
 
-The key ingredient is step 3: a validation script that checks the plan (`field_values.json`) against the source of truth (`form_fields.json`). Errors like "Field 'signature_date' not found — available fields: customer_name, order_total, signature_date_signed" give the agent enough information to self-correct.
+重要なのはステップ3です。計画 (`field_values.json`) を正解ソース (`form_fields.json`) と照合する検証スクリプトが必要です。"Field 'signature_date' not found ..." のような具体エラーは自己修正に十分な情報を与えます。
 
-### Bundling reusable scripts
+### 再利用スクリプトの同梱
 
-When [iterating on a skill](/skill-creation/evaluating-skills), compare the agent's execution traces across test cases. If you notice the agent independently reinventing the same logic each run — building charts, parsing a specific format, validating output — that's a signal to write a tested script once and bundle it in `scripts/`.
+[スキルを反復改善](/skill-creation/evaluating-skills) する際は、テストケース間で実行トレースを比較してください。毎回同じ処理（グラフ作成、特定形式解析、出力検証）を作り直しているなら、1回テスト済みスクリプトを作って `scripts/` に同梱する合図です。
 
-For more on designing and bundling scripts, see [Using scripts in skills](/skill-creation/using-scripts).
+スクリプト設計と同梱の詳細は [スキルでスクリプトを使う](/skill-creation/using-scripts) を参照してください。
 
-## Next steps
+## 次のステップ
 
-Once you have a working skill, two guides can help you refine it further:
+動作するスキルができたら、次の2ガイドでさらに改善できます。
 
-- **[Evaluating skill output quality](/skill-creation/evaluating-skills)** — Set up test cases, grade results, and iterate systematically.
-- **[Optimizing skill descriptions](/skill-creation/optimizing-descriptions)** — Test and improve your skill's `description` field so it triggers on the right prompts.
+- **[スキル出力品質の評価](/skill-creation/evaluating-skills)** — テスト設計、採点、反復改善を体系化
+- **[スキル説明の最適化](/skill-creation/optimizing-descriptions)** — `description` の発火精度を改善

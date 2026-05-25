@@ -1,17 +1,17 @@
-# Agent Skills Documentation
+# Agent Skills ドキュメント
 
-This directory contains the source code for the Agent Skills [documentation site](https://agentskills.io/), which is built using [Mintlify](https://mintlify.com).
+このディレクトリには、[Mintlify](https://mintlify.com) で構築された Agent Skills の [ドキュメントサイト](https://agentskills.io/) のソースコードが含まれます。
 
-## Development
+## 開発
 
-Run the following command at the documentation root, where `docs.json` is located:
+`docs.json` があるドキュメントルートで、次のコマンドを実行します。
 
 ```bash
 npx mint dev
 ```
 
-View your local preview at `http://localhost:3000`.
+ローカルプレビューは `http://localhost:3000` で確認できます。
 
-## Publishing changes
+## 変更の公開
 
-Changes are deployed to production automatically after pushing to the default branch.
+デフォルトブランチへ push すると、変更は自動的に本番環境へデプロイされます。

@@ -1,21 +1,23 @@
 ---
-title: "Quickstart"
-description: "Create your first Agent Skill and see it work in VS Code."
+title: "クイックスタート"
+description: "最初のAgent Skillを作成し、VS Codeで動かしてみましょう。"
 ---
 
-In this tutorial, you'll create a skill that gives an agent the capability to roll dice using a random number generator.
+このチュートリアルでは、乱数生成を使ってサイコロを振る能力をエージェントに与えるスキルを作成します。
 
-## Prerequisites
+## 前提条件
 
 - [VS Code](https://code.visualstudio.com/) with [GitHub Copilot](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot)
 
 <Note>
-This tutorial uses VS Code, but Agent Skills are an open format. The same skill works in any compatible agent, including Claude Code and OpenAI Codex.
+  このチュートリアルは VS Code を使いますが、Agent Skills
+  はオープンフォーマットです。同じスキルは Claude Code や OpenAI Codex
+  を含む互換エージェントでも動作します。
 </Note>
 
-## Create the skill
+## スキルを作成する
 
-A skill is a folder containing a `SKILL.md` file. VS Code looks for skills in `.agents/skills/` by default. Create `.agents/skills/roll-dice/SKILL.md` in your project:
+スキルは `SKILL.md` ファイルを含むフォルダです。VS Code はデフォルトで `.agents/skills/` を探索します。プロジェクト内に `.agents/skills/roll-dice/SKILL.md` を作成してください。
 
 ````markdown .agents/skills/roll-dice/SKILL.md
 ---
@@ -38,43 +40,43 @@ Replace `<sides>` with the number of sides on the die (e.g., 6 for a standard
 die, 20 for a d20).
 ````
 
-That's it — one file, under 20 lines. Here's what each part does:
+以上で完了です。1ファイル、20行未満で作れます。各要素の意味は次のとおりです。
 
-- **`name`** — A short identifier for the skill. Must match the folder name.
-- **`description`** — Tells the agent when to use this skill. This is how the agent decides whether to activate it.
-- **The body** — Instructions the agent follows when the skill activates. Here, the agent is instructed to generate a random number using a terminal command, substituting the number of sides from the user's request.
+- **`name`** — スキルの短い識別子。フォルダ名と一致させる必要があります。
+- **`description`** — このスキルをいつ使うかをエージェントに伝えます。エージェントはこれを基に有効化するか判断します。
+- **本文** — スキル有効化時にエージェントが従う手順です。ここではユーザー要求の面数に置き換えて、ターミナルコマンドで乱数を生成するよう指示しています。
 
-## Try it out
+## 試してみる
 
-1. Open your project in VS Code.
-2. Open the Copilot Chat panel.
-3. Select **Agent** mode from the mode dropdown at the bottom of the chat panel.
-4. Type `/skills` to confirm that `roll-dice` appears in the list. If it doesn't, check that the file is at `.agents/skills/roll-dice/SKILL.md` relative to your project root.
-5. Ask: **"Roll a d20"**
+1. VS Code でプロジェクトを開きます。
+2. Copilot Chat パネルを開きます。
+3. チャットパネル下部のモード選択から **Agent** モードを選びます。
+4. `/skills` を入力し、`roll-dice` が一覧に表示されることを確認します。表示されない場合は、プロジェクトルートから見て `.agents/skills/roll-dice/SKILL.md` にあるか確認してください。
+5. **"Roll a d20"** と入力します。
 
-The agent should activate the `roll-dice` skill. It may ask for permission to run a terminal command — allow it. It will run the command and return a random number between 1 and 20.
+エージェントが `roll-dice` スキルを有効化するはずです。ターミナルコマンド実行の許可を求められたら許可してください。コマンドが実行され、1〜20のランダムな数値が返ります。
 
 <Note>
-Tool-use reliability varies across models — some follow skill instructions and run commands consistently, while others may attempt to answer on their own. If the agent responds without running a terminal command, try selecting a different model from the model dropdown.
+  ツール実行の安定性はモデルによって異なります。スキル手順に従って一貫してコマンド実行するモデルもあれば、独自回答を試みるモデルもあります。ターミナルコマンドを実行せずに応答する場合は、モデル選択を変更して再試行してください。
 </Note>
 
-## How it works
+## 仕組み
 
-Here's what happened behind the scenes:
+内部では次の流れで動作しています。
 
-1. **Discovery** — When the chat session started, the agent scanned default skill directories and found your skill. It read only the `name` and `description`, just enough to know when the skill might be relevant.
+1. **Discovery** — チャットセッション開始時に、エージェントが既定のスキルディレクトリを走査し、あなたのスキルを発見します。まずは `name` と `description` だけを読み、関連性の判断に必要な最小情報だけ取得します。
 
-2. **Activation** — When you asked about rolling dice, the agent matched your question to the skill's description and loaded the full `SKILL.md` body into context.
+2. **Activation** — サイコロを振る依頼をすると、質問がスキル説明に一致し、`SKILL.md` 本文全体がコンテキストに読み込まれます。
 
-3. **Execution** — The agent followed the instructions in the body, adapting the terminal command to the number of sides in your request.
+3. **Execution** — エージェントが本文の手順に従い、依頼された面数に合わせてターミナルコマンドを調整して実行します。
 
-This process uses **progressive disclosure** to let the agent access many skills without loading all their instructions up front.
+この仕組みは **段階的開示（progressive disclosure）** により、すべての手順を最初に読み込まずに多数のスキルを扱えるようにしています。
 
-## Next steps
+## 次のステップ
 
-You've created a working Agent Skill. From here:
+これで動作するAgent Skillを作成できました。次は以下を参照してください。
 
-- **[Best practices](/skill-creation/best-practices)** — How to write skills that are well-scoped and effective.
-- **[Optimizing skill descriptions](/skill-creation/optimizing-descriptions)** — Test and improve your skill's description so it activates on the right prompts.
-- **[Specification](/specification)** — The complete format reference for `SKILL.md` files.
-- **[Example skills](https://github.com/anthropics/skills)** — Browse real-world skills on GitHub.
+- **[ベストプラクティス](/skill-creation/best-practices)** — 適切にスコープされ、効果的なスキルの書き方。
+- **[スキル説明の最適化](/skill-creation/optimizing-descriptions)** — 正しいプロンプトで有効化されるよう、説明文を検証・改善する方法。
+- **[仕様](/specification)** — `SKILL.md` ファイルの完全なフォーマットリファレンス。
+- **[サンプルスキル](https://github.com/anthropics/skills)** — GitHub で実例を確認。

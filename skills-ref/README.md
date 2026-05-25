@@ -1,15 +1,15 @@
 # skills-ref
 
-Reference library for Agent Skills.
+Agent Skills の参照ライブラリです。
 
 > [!IMPORTANT]
-> This library is intended for demonstration purposes only. It is not meant to be used in production.
+> このライブラリはデモ目的です。本番利用は想定していません。
 
-## Installation
+## インストール
 
 ### macOS / Linux
 
-Using pip:
+pip を使う場合:
 
 ```bash
 python -m venv .venv
@@ -17,7 +17,7 @@ source .venv/bin/activate
 pip install -e .
 ```
 
-Or using [uv](https://docs.astral.sh/uv/):
+または [uv](https://docs.astral.sh/uv/) を使う場合:
 
 ```bash
 uv sync
@@ -26,7 +26,7 @@ source .venv/bin/activate
 
 ### Windows
 
-Using pip (PowerShell):
+pip（PowerShell）を使う場合:
 
 ```powershell
 python -m venv .venv
@@ -34,7 +34,7 @@ python -m venv .venv
 pip install -e .
 ```
 
-Using pip (Command Prompt):
+pip（コマンドプロンプト）を使う場合:
 
 ```cmd
 python -m venv .venv
@@ -42,27 +42,27 @@ python -m venv .venv
 pip install -e .
 ```
 
-Or using [uv](https://docs.astral.sh/uv/):
+または [uv](https://docs.astral.sh/uv/) を使う場合:
 
 ```powershell
 uv sync
 .venv\Scripts\Activate.ps1
 ```
 
-After installation, the `skills-ref` executable will be available on your `PATH` (within the activated virtual environment).
+インストール後、`skills-ref` 実行ファイルは（有効化した仮想環境内の）`PATH` で利用可能になります。
 
-## Usage
+## 使い方
 
 ### CLI
 
 ```bash
-# Validate a skill
+# スキルを検証
 skills-ref validate path/to/skill
 
-# Read skill properties (outputs JSON)
+# スキルのプロパティを読む（JSON 出力）
 skills-ref read-properties path/to/skill
 
-# Generate <available_skills> XML for agent prompts
+# エージェントプロンプト用の <available_skills> XML を生成
 skills-ref to-prompt path/to/skill-a path/to/skill-b
 ```
 
@@ -72,23 +72,23 @@ skills-ref to-prompt path/to/skill-a path/to/skill-b
 from pathlib import Path
 from skills_ref import validate, read_properties, to_prompt
 
-# Validate a skill directory
+# スキルディレクトリを検証
 problems = validate(Path("my-skill"))
 if problems:
-    print("Validation errors:", problems)
+    print("検証エラー:", problems)
 
-# Read skill properties
+# スキルのプロパティを読む
 props = read_properties(Path("my-skill"))
 print(f"Skill: {props.name} - {props.description}")
 
-# Generate prompt for available skills
+# 利用可能スキル向けプロンプトを生成
 prompt = to_prompt([Path("skill-a"), Path("skill-b")])
 print(prompt)
 ```
 
-## Agent Prompt Integration
+## エージェントプロンプトへの統合
 
-Use `to-prompt` to generate the suggested `<available_skills>` XML block for your agent's system prompt. This format is recommended for Anthropic's models, but Skill Clients may choose to format it differently based on the model being used.
+`to-prompt` を使うと、エージェントのシステムプロンプトに入れる推奨 `<available_skills>` XML ブロックを生成できます。この形式は Anthropic モデル向けの推奨ですが、Skill Client 側で利用モデルに応じて別形式にしても構いません。
 
 ```xml
 <available_skills>
@@ -106,8 +106,8 @@ What this skill does and when to use it
 </available_skills>
 ```
 
-The `<location>` element tells the agent where to find the full skill instructions.
+`<location>` 要素は、スキルの完全な手順がどこにあるかをエージェントに示します。
 
-## License
+## ライセンス
 
 Apache 2.0

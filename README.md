@@ -2,58 +2,58 @@
 
 [![Discord](https://img.shields.io/badge/Discord-Join-5865F2?logo=discord&logoColor=white)](https://discord.gg/MKPE9g8aUy)
 
-A standardized way to give AI agents new capabilities and expertise.
+AIエージェントに新しい能力と専門性を与えるための、標準化された仕組みです。
 
-## What are Agent Skills?
+## Agent Skillsとは？
 
-Agent Skills are a lightweight, open format for extending AI agent capabilities with specialized knowledge and workflows.
+Agent Skillsは、専門知識やワークフローを使ってAIエージェントの能力を拡張するための、軽量でオープンなフォーマットです。
 
-At its core, a skill is a folder containing a `SKILL.md` file. This file includes metadata (`name` and `description`, at minimum) and instructions that tell an agent how to perform a specific task. Skills can also bundle scripts, reference materials, templates, and other resources.
+スキルの中心は `SKILL.md` を含む1つのフォルダです。このファイルには最低限のメタデータ（`name` と `description`）と、特定のタスクをどう実行するかをエージェントに伝える手順が含まれます。スキルには、スクリプト、参照資料、テンプレート、その他のリソースも同梱できます。
 
 ```
 my-skill/
-├── SKILL.md          # Required: metadata + instructions
-├── scripts/          # Optional: executable code
-├── references/       # Optional: documentation
-├── assets/           # Optional: templates, resources
-└── ...               # Any additional files or directories
+├── SKILL.md          # 必須: メタデータ + 手順
+├── scripts/          # 任意: 実行可能コード
+├── references/       # 任意: ドキュメント
+├── assets/           # 任意: テンプレート、リソース
+└── ...               # 追加のファイル/ディレクトリ
 ```
 
-## Why Agent Skills?
+## なぜAgent Skills？
 
-Agents are increasingly capable, but often don't have the context they need to do real work reliably. Skills solve this by packaging procedural knowledge and company-, team-, and user-specific context into portable, version-controlled folders that agents load on demand. This gives agents:
+エージェントの能力は高まっていますが、実務を安定してこなすための文脈が不足しがちです。Skillsは、手続き的知識や企業・チーム・ユーザー固有の文脈を、持ち運び可能でバージョン管理可能なフォルダとしてまとめ、必要時に読み込ませることでこの問題を解決します。これにより、エージェントは次を得られます。
 
-- **Domain expertise**: Capture specialized knowledge — from legal review processes to data analysis pipelines to presentation formatting — as reusable instructions and resources.
-- **Repeatable workflows**: Turn multi-step tasks into consistent, auditable procedures.
-- **Cross-product reuse**: Build a skill once and use it across any skills-compatible agent.
+- **ドメイン専門性**: 法務レビュー手順、データ分析パイプライン、プレゼン整形ルールなどの専門知識を、再利用可能な手順とリソースとして表現できます。
+- **再現可能なワークフロー**: 複数ステップの作業を、一貫性があり監査可能な手順にできます。
+- **製品横断での再利用**: 1度作成したスキルを、Skills対応の任意のエージェントで使い回せます。
 
-## How do Agent Skills work?
+## Agent Skillsの動作
 
-Agents load skills through **progressive disclosure**, in three stages:
+エージェントは **段階的開示（progressive disclosure）** によって、3段階でスキルを読み込みます。
 
-1. **Discovery**: At startup, agents load only the name and description of each available skill, just enough to know when it might be relevant.
+1. **Discovery（発見）**: 起動時に、利用可能な各スキルの名前と説明だけを読み込み、関連しそうかどうかだけを判断します。
 
-2. **Activation**: When a task matches a skill's description, the agent reads the full `SKILL.md` instructions into context.
+2. **Activation（有効化）**: タスクがスキルの説明に合致したとき、`SKILL.md` の完全な手順をコンテキストに読み込みます。
 
-3. **Execution**: The agent follows the instructions, optionally executing bundled code or loading referenced files as needed.
+3. **Execution（実行）**: 手順に従って実行し、必要に応じて同梱コードの実行や参照ファイルの読み込みを行います。
 
-Full instructions load only when a task calls for them, so agents can keep many skills on hand with only a small context footprint.
+完全な手順は必要なときだけ読み込まれるため、コンテキスト消費を抑えつつ多くのスキルを保持できます。
 
-## Where can I use Agent Skills?
+## どこで使える？
 
-Agent Skills are supported by a large number of AI tools and agentic clients — see the [Client Showcase](https://agentskills.io/clients) to explore some of them!
+Agent Skillsは、多くのAIツールやエージェントクライアントでサポートされています。詳しくは [Client Showcase](https://agentskills.io/clients) を参照してください。
 
-## Getting started
+## はじめ方
 
-- **[Documentation](https://agentskills.io)** — Guides and tutorials
-- **[Specification](https://agentskills.io/specification)** — Format details
-- **[Example Skills](https://github.com/anthropics/skills)** — See what's possible
-- **[Discord](https://discord.gg/MKPE9g8aUy)** — Share what you're building!
+- **[Documentation](https://agentskills.io)** — ガイドとチュートリアル
+- **[Specification](https://agentskills.io/specification)** — フォーマット仕様
+- **[Example Skills](https://github.com/anthropics/skills)** — 実例
+- **[Discord](https://discord.gg/MKPE9g8aUy)** — 作ったものの共有
 
-## Open development
+## オープン開発
 
-The Agent Skills format was originally developed by [Anthropic](https://www.anthropic.com/), released as an open standard, and has been adopted by a growing number of agent products. The standard is open to contributions from the broader ecosystem — see [`CONTRIBUTING.md`](CONTRIBUTING.md) for how to get involved.
+Agent Skillsフォーマットは [Anthropic](https://www.anthropic.com/) が最初に開発し、オープン標準として公開されました。現在は多くのエージェント製品に採用されています。この標準はエコシステム全体からのコントリビューションを歓迎しています。参加方法は [`CONTRIBUTING.md`](CONTRIBUTING.md) を参照してください。
 
-## License
+## ライセンス
 
-Code in this repository is licensed under [Apache 2.0](LICENSE). Documentation is licensed under [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/). See individual directories for details.
+このリポジトリのコードは [Apache 2.0](LICENSE) でライセンスされています。ドキュメントは [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/) です。詳細は各ディレクトリを参照してください。

@@ -1,38 +1,38 @@
 ---
-title: "Specification"
-description: "The complete format specification for Agent Skills."
+title: "仕様"
+description: "Agent Skills の完全なフォーマット仕様。"
 ---
 
-## Directory structure
+## ディレクトリ構成
 
-A skill is a directory containing, at minimum, a `SKILL.md` file:
+スキルは、最低限 `SKILL.md` ファイルを含むディレクトリです。
 
 ```
 skill-name/
-├── SKILL.md          # Required: metadata + instructions
-├── scripts/          # Optional: executable code
-├── references/       # Optional: documentation
-├── assets/           # Optional: templates, resources
-└── ...               # Any additional files or directories
+├── SKILL.md          # 必須: メタデータ + 手順
+├── scripts/          # 任意: 実行可能コード
+├── references/       # 任意: ドキュメント
+├── assets/           # 任意: テンプレート、リソース
+└── ...               # 追加のファイル/ディレクトリ
 ```
 
-## `SKILL.md` format
+## `SKILL.md` フォーマット
 
-The `SKILL.md` file must contain YAML frontmatter followed by Markdown content.
+`SKILL.md` ファイルには、YAML frontmatter とそれに続く Markdown 本文が必要です。
 
 ### Frontmatter
 
-| Field | Required | Constraints |
-|-------|----------|-------------|
-| `name` | Yes | Max 64 characters. Lowercase letters, numbers, and hyphens only. Must not start or end with a hyphen. |
-| `description` | Yes | Max 1024 characters. Non-empty. Describes what the skill does and when to use it. |
-| `license` | No | License name or reference to a bundled license file. |
-| `compatibility` | No | Max 500 characters. Indicates environment requirements (intended product, system packages, network access, etc.). |
-| `metadata` | No | Arbitrary key-value mapping for additional metadata. |
-| `allowed-tools` | No | Space-separated string of pre-approved tools the skill may use. (Experimental) |
+| フィールド      | 必須   | 制約                                                                                  |
+| --------------- | ------ | ------------------------------------------------------------------------------------- |
+| `name`          | はい   | 最大64文字。小文字、数字、ハイフンのみ。先頭/末尾にハイフン不可。                     |
+| `description`   | はい   | 最大1024文字。空文字不可。スキルの内容と使いどころを記述。                            |
+| `license`       | いいえ | ライセンス名、または同梱ライセンスファイルへの参照。                                  |
+| `compatibility` | いいえ | 最大500文字。環境要件（対象製品、システムパッケージ、ネットワークアクセス等）を示す。 |
+| `metadata`      | いいえ | 追加メタデータ用の任意キー/値マッピング。                                             |
+| `allowed-tools` | いいえ | 事前承認済みツールのスペース区切り文字列。（実験的）                                  |
 
 <Card>
-**Minimal example:**
+**最小例:**
 
 ```markdown SKILL.md
 ---
@@ -41,7 +41,7 @@ description: A description of what this skill does and when to use it.
 ---
 ```
 
-**Example with optional fields:**
+**任意フィールドを含む例:**
 
 ```markdown SKILL.md
 ---
@@ -53,19 +53,21 @@ metadata:
   version: "1.0"
 ---
 ```
+
 </Card>
 
-#### `name` field
+#### `name` フィールド
 
-The required `name` field:
-- Must be 1-64 characters
-- May only contain unicode lowercase alphanumeric characters (`a-z`, `0-9`) and hyphens (`-`)
-- Must not start or end with a hyphen (`-`)
-- Must not contain consecutive hyphens (`--`)
-- Must match the parent directory name
+必須の `name` フィールド:
+
+- 1〜64文字であること
+- Unicode の小文字英数字（`a-z`, `0-9`）とハイフン（`-`）のみ利用可能
+- 先頭/末尾をハイフン（`-`）にできない
+- 連続ハイフン（`--`）を含めない
+- 親ディレクトリ名と一致している
 
 <Card>
-**Valid examples:**
+**有効な例:**
 ```yaml
 name: pdf-processing
 ```
@@ -76,154 +78,145 @@ name: data-analysis
 name: code-review
 ```
 
-**Invalid examples:**
+**無効な例:**
+
 ```yaml
-name: PDF-Processing  # uppercase not allowed
+name: PDF-Processing # 大文字は不可
 ```
+
 ```yaml
-name: -pdf  # cannot start with hyphen
+name: -pdf # 先頭ハイフン不可
 ```
+
 ```yaml
-name: pdf--processing  # consecutive hyphens not allowed
+name: pdf--processing # 連続ハイフン不可
 ```
+
 </Card>
 
-#### `description` field
+#### `description` フィールド
 
-The required `description` field:
-- Must be 1-1024 characters
-- Should describe both what the skill does and when to use it
-- Should include specific keywords that help agents identify relevant tasks
+必須の `description` フィールド:
+
+- 1〜1024文字であること
+- スキルが何をするかと、いつ使うかの両方を記述する
+- 関連タスクをエージェントが判定しやすい具体的キーワードを含める
 
 <Card>
-**Good example:**
+**良い例:**
 ```yaml
 description: Extracts text and tables from PDF files, fills PDF forms, and merges multiple PDFs. Use when working with PDF documents or when the user mentions PDFs, forms, or document extraction.
 ```
 
-**Poor example:**
+**悪い例:**
+
 ```yaml
 description: Helps with PDFs.
 ```
+
 </Card>
 
-#### `license` field
+#### `license` フィールド
 
-The optional `license` field:
-- Specifies the license applied to the skill
-- We recommend keeping it short (either the name of a license or the name of a bundled license file)
+任意の `license` フィールド:
+
+- スキルに適用されるライセンスを指定する
+- 短く記述することを推奨（ライセンス名、または同梱ライセンスファイル名）
 
 <Card>
-**Example:**
-```yaml
-license: Proprietary. LICENSE.txt has complete terms
-```
+  **例:** ```yaml license: Proprietary. LICENSE.txt has complete terms ```
 </Card>
 
-#### `compatibility` field
+#### `compatibility` フィールド
 
-The optional `compatibility` field:
-- Must be 1-500 characters if provided
-- Should only be included if your skill has specific environment requirements
-- Can indicate intended product, required system packages, network access needs, etc.
+任意の `compatibility` フィールド:
+
+- 指定する場合は1〜500文字
+- スキルに特定の環境要件がある場合のみ記述を推奨
+- 対象製品、必要なシステムパッケージ、ネットワークアクセス要件などを示せる
 
 <Card>
-**Examples:**
-```yaml
-compatibility: Designed for Claude Code (or similar products)
-```
-```yaml
-compatibility: Requires git, docker, jq, and access to the internet
-```
-```yaml
-compatibility: Requires Python 3.14+ and uv
-```
+  **例:** ```yaml compatibility: Designed for Claude Code (or similar products)
+  ``` ```yaml compatibility: Requires git, docker, jq, and access to the
+  internet ``` ```yaml compatibility: Requires Python 3.14+ and uv ```
 </Card>
 
-<Note>
-Most skills do not need the `compatibility` field.
-</Note>
+<Note>多くのスキルでは `compatibility` フィールドは不要です。</Note>
 
-#### `metadata` field
+#### `metadata` フィールド
 
-The optional `metadata` field:
-- A map from string keys to string values
-- Clients can use this to store additional properties not defined by the Agent Skills spec
-- We recommend making your key names reasonably unique to avoid accidental conflicts
+任意の `metadata` フィールド:
 
-<Card>
-**Example:**
-```yaml
-metadata:
-  author: example-org
-  version: "1.0"
-```
-</Card>
+- 文字列キーから文字列値へのマップ
+- Agent Skills 仕様で未定義の追加プロパティを保存するためにクライアントが利用可能
+- 偶発的な衝突を避けるため、キー名はある程度ユニークにすることを推奨
 
-#### `allowed-tools` field
+<Card>**例:** ```yaml metadata: author: example-org version: "1.0" ```</Card>
 
-The optional `allowed-tools` field:
-- A space-separated string of tools that are pre-approved to run
-- Experimental. Support for this field may vary between agent implementations
+#### `allowed-tools` フィールド
 
-<Card>
-**Example:**
-```yaml
-allowed-tools: Bash(git:*) Bash(jq:*) Read
-```
-</Card>
+任意の `allowed-tools` フィールド:
 
-### Body content
+- 実行を事前承認するツールをスペース区切りで列挙
+- 実験的機能のため、エージェント実装ごとにサポート状況は異なる
 
-The Markdown body after the frontmatter contains the skill instructions. There are no format restrictions. Write whatever helps agents perform the task effectively.
+<Card>**例:** ```yaml allowed-tools: Bash(git:*) Bash(jq:*) Read ```</Card>
 
-Recommended sections:
-- Step-by-step instructions
-- Examples of inputs and outputs
-- Common edge cases
+### 本文
 
-Note that the agent will load this entire file once it's decided to activate a skill. Consider splitting longer `SKILL.md` content into referenced files.
+frontmatter の後に続く Markdown 本文にスキル手順を記述します。本文の形式制約はありません。エージェントがタスクを効果的に実行できる内容を書いてください。
 
-## Optional directories
+推奨セクション:
+
+- ステップごとの手順
+- 入力と出力の例
+- よくあるエッジケース
+
+エージェントはスキル有効化を決めると、このファイル全体を読み込みます。`SKILL.md` が長い場合は、参照ファイルへ分割することを検討してください。
+
+## 任意ディレクトリ
 
 ### `scripts/`
 
-Contains executable code that agents can run. Scripts should:
-- Be self-contained or clearly document dependencies
-- Include helpful error messages
-- Handle edge cases gracefully
+エージェントが実行可能なコードを格納します。スクリプトは次を満たすべきです。
 
-Supported languages depend on the agent implementation. Common options include Python, Bash, and JavaScript.
+- 単体で動く、または依存関係を明確に記述する
+- 役立つエラーメッセージを含む
+- エッジケースを適切に処理する
+
+対応言語はエージェント実装に依存します。一般的には Python、Bash、JavaScript が使われます。
 
 ### `references/`
 
-Contains additional documentation that agents can read when needed:
-- `REFERENCE.md` - Detailed technical reference
-- `FORMS.md` - Form templates or structured data formats
-- Domain-specific files (`finance.md`, `legal.md`, etc.)
+必要時にエージェントが読める補助ドキュメントを格納します。
 
-Keep individual [reference files](#file-references) focused. Agents load these on demand, so smaller files mean less use of context.
+- `REFERENCE.md` - 詳細な技術リファレンス
+- `FORMS.md` - フォームテンプレートや構造化データ形式
+- ドメイン固有ファイル（`finance.md`, `legal.md` など）
+
+個々の [参照ファイル](#file-references) は焦点を絞ってください。エージェントは必要時に読み込むため、ファイルが小さいほどコンテキスト消費を抑えられます。
 
 ### `assets/`
 
-Contains static resources:
-- Templates (document templates, configuration templates)
-- Images (diagrams, examples)
-- Data files (lookup tables, schemas)
+静的リソースを格納します。
 
-## Progressive disclosure
+- テンプレート（文書テンプレート、設定テンプレート）
+- 画像（図、例）
+- データファイル（ルックアップテーブル、スキーマ）
 
-Agents load skills *progressively*, pulling in more detail only as a task calls for it. Skills should be structured to take advantage of this:
+## 段階的開示
 
-1. **Metadata** (~100 tokens): The `name` and `description` fields are loaded at startup for all skills
-2. **Instructions** (< 5000 tokens recommended): The full `SKILL.md` body is loaded when the skill is activated
-3. **Resources** (as needed): Files (e.g. those in `scripts/`, `references/`, or `assets/`) are loaded only when required
+エージェントはスキルを _段階的_ に読み込み、タスクに応じて必要な詳細だけ取り込みます。スキルはこの性質を活かして構成してください。
 
-Keep your main `SKILL.md` under 500 lines. Move detailed reference material to separate files.
+1. **Metadata**（約100トークン）: 起動時に全スキルの `name` と `description` を読み込む
+2. **Instructions**（推奨 5000 トークン未満）: スキル有効化時に `SKILL.md` 本文全体を読み込む
+3. **Resources**（必要時）: `scripts/`、`references/`、`assets/` などのファイルを必要時のみ読み込む
 
-## File references
+メインの `SKILL.md` は500行未満を目安にし、詳細な資料は別ファイルへ分離してください。
 
-When referencing other files in your skill, use relative paths from the skill root:
+## ファイル参照
+
+スキル内で他ファイルを参照する場合は、スキルルートからの相対パスを使います。
 
 ```markdown SKILL.md
 See [the reference guide](references/REFERENCE.md) for details.
@@ -232,14 +225,14 @@ Run the extraction script:
 scripts/extract.py
 ```
 
-Keep file references one level deep from `SKILL.md`. Avoid deeply nested reference chains.
+`SKILL.md` からの参照は1段階程度に保ち、深い入れ子の参照チェーンは避けてください。
 
-## Validation
+## 検証
 
-Use the [skills-ref](https://github.com/agentskills/agentskills/tree/main/skills-ref) reference library to validate your skills:
+[skills-ref](https://github.com/agentskills/agentskills/tree/main/skills-ref) 参照ライブラリを使ってスキルを検証できます。
 
 ```bash
 skills-ref validate ./my-skill
 ```
 
-This checks that your `SKILL.md` frontmatter is valid and follows all naming conventions.
+これにより、`SKILL.md` の frontmatter が有効で、命名規約に従っていることを確認できます。
