@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" width="320" height="80" role="img" aria-label="Obra wordmark and mark lockup">
+  <title>Obra — wordmark + mark lockup (on light background)</title>
+  <desc>T₁ torus mark followed by the "Obra" wordmark set in Spectral. Fixed-color variant for light backgrounds. Requires Spectral font loaded; falls back to system serif.</desc>
+  <style>
+    .wordmark { font-family: 'Spectral', Georgia, serif; font-weight: 400; font-size: 60px; letter-spacing: -0.005em; fill: #1a1a1a; }
+  </style>
+  <g transform="translate(0, 16)">
+    <circle cx="24" cy="24" r="18" fill="none" stroke="#1a1a1a" stroke-width="4"/>
+    <circle cx="24" cy="24" r="10.5" fill="none" stroke="#1a1a1a" stroke-width="1.5"/>
+  </g>
+  <text x="64" y="60" class="wordmark">Obra</text>
+</svg>
