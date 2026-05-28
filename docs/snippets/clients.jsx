@@ -365,4 +365,12 @@ export const clients = [
     scale: 1.33,
     instructionsUrl: "https://superconductor.com/docs/project/mcp-and-skills",
   },
+  {
+    name: "Obra",
+    description: "Obra is a managed-service AI virtual employee for regulated SMBs — today focused on EU short-term-rental hosts who must file each arriving guest with their national identity registry (Portugal's SEF SIBA, etc.). Tamper-evident audit chain + operator-blind structural privacy.",
+    url: "https://get-obra.com",
+    lightSrc: "/images/logos/obra/obra-logo-light.svg",
+    darkSrc: "/images/logos/obra/obra-logo-dark.svg",
+    instructionsUrl: "https://get-obra.com/agent-skills/",
+  },
 ];
