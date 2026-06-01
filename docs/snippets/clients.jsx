@@ -365,4 +365,12 @@ export const clients = [
     scale: 1.33,
     instructionsUrl: "https://superconductor.com/docs/project/mcp-and-skills",
   },
+  {
+    name: "TypingMind",
+    description: "TypingMind is a professional AI chat workspace for ChatGPT, Claude, Gemini, and more. Connect your own API keys and use powerful features like MCP, Skills, multi-model chat, Artifacts, Projects, AI Agents, prompt library, and more",
+    url: "https://www.typingmind.com/",
+    lightSrc: "/images/logos/typingmind/typingmind-logo-light.svg",
+    darkSrc: "/images/logos/typingmind/typingmind-logo-dark.svg",
+    instructionsUrl: "https://docs.typingmind.com/skills",
+  },
 ];
