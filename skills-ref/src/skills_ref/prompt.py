@@ -48,7 +48,7 @@ def to_prompt(skill_dirs: list[Path]) -> str:
 
         skill_md_path = find_skill_md(skill_dir)
         lines.append("<location>")
-        lines.append(str(skill_md_path))
+        lines.append(html.escape(str(skill_md_path)))
         lines.append("</location>")
 
         lines.append("</skill>")
