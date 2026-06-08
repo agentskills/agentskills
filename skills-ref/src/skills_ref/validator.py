@@ -169,8 +169,15 @@ def validate(skill_dir: Path) -> list[str]:
         return ["Missing required file: SKILL.md"]
 
     try:
-        content = skill_md.read_text()
+        with open(skill_md, "r", encoding="utf-8") as f:
+            content = f.read(1024 * 1024 + 1)
+            if len(content) > 1024 * 1024:
+                return [f"SKILL.md in {skill_dir} exceeds 1MB size limit"]
         metadata, _ = parse_frontmatter(content)
+    except OSError as e:
+        return [f"Failed to read SKILL.md in {skill_dir}: {e}"]
+    except UnicodeDecodeError as e:
+        return [f"SKILL.md in {skill_dir} is not valid UTF-8: {e}"]
     except ParseError as e:
         return [str(e)]
 
