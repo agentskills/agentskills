@@ -1,5 +1,7 @@
 """Tests for prompt module."""
 
+import sys
+import pytest
 from skills_ref.prompt import to_prompt
 
 
@@ -68,3 +70,23 @@ Body
     assert "&lt;bar&gt;" in result
     assert "<foo>" not in result
     assert "<bar>" not in result
+
+
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Windows does not support < or > in paths"
+)
+def test_special_characters_escaped_in_location(tmp_path):
+    """XML special characters in location path are escaped."""
+    skill_dir = tmp_path / "special-location-&-<>"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: special-location
+description: Test skill with special characters in path
+---
+Body
+""")
+    result = to_prompt([skill_dir])
+    assert "&amp;" in result
+    assert "&lt;" in result
+    assert "&gt;" in result
+    assert "special-location-&-<>" not in result
