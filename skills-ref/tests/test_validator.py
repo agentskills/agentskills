@@ -288,3 +288,27 @@ Body
 """)
     errors = validate(skill_dir)
     assert errors == [], f"Expected no errors, got: {errors}"
+
+
+def test_validate_exceeds_size_limit(tmp_path):
+    """File size exceeding 1MB should return a validation error."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    skill_md = skill_dir / "SKILL.md"
+    skill_md.write_text("x" * (1024 * 1024 + 2))
+
+    errors = validate(skill_dir)
+    assert len(errors) == 1
+    assert "exceeds 1MB size limit" in errors[0]
+
+
+def test_validate_unicode_error(tmp_path):
+    """Invalid UTF-8 file should return a validation error."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    skill_md = skill_dir / "SKILL.md"
+    skill_md.write_bytes(b"\xff\xfe\xfd")
+
+    errors = validate(skill_dir)
+    assert len(errors) == 1
+    assert "is not valid UTF-8" in errors[0]

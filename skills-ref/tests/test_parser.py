@@ -186,3 +186,25 @@ Body
     # Verify to_dict outputs as "allowed-tools" (hyphenated)
     d = props.to_dict()
     assert d["allowed-tools"] == "Bash(jq:*) Bash(git:*)"
+
+
+def test_read_properties_exceeds_size_limit(tmp_path):
+    """File size exceeding 1MB should raise ParseError."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    skill_md = skill_dir / "SKILL.md"
+    skill_md.write_text("x" * (1024 * 1024 + 2))
+
+    with pytest.raises(ParseError, match="exceeds 1MB size limit"):
+        read_properties(skill_dir)
+
+
+def test_read_properties_unicode_error(tmp_path):
+    """Invalid UTF-8 file should raise ParseError."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    skill_md = skill_dir / "SKILL.md"
+    skill_md.write_bytes(b"\xff\xfe\xfd")
+
+    with pytest.raises(ParseError, match="is not valid UTF-8"):
+        read_properties(skill_dir)
