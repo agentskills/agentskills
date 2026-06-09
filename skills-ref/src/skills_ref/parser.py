@@ -84,17 +84,17 @@ def read_properties(skill_dir: Path) -> SkillProperties:
     skill_md = find_skill_md(skill_dir)
 
     if skill_md is None:
-        raise ParseError(f"SKILL.md not found in {skill_dir}")
+        raise ParseError(f"SKILL.md not found in {skill_dir.name}")
 
     try:
         with open(skill_md, "r", encoding="utf-8") as f:
             content = f.read(1024 * 1024 + 1)
             if len(content) > 1024 * 1024:
-                raise ParseError(f"SKILL.md in {skill_dir} exceeds 1MB size limit")
+                raise ParseError(f"SKILL.md in {skill_dir.name} exceeds 1MB size limit")
     except OSError as e:
-        raise ParseError(f"Failed to read SKILL.md in {skill_dir}: {e}")
-    except UnicodeDecodeError as e:
-        raise ParseError(f"SKILL.md in {skill_dir} is not valid UTF-8: {e}")
+        raise ParseError(f"Failed to read SKILL.md in {skill_dir.name}: {e.strerror}")
+    except UnicodeDecodeError:
+        raise ParseError(f"SKILL.md in {skill_dir.name} is not valid UTF-8")
 
     metadata, _ = parse_frontmatter(content)
 
