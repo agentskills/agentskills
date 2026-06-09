@@ -159,10 +159,10 @@ def validate(skill_dir: Path) -> list[str]:
     skill_dir = Path(skill_dir)
 
     if not skill_dir.exists():
-        return [f"Path does not exist: {skill_dir}"]
+        return [f"Path does not exist: {skill_dir.name}"]
 
     if not skill_dir.is_dir():
-        return [f"Not a directory: {skill_dir}"]
+        return [f"Not a directory: {skill_dir.name}"]
 
     skill_md = find_skill_md(skill_dir)
     if skill_md is None:
@@ -172,12 +172,12 @@ def validate(skill_dir: Path) -> list[str]:
         with open(skill_md, "r", encoding="utf-8") as f:
             content = f.read(1024 * 1024 + 1)
             if len(content) > 1024 * 1024:
-                return [f"SKILL.md in {skill_dir} exceeds 1MB size limit"]
+                return [f"SKILL.md in {skill_dir.name} exceeds 1MB size limit"]
         metadata, _ = parse_frontmatter(content)
     except OSError as e:
-        return [f"Failed to read SKILL.md in {skill_dir}: {e}"]
-    except UnicodeDecodeError as e:
-        return [f"SKILL.md in {skill_dir} is not valid UTF-8: {e}"]
+        return [f"Failed to read SKILL.md in {skill_dir.name}: {e.strerror}"]
+    except UnicodeDecodeError:
+        return [f"SKILL.md in {skill_dir.name} is not valid UTF-8"]
     except ParseError as e:
         return [str(e)]
 
