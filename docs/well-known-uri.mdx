@@ -180,7 +180,7 @@ A versioned index has the same shape as the canonical index. Skill `url` values 
 }
 ```
 
-**Publishers must treat versioned index paths as immutable.** Once a versioned index is published, neither the index nor its referenced artifacts should be modified. This mirrors the convention enforced by package registries such as [npm](https://docs.npmjs.com/policies/unpublish) and [Cargo](https://doc.rust-lang.org/cargo/reference/publishing.html#publishing-on-cratesio), where a published version cannot be overwritten.
+**Publishers should treat versioned index paths as immutable.** Once a versioned index is published, neither the index nor its referenced artifacts should be modified. Unlike package registries such as [npm](https://docs.npmjs.com/policies/unpublish) and [Cargo](https://doc.rust-lang.org/cargo/reference/publishing.html#publishing-on-cratesio) — which technically enforce immutability at the registry level — this spec cannot enforce it. Immutability here is a trust-based convention: a client that trusts a publisher enough to install their skills should be able to trust that publisher not to silently change a pinned snapshot.
 
 ### Client lockfile pattern
 
