@@ -20,10 +20,15 @@ def find_skill_md(skill_dir: Path) -> Optional[Path]:
     Returns:
         Path to the SKILL.md file, or None if not found
     """
-    for name in ("SKILL.md", "skill.md"):
-        path = skill_dir / name
-        if path.exists():
-            return path
+    try:
+        for name in ("SKILL.md", "skill.md"):
+            path = skill_dir / name
+            if path.exists():
+                return path
+    except OSError:
+        pass
+    except RuntimeError:
+        pass
     return None
 
 
@@ -81,12 +86,13 @@ def read_properties(skill_dir: Path) -> SkillProperties:
         ValidationError: If required fields (name, description) are missing
     """
     skill_dir = Path(skill_dir)
-    skill_md = find_skill_md(skill_dir)
-
-    if skill_md is None:
-        raise ParseError(f"SKILL.md not found in {skill_dir.name}")
 
     try:
+        skill_md = find_skill_md(skill_dir)
+
+        if skill_md is None:
+            raise ParseError(f"SKILL.md not found in {skill_dir.name}")
+
         with open(skill_md, "r", encoding="utf-8") as f:
             content = f.read(1024 * 1024 + 1)
             if len(content) > 1024 * 1024:
@@ -95,6 +101,8 @@ def read_properties(skill_dir: Path) -> SkillProperties:
         raise ParseError(f"Failed to read SKILL.md in {skill_dir.name}: {e.strerror}")
     except UnicodeDecodeError:
         raise ParseError(f"SKILL.md in {skill_dir.name} is not valid UTF-8")
+    except RuntimeError as e:
+        raise ParseError(f"Failed to read SKILL.md in {skill_dir.name}: {str(e)}")
 
     metadata, _ = parse_frontmatter(content)
 

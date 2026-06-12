@@ -35,8 +35,13 @@ def to_prompt(skill_dirs: list[Path]) -> str:
     lines = ["<available_skills>"]
 
     for skill_dir in skill_dirs:
-        skill_dir = Path(skill_dir).resolve()
-        props = read_properties(skill_dir)
+        try:
+            skill_dir = Path(skill_dir).resolve()
+            props = read_properties(skill_dir)
+        except (OSError, RuntimeError) as e:
+            from .errors import SkillError
+            error_msg = str(e.strerror) if hasattr(e, "strerror") else "Symlink loop or unresolvable path"
+            raise SkillError(f"Failed to resolve skill directory {Path(skill_dir).name}: {error_msg}")
 
         lines.append("<skill>")
         lines.append("<name>")
