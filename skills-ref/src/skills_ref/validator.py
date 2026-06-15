@@ -180,7 +180,7 @@ def validate(skill_dir: Path) -> list[str]:
         return [f"SKILL.md in {skill_dir.name} is not valid UTF-8"]
     except ParseError as e:
         return [str(e)]
-    except RuntimeError as e:
-        return [f"Failed to read SKILL.md in {skill_dir.name}: {str(e)}"]
+    except RuntimeError:
+        return [f"Failed to read SKILL.md in {skill_dir.name}: Symlink loop or unresolvable path"]
 
     return validate_metadata(metadata, skill_dir)

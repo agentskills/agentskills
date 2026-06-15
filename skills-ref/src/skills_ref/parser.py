@@ -101,8 +101,8 @@ def read_properties(skill_dir: Path) -> SkillProperties:
         raise ParseError(f"Failed to read SKILL.md in {skill_dir.name}: {e.strerror}")
     except UnicodeDecodeError:
         raise ParseError(f"SKILL.md in {skill_dir.name} is not valid UTF-8")
-    except RuntimeError as e:
-        raise ParseError(f"Failed to read SKILL.md in {skill_dir.name}: {str(e)}")
+    except RuntimeError:
+        raise ParseError(f"Failed to read SKILL.md in {skill_dir.name}: Symlink loop or unresolvable path")
 
     metadata, _ = parse_frontmatter(content)
 
