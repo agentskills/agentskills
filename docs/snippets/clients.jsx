@@ -365,4 +365,12 @@ export const clients = [
     scale: 1.33,
     instructionsUrl: "https://superconductor.com/docs/project/mcp-and-skills",
   },
+  {
+    name: "SkillRepo",
+    description: "SkillRepo is the open distribution layer for AI agent skills, built entirely on the Agent Skills standard. Engineering teams discover and curate skills in a searchable catalog, and a pull-based CLI syncs the right ones into every compatible tool they use.",
+    url: "https://skillrepo.dev",
+    lightSrc: "/images/logos/skillrepo/skillrepo-light.svg",
+    darkSrc: "/images/logos/skillrepo/skillrepo-dark.svg",
+    instructionsUrl: "https://skillrepo.dev/docs/getting-started",
+  },
 ];
