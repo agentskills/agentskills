@@ -40,8 +40,15 @@ def to_prompt(skill_dirs: list[Path]) -> str:
             props = read_properties(skill_dir)
         except (OSError, RuntimeError) as e:
             from .errors import SkillError
-            error_msg = str(e.strerror) if hasattr(e, "strerror") else "Symlink loop or unresolvable path"
-            raise SkillError(f"Failed to resolve skill directory {Path(skill_dir).name}: {error_msg}")
+
+            error_msg = (
+                str(e.strerror)
+                if hasattr(e, "strerror")
+                else "Symlink loop or unresolvable path"
+            )
+            raise SkillError(
+                f"Failed to resolve skill directory {Path(skill_dir).name}: {error_msg}"
+            )
 
         lines.append("<skill>")
         lines.append("<name>")

@@ -14,7 +14,10 @@ from .validator import validate
 
 def _is_skill_md_file(path: Path) -> bool:
     """Check if path points directly to a SKILL.md or skill.md file."""
-    return path.is_file() and path.name.lower() == "skill.md"
+    try:
+        return path.is_file() and path.name.lower() == "skill.md"
+    except (OSError, RuntimeError):
+        return False
 
 
 @click.group()
@@ -50,7 +53,9 @@ def validate_cmd(skill_path: Path):
         else:
             click.echo(f"Valid skill: {skill_path.name}")
     except Exception:
-        click.echo(f"An unexpected error occurred validating {skill_path.name}", err=True)
+        click.echo(
+            f"An unexpected error occurred validating {skill_path.name}", err=True
+        )
         sys.exit(1)
 
 
@@ -76,7 +81,10 @@ def read_properties_cmd(skill_path: Path):
         click.echo(f"Error: {e}", err=True)
         sys.exit(1)
     except Exception:
-        click.echo(f"An unexpected error occurred reading properties for {skill_path.name}", err=True)
+        click.echo(
+            f"An unexpected error occurred reading properties for {skill_path.name}",
+            err=True,
+        )
         sys.exit(1)
 
 
