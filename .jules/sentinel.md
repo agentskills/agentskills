@@ -19,3 +19,7 @@
 **Vulnerability:** Information leakage where internal system paths or stack traces were exposed via `str(e)` on `RuntimeError` during path operations in `src/skills_ref/parser.py` and `src/skills_ref/validator.py`.
 **Learning:** `RuntimeError` during file system operations can contain sensitive internal paths or stack traces that shouldn't be exposed to external users. This occurred because `str(e)` was directly used to construct the user-facing error message.
 **Prevention:** Avoid using `str(e)` directly on exceptions like `RuntimeError` from path operations; use `path.name` or generic fallback messages like "Symlink loop or unresolvable path" instead. Strictly sanitize error and exception messages.
+## 2024-05-25 - Information Leakage via Unhandled Path Exceptions
+**Vulnerability:** Information leakage where internal system paths or stack traces could be exposed due to unhandled exceptions (`OSError`, `RuntimeError`) during path evaluation `path.is_file()` in `cli.py`.
+**Learning:** Even simple checks like `is_file()` can raise exceptions, such as a `RuntimeError` due to symlink loops or `OSError` due to permission issues. When executed outside of protected regions (like the `try` block of CLI commands), these can crash the application and leak the full stack trace to the user.
+**Prevention:** Always wrap all path evaluation operations (like `is_file`, `exists`) in `try...except (OSError, RuntimeError)` blocks, even seemingly innocuous ones, to prevent unhandled exceptions from propagating to the user.
