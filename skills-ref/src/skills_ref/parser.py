@@ -23,7 +23,7 @@ def find_skill_md(skill_dir: Path) -> Optional[Path]:
     try:
         for name in ("SKILL.md", "skill.md"):
             path = skill_dir / name
-            if path.exists():
+            if path.is_file():
                 return path
     except OSError:
         pass
