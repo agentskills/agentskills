@@ -23,3 +23,7 @@
 **Vulnerability:** Information leakage where internal system paths or stack traces could be exposed due to unhandled exceptions (`OSError`, `RuntimeError`) during path evaluation `path.is_file()` in `cli.py`.
 **Learning:** Even simple checks like `is_file()` can raise exceptions, such as a `RuntimeError` due to symlink loops or `OSError` due to permission issues. When executed outside of protected regions (like the `try` block of CLI commands), these can crash the application and leak the full stack trace to the user.
 **Prevention:** Always wrap all path evaluation operations (like `is_file`, `exists`) in `try...except (OSError, RuntimeError)` blocks, even seemingly innocuous ones, to prevent unhandled exceptions from propagating to the user.
+## 2025-06-20 - [Denial of Service via FIFO/Special Files]
+**Vulnerability:** The application used `path.exists()` in `parser.py` before attempting to open `SKILL.md`. An attacker could provide a named pipe (FIFO) or special device file, causing the `open()` call to block indefinitely, leading to a Denial of Service.
+**Learning:** `path.exists()` does not guarantee a path is a regular file. Opening special files can result in hangs or unexpected behavior.
+**Prevention:** Always use `path.is_file()` when looking up files to ensure the target is a regular file before attempting to read its contents.
