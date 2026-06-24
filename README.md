@@ -1,5 +1,14 @@
 # Agent Skills
 
+<p align="center">
+  <a href="https://www.atlascloud.ai/?utm_source=github&utm_medium=link&utm_campaign=agentskills">
+    <img src="assets/atlas-cloud-logo.png" alt="Atlas Cloud" width="140" />
+  </a>
+  <br />
+  <sub><strong>Atlas Cloud</strong> Atlas Cloud provides OpenAI-compatible LLM APIs and async image/video generation APIs for reusable agent skills and multimodal automation.</sub>
+</p>
+
+
 [![Discord](https://img.shields.io/badge/Discord-Join-5865F2?logo=discord&logoColor=white)](https://discord.gg/MKPE9g8aUy)
 
 A standardized way to give AI agents new capabilities and expertise.
