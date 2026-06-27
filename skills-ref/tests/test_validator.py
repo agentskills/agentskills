@@ -230,7 +230,7 @@ description: {long_desc}
 Body
 """)
     errors = validate(skill_dir)
-    assert any("exceeds" in e and "1024" in e for e in errors)
+    assert any("exceed" in e and "1024" in e for e in errors)
 
 
 def test_valid_compatibility(tmp_path):
@@ -312,3 +312,82 @@ def test_validate_unicode_error(tmp_path):
     errors = validate(skill_dir)
     assert len(errors) == 1
     assert "is not valid UTF-8" in errors[0]
+
+def test_license_too_long(tmp_path):
+    """License exceeding 100 chars should fail."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    long_license = "x" * 150
+    (skill_dir / "SKILL.md").write_text(f"""---
+name: my-skill
+description: A test skill
+license: {long_license}
+---
+Body
+""")
+    errors = validate(skill_dir)
+    assert any("exceeds" in e and "100" in e for e in errors)
+
+
+def test_allowed_tools_too_long(tmp_path):
+    """Allowed tools exceeding 1024 chars should fail."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    long_tools = "x" * 1100
+    (skill_dir / "SKILL.md").write_text(f"""---
+name: my-skill
+description: A test skill
+allowed-tools: {long_tools}
+---
+Body
+""")
+    errors = validate(skill_dir)
+    assert any("exceed" in e and "1024" in e for e in errors)
+
+
+def test_metadata_key_too_long(tmp_path):
+    """Metadata key exceeding 64 chars should fail."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    long_key = "x" * 70
+    (skill_dir / "SKILL.md").write_text(f"""---
+name: my-skill
+description: A test skill
+metadata:
+  {long_key}: value
+---
+Body
+""")
+    errors = validate(skill_dir)
+    assert any("exceeds" in e and "64" in e for e in errors)
+
+
+def test_metadata_value_too_long(tmp_path):
+    """Metadata value exceeding 1024 chars should fail."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    long_value = "x" * 1100
+    (skill_dir / "SKILL.md").write_text(f"""---
+name: my-skill
+description: A test skill
+metadata:
+  key: {long_value}
+---
+Body
+""")
+    errors = validate(skill_dir)
+    assert any("exceeds" in e and "1024" in e for e in errors)
+
+def test_metadata_not_dict(tmp_path):
+    """Metadata that is not a dict should fail."""
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text("""---
+name: my-skill
+description: A test skill
+metadata: not a dict
+---
+Body
+""")
+    errors = validate(skill_dir)
+    assert any("must be a dictionary" in e for e in errors)

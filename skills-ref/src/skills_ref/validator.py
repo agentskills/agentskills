@@ -10,6 +10,10 @@ from .parser import find_skill_md, parse_frontmatter
 MAX_SKILL_NAME_LENGTH = 64
 MAX_DESCRIPTION_LENGTH = 1024
 MAX_COMPATIBILITY_LENGTH = 500
+MAX_LICENSE_LENGTH = 100
+MAX_ALLOWED_TOOLS_LENGTH = 1024
+MAX_METADATA_KEY_LENGTH = 64
+MAX_METADATA_VALUE_LENGTH = 1024
 
 # Allowed frontmatter fields per Agent Skills Spec
 ALLOWED_FIELDS = {
@@ -101,6 +105,68 @@ def _validate_compatibility(compatibility: str) -> list[str]:
     return errors
 
 
+def _validate_license(license_str: str) -> list[str]:
+    """Validate license format."""
+    errors = []
+
+    if not isinstance(license_str, str):
+        errors.append("Field 'license' must be a string")
+        return errors
+
+    if len(license_str) > MAX_LICENSE_LENGTH:
+        errors.append(
+            f"License exceeds {MAX_LICENSE_LENGTH} character limit "
+            f"({len(license_str)} chars)"
+        )
+
+    return errors
+
+
+def _validate_allowed_tools(allowed_tools: str) -> list[str]:
+    """Validate allowed-tools format."""
+    errors = []
+
+    if not isinstance(allowed_tools, str):
+        errors.append("Field 'allowed-tools' must be a string")
+        return errors
+
+    if len(allowed_tools) > MAX_ALLOWED_TOOLS_LENGTH:
+        errors.append(
+            f"Allowed tools exceed {MAX_ALLOWED_TOOLS_LENGTH} character limit "
+            f"({len(allowed_tools)} chars)"
+        )
+
+    return errors
+
+
+def _validate_metadata_dict(custom_metadata: dict) -> list[str]:
+    """Validate custom metadata structure and limits."""
+    errors = []
+
+    if not isinstance(custom_metadata, dict):
+        errors.append("Field 'metadata' must be a dictionary")
+        return errors
+
+    for k, v in custom_metadata.items():
+        if not isinstance(k, str):
+            errors.append("Metadata keys must be strings")
+            continue
+        if len(k) > MAX_METADATA_KEY_LENGTH:
+            errors.append(
+                f"Metadata key '{k}' exceeds {MAX_METADATA_KEY_LENGTH} character limit"
+            )
+
+        if not isinstance(v, str):
+            errors.append(f"Metadata value for '{k}' must be a string")
+            continue
+        if len(v) > MAX_METADATA_VALUE_LENGTH:
+            errors.append(
+                f"Metadata value for '{k}' exceeds {MAX_METADATA_VALUE_LENGTH} character limit"
+            )
+
+    return errors
+
+
 def _validate_metadata_fields(metadata: dict) -> list[str]:
     """Validate that only allowed fields are present."""
     errors = []
@@ -143,6 +209,15 @@ def validate_metadata(metadata: dict, skill_dir: Optional[Path] = None) -> list[
 
     if "compatibility" in metadata:
         errors.extend(_validate_compatibility(metadata["compatibility"]))
+
+    if "license" in metadata:
+        errors.extend(_validate_license(metadata["license"]))
+
+    if "allowed-tools" in metadata:
+        errors.extend(_validate_allowed_tools(metadata["allowed-tools"]))
+
+    if "metadata" in metadata:
+        errors.extend(_validate_metadata_dict(metadata["metadata"]))
 
     return errors
 

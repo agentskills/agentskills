@@ -27,3 +27,9 @@
 **Vulnerability:** The application used `path.exists()` in `parser.py` before attempting to open `SKILL.md`. An attacker could provide a named pipe (FIFO) or special device file, causing the `open()` call to block indefinitely, leading to a Denial of Service.
 **Learning:** `path.exists()` does not guarantee a path is a regular file. Opening special files can result in hangs or unexpected behavior.
 **Prevention:** Always use `path.is_file()` when looking up files to ensure the target is a regular file before attempting to read its contents.
+
+## 2024-06-27 - Implement String Length Limits for YAML Parsing
+
+**Vulnerability:** The validator for SKILL.md did not impose limits on the length of strings for `license`, `allowed-tools`, and custom `metadata` dictionary keys and values. This lack of constraints could allow parsing maliciously crafted strings, leading to resource exhaustion (DoS) when manipulating those items.
+**Learning:** External inputs like parsed metadata require comprehensive validation, explicitly checking length and bounds on all fields (including loosely structured dictionaries) to prevent unbounded memory allocation and CPU overhead during validation.
+**Prevention:** Explicitly define maximum length limits for all expected metadata fields and enforce those limits within dedicated validation functions early in the processing pipeline. Use constraints like `MAX_METADATA_KEY_LENGTH` to safeguard against excessively long dictionary keys and values.
