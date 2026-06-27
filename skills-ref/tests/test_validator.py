@@ -313,6 +313,7 @@ def test_validate_unicode_error(tmp_path):
     assert len(errors) == 1
     assert "is not valid UTF-8" in errors[0]
 
+
 def test_license_too_long(tmp_path):
     """License exceeding 100 chars should fail."""
     skill_dir = tmp_path / "my-skill"
@@ -377,6 +378,7 @@ Body
 """)
     errors = validate(skill_dir)
     assert any("exceeds" in e and "1024" in e for e in errors)
+
 
 def test_metadata_not_dict(tmp_path):
     """Metadata that is not a dict should fail."""
