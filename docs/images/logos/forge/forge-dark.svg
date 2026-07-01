@@ -1,0 +1,158 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Core gradient - forge orange to deep ember -->
+    <linearGradient id="forgeGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF8C42"/>
+      <stop offset="50%" stop-color="#F97316"/>
+      <stop offset="100%" stop-color="#D94F00"/>
+    </linearGradient>
+    
+    <!-- Anvil body gradient - dark steel -->
+    <linearGradient id="anvilSteel" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2D3748"/>
+      <stop offset="100%" stop-color="#1A202C"/>
+    </linearGradient>
+    
+    <!-- Spark glow -->
+    <radialGradient id="sparkGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFF7ED" stop-opacity="0.9"/>
+      <stop offset="40%" stop-color="#FDBA74" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#F97316" stop-opacity="0"/>
+    </radialGradient>
+    
+    <!-- Ambient glow behind the mark -->
+    <radialGradient id="ambientGlow" cx="50%" cy="45%" r="45%">
+      <stop offset="0%" stop-color="#F97316" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#F97316" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Drop shadow filter -->
+    <filter id="dropShadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000000" flood-opacity="0.25"/>
+    </filter>
+    
+    <!-- Ember glow filter -->
+    <filter id="emberGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" 
+        values="1 0 0 0 0  0.4 0.2 0 0 0  0 0 0 0 0  0 0 0 0.6 0" result="glow"/>
+      <feMerge>
+        <feMergeNode in="glow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Spark filter -->
+    <filter id="sparkFilter" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur"/>
+      <feColorMatrix in="blur" type="matrix"
+        values="1 0.8 0.4 0 0  0.8 0.5 0.2 0 0  0.4 0.2 0 0 0  0 0 0 1 0" result="glow"/>
+      <feMerge>
+        <feMergeNode in="glow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" fill="#0B0F1A"/>
+
+  <!-- Background ambient glow -->
+  <circle cx="256" cy="230" r="200" fill="url(#ambientGlow)"/>
+
+  <!-- === ANVIL MARK === -->
+  <!-- The anvil is abstracted into a geometric, modern form -->
+  <!-- It doubles as a downward chevron / compile arrow -->
+  
+  <g filter="url(#dropShadow)" transform="translate(256, 220)">
+    
+    <!-- Anvil horn (left) - sleek tapered form -->
+    <path d="M-120,30 L-68,-10 L-60,10 L-105,45 Z" fill="url(#anvilSteel)"/>
+    
+    <!-- Anvil face (top surface) - wide, flat, reflective -->
+    <path d="M-68,-10 L68,-10 L80,10 L-60,10 Z" fill="#374151"/>
+    <!-- Subtle top highlight -->
+    <path d="M-68,-10 L68,-10 L62,-4 L-62,-4 Z" fill="#4B5563" opacity="0.7"/>
+    
+    <!-- Anvil body (front face) -->
+    <path d="M-60,10 L80,10 L70,55 L-50,55 Z" fill="url(#anvilSteel)"/>
+    
+    <!-- Anvil base (wider foot) -->
+    <path d="M-70,55 L90,55 L100,80 L-80,80 Z" fill="#1A202C"/>
+    <!-- Base front face -->
+    <path d="M-80,80 L100,80 L95,95 L-75,95 Z" fill="#111827"/>
+    
+    <!-- Subtle edge highlights -->
+    <line x1="-60" y1="10" x2="-50" y2="55" stroke="#4B5563" stroke-width="1" opacity="0.5"/>
+    <line x1="80" y1="10" x2="70" y2="55" stroke="#4B5563" stroke-width="1" opacity="0.5"/>
+  </g>
+
+  <!-- === HAMMER (striking position, angled) === -->
+  <g filter="url(#dropShadow)" transform="translate(256, 220)">
+    
+    <!-- Hammer handle - diagonal, elegant -->
+    <g transform="rotate(-35, 10, -60)">
+      <rect x="6" y="-140" width="8" height="90" rx="3" fill="#78716C"/>
+      <!-- Handle grip texture lines -->
+      <line x1="7" y1="-130" x2="13" y2="-130" stroke="#5C5550" stroke-width="1"/>
+      <line x1="7" y1="-122" x2="13" y2="-122" stroke="#5C5550" stroke-width="1"/>
+      <line x1="7" y1="-114" x2="13" y2="-114" stroke="#5C5550" stroke-width="1"/>
+    </g>
+    
+    <!-- Hammer head -->
+    <g transform="rotate(-35, 10, -60)">
+      <!-- Main head block -->
+      <rect x="-14" y="-150" width="48" height="22" rx="3" fill="url(#forgeGlow)"/>
+      <!-- Top bevel highlight -->
+      <rect x="-12" y="-149" width="44" height="4" rx="2" fill="#FFB380" opacity="0.5"/>
+      <!-- Striking face (bottom edge glow) -->
+      <rect x="-10" y="-131" width="40" height="3" rx="1" fill="#FDBA74" opacity="0.7"/>
+    </g>
+  </g>
+
+  <!-- === SPARKS (the moment of creation) === -->
+  <g transform="translate(256, 220)" filter="url(#sparkFilter)">
+    <!-- Primary sparks radiating from strike point -->
+    <circle cx="-15" cy="-18" r="3" fill="#FFF7ED"/>
+    <circle cx="25" cy="-30" r="2.5" fill="#FDBA74"/>
+    <circle cx="-30" cy="-35" r="2" fill="#FFD4A8"/>
+    <circle cx="40" cy="-15" r="1.8" fill="#FFF7ED"/>
+    <circle cx="5" cy="-42" r="2.2" fill="#FDBA74"/>
+    <circle cx="-10" cy="-50" r="1.5" fill="#FFD4A8"/>
+    <circle cx="35" cy="-45" r="1.5" fill="#FFF7ED"/>
+    
+    <!-- Spark trails (short lines) -->
+    <line x1="-20" y1="-22" x2="-35" y2="-38" stroke="#FDBA74" stroke-width="1.5" stroke-linecap="round" opacity="0.8"/>
+    <line x1="30" y1="-25" x2="50" y2="-40" stroke="#FFD4A8" stroke-width="1.2" stroke-linecap="round" opacity="0.7"/>
+    <line x1="10" y1="-35" x2="15" y2="-55" stroke="#FDBA74" stroke-width="1" stroke-linecap="round" opacity="0.6"/>
+    <line x1="-5" y1="-30" x2="-18" y2="-52" stroke="#FFF7ED" stroke-width="1.3" stroke-linecap="round" opacity="0.7"/>
+  </g>
+
+  <!-- === Central glow at strike point === -->
+  <ellipse cx="246" cy="208" rx="20" ry="12" fill="url(#sparkGlow)" opacity="0.8"/>
+
+  <!-- === WORDMARK === -->
+  <g transform="translate(256, 380)">
+    <!-- F O R G E - modern geometric letterforms -->
+    <text x="0" y="0" 
+      font-family="'SF Pro Display', 'Helvetica Neue', 'Segoe UI', sans-serif" 
+      font-size="72" 
+      font-weight="700" 
+      letter-spacing="14" 
+      text-anchor="middle" 
+      fill="#E5E7EB">FORGE</text>
+    
+    <!-- Subtle underline accent in forge orange -->
+    <rect x="-108" y="14" width="216" height="3" rx="1.5" fill="url(#forgeGlow)" opacity="0.8"/>
+  </g>
+
+  <!-- === TAGLINE === -->
+  <text x="256" y="420" 
+    font-family="'SF Pro Text', 'Helvetica Neue', 'Segoe UI', sans-serif" 
+    font-size="14" 
+    font-weight="400" 
+    letter-spacing="5" 
+    text-anchor="middle" 
+    fill="#9CA3AF"
+    opacity="0.8">SKILL.MD → AGENT</text>
+
+</svg>
