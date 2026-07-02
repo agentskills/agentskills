@@ -20,7 +20,7 @@ export const clients = [
     url: "https://www.zeroclawlabs.ai/",
     lightSrc: "/images/logos/zeroclaw/zeroclaw-logo-light.png",
     darkSrc: "/images/logos/zeroclaw/zeroclaw-logo-dark.png",
-    instructionsUrl: "https://docs.zeroclawlabs.ai/en/tools/skills.html",
+    instructionsUrl: "https://docs.zeroclawlabs.ai/master/en/tools/skills.html",
     sourceCodeUrl: "https://github.com/zeroclaw-labs/zeroclaw",
   },
   {
