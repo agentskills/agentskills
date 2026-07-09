@@ -385,4 +385,13 @@ export const clients = [
     instructionsUrl: "https://deepcode.vegamo.cn/en/docs/configuration/agent-skills",
     sourceCodeUrl: "https://github.com/lessweb/deepcode-cli",
   },
+  {
+    name: "Forge",
+    description: "Forge is an open-source AI agent runtime by initializ. Build, run, and deploy secure agents from a single SKILL.md file — encrypted secrets, egress allowlists, and audit logging by default. Runs locally, in Docker, Kubernetes, or air-gapped.",
+    url: "https://useforge.ai/",
+    lightSrc: "/images/logos/forge/forge-light.svg",
+    darkSrc: "/images/logos/forge/forge-dark.svg",
+    instructionsUrl: "https://useforge.ai/docs/skills/writing-custom-skills/",
+    sourceCodeUrl: "https://github.com/initializ/forge",
+  },
 ];

@@ -1,0 +1,139 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Core gradient - forge orange to deep ember -->
+    <linearGradient id="forgeGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF8C42"/>
+      <stop offset="50%" stop-color="#F97316"/>
+      <stop offset="100%" stop-color="#D94F00"/>
+    </linearGradient>
+    
+    <!-- Anvil body gradient - dark navy for light bg -->
+    <linearGradient id="anvilSteel" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1E293B"/>
+      <stop offset="100%" stop-color="#0F172A"/>
+    </linearGradient>
+    
+    <!-- Spark glow -->
+    <radialGradient id="sparkGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFF7ED" stop-opacity="0.95"/>
+      <stop offset="40%" stop-color="#FDBA74" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#F97316" stop-opacity="0"/>
+    </radialGradient>
+    
+    <!-- Ambient glow behind the mark -->
+    <radialGradient id="ambientGlow" cx="50%" cy="45%" r="45%">
+      <stop offset="0%" stop-color="#F97316" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#F97316" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Drop shadow - softer on light bg -->
+    <filter id="dropShadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#0F172A" flood-opacity="0.15"/>
+    </filter>
+
+    <!-- Spark filter -->
+    <filter id="sparkFilter" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur"/>
+      <feColorMatrix in="blur" type="matrix"
+        values="1 0.6 0.2 0 0  0.6 0.3 0.1 0 0  0.2 0.1 0 0 0  0 0 0 0.8 0" result="glow"/>
+      <feMerge>
+        <feMergeNode in="glow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- White background -->
+  <rect width="512" height="512" fill="#FFFFFF"/>
+
+  <!-- Background ambient glow -->
+  <circle cx="256" cy="230" r="200" fill="url(#ambientGlow)"/>
+
+  <!-- === ANVIL MARK === -->
+  <g filter="url(#dropShadow)" transform="translate(256, 220)">
+    
+    <!-- Anvil horn (left) -->
+    <path d="M-120,30 L-68,-10 L-60,10 L-105,45 Z" fill="url(#anvilSteel)"/>
+    
+    <!-- Anvil face (top surface) -->
+    <path d="M-68,-10 L68,-10 L80,10 L-60,10 Z" fill="#1E293B"/>
+    <!-- Subtle top highlight -->
+    <path d="M-68,-10 L68,-10 L62,-4 L-62,-4 Z" fill="#334155" opacity="0.6"/>
+    
+    <!-- Anvil body (front face) -->
+    <path d="M-60,10 L80,10 L70,55 L-50,55 Z" fill="url(#anvilSteel)"/>
+    
+    <!-- Anvil base (wider foot) -->
+    <path d="M-70,55 L90,55 L100,80 L-80,80 Z" fill="#0F172A"/>
+    <!-- Base front face -->
+    <path d="M-80,80 L100,80 L95,95 L-75,95 Z" fill="#0B0F1A"/>
+    
+    <!-- Edge highlights -->
+    <line x1="-60" y1="10" x2="-50" y2="55" stroke="#334155" stroke-width="1" opacity="0.4"/>
+    <line x1="80" y1="10" x2="70" y2="55" stroke="#334155" stroke-width="1" opacity="0.4"/>
+  </g>
+
+  <!-- === HAMMER === -->
+  <g filter="url(#dropShadow)" transform="translate(256, 220)">
+    
+    <!-- Hammer handle -->
+    <g transform="rotate(-35, 10, -60)">
+      <rect x="6" y="-140" width="8" height="90" rx="3" fill="#64748B"/>
+      <line x1="7" y1="-130" x2="13" y2="-130" stroke="#475569" stroke-width="1"/>
+      <line x1="7" y1="-122" x2="13" y2="-122" stroke="#475569" stroke-width="1"/>
+      <line x1="7" y1="-114" x2="13" y2="-114" stroke="#475569" stroke-width="1"/>
+    </g>
+    
+    <!-- Hammer head -->
+    <g transform="rotate(-35, 10, -60)">
+      <rect x="-14" y="-150" width="48" height="22" rx="3" fill="url(#forgeGlow)"/>
+      <rect x="-12" y="-149" width="44" height="4" rx="2" fill="#FFB380" opacity="0.5"/>
+      <rect x="-10" y="-131" width="40" height="3" rx="1" fill="#FDBA74" opacity="0.7"/>
+    </g>
+  </g>
+
+  <!-- === SPARKS === -->
+  <g transform="translate(256, 220)" filter="url(#sparkFilter)">
+    <circle cx="-15" cy="-18" r="3" fill="#F97316"/>
+    <circle cx="25" cy="-30" r="2.5" fill="#EA580C"/>
+    <circle cx="-30" cy="-35" r="2" fill="#F97316"/>
+    <circle cx="40" cy="-15" r="1.8" fill="#EA580C"/>
+    <circle cx="5" cy="-42" r="2.2" fill="#F97316"/>
+    <circle cx="-10" cy="-50" r="1.5" fill="#FDBA74"/>
+    <circle cx="35" cy="-45" r="1.5" fill="#EA580C"/>
+    
+    <!-- Spark trails -->
+    <line x1="-20" y1="-22" x2="-35" y2="-38" stroke="#F97316" stroke-width="1.5" stroke-linecap="round" opacity="0.7"/>
+    <line x1="30" y1="-25" x2="50" y2="-40" stroke="#EA580C" stroke-width="1.2" stroke-linecap="round" opacity="0.6"/>
+    <line x1="10" y1="-35" x2="15" y2="-55" stroke="#F97316" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
+    <line x1="-5" y1="-30" x2="-18" y2="-52" stroke="#EA580C" stroke-width="1.3" stroke-linecap="round" opacity="0.6"/>
+  </g>
+
+  <!-- Central glow at strike point -->
+  <ellipse cx="246" cy="208" rx="20" ry="12" fill="url(#sparkGlow)" opacity="0.6"/>
+
+  <!-- === WORDMARK === -->
+  <g transform="translate(256, 380)">
+    <text x="0" y="0" 
+      font-family="'SF Pro Display', 'Helvetica Neue', 'Segoe UI', sans-serif" 
+      font-size="72" 
+      font-weight="700" 
+      letter-spacing="14" 
+      text-anchor="middle" 
+      fill="#0F172A">FORGE</text>
+    
+    <!-- Underline accent -->
+    <rect x="-108" y="14" width="216" height="3" rx="1.5" fill="url(#forgeGlow)" opacity="0.9"/>
+  </g>
+
+  <!-- === TAGLINE === -->
+  <text x="256" y="420" 
+    font-family="'SF Pro Text', 'Helvetica Neue', 'Segoe UI', sans-serif" 
+    font-size="14" 
+    font-weight="400" 
+    letter-spacing="5" 
+    text-anchor="middle" 
+    fill="#64748B"
+    opacity="0.9">SKILL.MD → AGENT</text>
+
+</svg>
