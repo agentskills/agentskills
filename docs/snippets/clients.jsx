@@ -376,4 +376,13 @@ export const clients = [
     instructionsUrl: "https://deepcode.vegamo.cn/en/docs/configuration/agent-skills",
     sourceCodeUrl: "https://github.com/lessweb/deepcode-cli",
   },
+  {
+    name: "Adspirer",
+    description: "Adspirer is a paid media agent that runs advertising campaigns across Google Ads, Meta, TikTok, LinkedIn, Amazon, and ChatGPT Ads. It ships Agent Skills that teach any skills-compatible client how to plan, launch, and optimize campaigns through its MCP server.",
+    url: "https://www.adspirer.com",
+    lightSrc: "/images/logos/adspirer/adspirer-logo-light.svg",
+    darkSrc: "/images/logos/adspirer/adspirer-logo-dark.svg",
+    instructionsUrl: "https://www.adspirer.com/docs/agent-skills/skills",
+    sourceCodeUrl: "https://github.com/amekala/ads-mcp",
+  },
 ];
