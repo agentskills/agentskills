@@ -1,0 +1,77 @@
+---
+title: Ecosystem tools
+description: Community projects for building, validating, composing, and maintaining Agent Skills.
+---
+
+Agent Skills define a portable format for packaging agent instructions and resources. As projects adopt skills at scale, many teams also need tools around the format: generators, validators, registries, composition layers, and maintenance workflows.
+
+This page highlights common categories of ecosystem tooling. It is not part of the Agent Skills specification; instead, it is a place to discover community projects that operate above the format layer.
+
+## Tool categories
+
+### Build and compile tools
+
+Build tools generate standard `SKILL.md` folders from higher-level configuration, templates, or workflow definitions. They can help teams keep repeated metadata, references, and state contracts consistent across many skills.
+
+Examples of build-tool capabilities include:
+
+- compiling YAML or JSON definitions into skill folders
+- expanding shared templates across multiple skills
+- generating references or bundled scripts from source files
+- checking that generated skills still match the checked-in source configuration
+
+### Validation and quality tools
+
+Validation tools inspect skills before they are published or loaded by agents. They can enforce repository-specific conventions in addition to the base format requirements.
+
+Examples of validation checks include:
+
+- required frontmatter fields and valid descriptions
+- broken links to `references/`, `scripts/`, or `assets/`
+- missing executable permissions for bundled scripts
+- oversized instructions that should be moved into progressive-disclosure references
+- unsafe or ambiguous tool-use instructions
+
+### Composition and pipeline tools
+
+Composition tools combine multiple skills into larger agent workflows. These tools often add typed state, routing, or pipeline concepts while still emitting or consuming standard skill folders.
+
+Examples of composition patterns include:
+
+- selecting a set of skills for a specific agent role
+- wiring skills into a multi-step workflow
+- passing structured state between skill-driven steps
+- generating a lean runtime bundle from a larger skill library
+
+### Meta-skills and lifecycle management
+
+Meta-skills are themselves skills whose job is to create, review, update, or retire other skills. Lifecycle tooling helps teams keep skill libraries current as model capabilities, APIs, and project documentation change.
+
+Examples include:
+
+- authoring assistants that scaffold new skills
+- review skills that check format and instruction clarity
+- maintenance skills that identify stale instructions or obsolete references
+- migration helpers for updating a skill library to newer conventions
+
+### Skill collections and registries
+
+A collection or registry groups skills for a domain, organization, or ecosystem. These projects often define extra conventions beyond a single skill, such as inter-skill contracts, shared schemas, or curated compatibility metadata.
+
+Examples include:
+
+- domain-specific skill collections
+- organization-internal registries
+- compatibility badges or manifests for skills-aware clients
+- shared schemas used by multiple related skills
+
+## Listing a project
+
+If you maintain tooling that works with Agent Skills, open a pull request adding a short entry to this page. Include:
+
+- project name and repository link
+- category from the sections above
+- one or two sentences explaining what the tool does
+- whether it produces standard skill folders, consumes them, validates them, or provides a registry/collection layer
+
+Keep listings factual and concise. The goal is to help skill creators and client implementors discover adjacent tooling without turning the specification itself into a tooling registry.
