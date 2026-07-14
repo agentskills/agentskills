@@ -393,4 +393,14 @@ export const clients = [
     darkSrc: "/images/logos/pulumi-neo/pulumi-neo-logo-dark.svg",
     instructionsUrl: "https://www.pulumi.com/docs/ai/skills/",
   },
+  {
+    name: "Hermes Agent",
+    description: "Hermes Agent is an open-source, model-agnostic AI agent with persistent memory, reusable skills, terminal and messaging interfaces, and multi-agent delegation.",
+    url: "https://hermes-agent.nousresearch.com/",
+    lightSrc: "/images/logos/hermes-agent/hermes-agent-logo-light.svg",
+    darkSrc: "/images/logos/hermes-agent/hermes-agent-logo-dark.svg",
+    scale: 0.55,
+    instructionsUrl: "https://hermes-agent.nousresearch.com/docs/user-guide/features/skills",
+    sourceCodeUrl: "https://github.com/NousResearch/hermes-agent",
+  },
 ];
