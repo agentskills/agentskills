@@ -16,6 +16,31 @@ description: A test skill
     assert errors == []
 
 
+def test_utf8_skill_md_unicode_content(tmp_path):
+    """SKILL.md must be read as UTF-8 regardless of platform default encoding.
+
+    Regression: on Windows, Path.read_text() defaults to cp1252 and raises
+    UnicodeDecodeError on common UTF-8 byte sequences (e.g. em-dash U+2014
+    encodes to 0xE2 0x80 0x94; smart quote U+201C encodes to 0xE2 0x80 0x9C).
+    """
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    # Write UTF-8 explicitly so the fixture is byte-identical across platforms.
+    (skill_dir / "SKILL.md").write_text(
+        """---
+name: my-skill
+description: Extracts text — handles UTF-8 punctuation like em-dashes, “smart quotes”, and ellipses…
+---
+# My Skill — Unicode body
+
+Body text with non-ASCII: café, naïve, façade, résumé.
+""",
+        encoding="utf-8",
+    )
+    errors = validate(skill_dir)
+    assert errors == []
+
+
 def test_nonexistent_path(tmp_path):
     errors = validate(tmp_path / "nonexistent")
     assert len(errors) == 1
@@ -171,7 +196,7 @@ name: 技能
 description: A skill with Chinese name
 ---
 Body
-""")
+""", encoding="utf-8")
     errors = validate(skill_dir)
     assert errors == []
 
@@ -185,7 +210,7 @@ name: мой-навык
 description: A skill with Russian name
 ---
 Body
-""")
+""", encoding="utf-8")
     errors = validate(skill_dir)
     assert errors == []
 
@@ -199,7 +224,7 @@ name: навык
 description: A skill with Russian lowercase name
 ---
 Body
-""")
+""", encoding="utf-8")
     errors = validate(skill_dir)
     assert errors == []
 
@@ -213,7 +238,7 @@ name: НАВЫК
 description: A skill with Russian uppercase name
 ---
 Body
-""")
+""", encoding="utf-8")
     errors = validate(skill_dir)
     assert any("lowercase" in e for e in errors)
 
@@ -285,6 +310,6 @@ name: {decomposed_name}
 description: A test skill
 ---
 Body
-""")
+""", encoding="utf-8")
     errors = validate(skill_dir)
     assert errors == [], f"Expected no errors, got: {errors}"
