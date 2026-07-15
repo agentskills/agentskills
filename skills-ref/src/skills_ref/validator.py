@@ -101,21 +101,28 @@ def _validate_compatibility(compatibility: str) -> list[str]:
     return errors
 
 
-def _validate_metadata_fields(metadata: dict) -> list[str]:
+def _validate_metadata_fields(
+    metadata: dict, extra_allowed_fields: set[str] | None = None
+) -> list[str]:
     """Validate that only allowed fields are present."""
     errors = []
 
-    extra_fields = set(metadata.keys()) - ALLOWED_FIELDS
+    allowed = ALLOWED_FIELDS | (extra_allowed_fields or set())
+    extra_fields = set(metadata.keys()) - allowed
     if extra_fields:
         errors.append(
             f"Unexpected fields in frontmatter: {', '.join(sorted(extra_fields))}. "
-            f"Only {sorted(ALLOWED_FIELDS)} are allowed."
+            f"Only {sorted(allowed)} are allowed."
         )
 
     return errors
 
 
-def validate_metadata(metadata: dict, skill_dir: Optional[Path] = None) -> list[str]:
+def validate_metadata(
+    metadata: dict,
+    skill_dir: Optional[Path] = None,
+    extra_allowed_fields: set[str] | None = None,
+) -> list[str]:
     """Validate parsed skill metadata.
 
     This is the core validation function that works on already-parsed metadata,
@@ -124,12 +131,13 @@ def validate_metadata(metadata: dict, skill_dir: Optional[Path] = None) -> list[
     Args:
         metadata: Parsed YAML frontmatter dictionary
         skill_dir: Optional path to skill directory (for name-directory match check)
+        extra_allowed_fields: Additional field names to accept in frontmatter
 
     Returns:
         List of validation error messages. Empty list means valid.
     """
     errors = []
-    errors.extend(_validate_metadata_fields(metadata))
+    errors.extend(_validate_metadata_fields(metadata, extra_allowed_fields))
 
     if "name" not in metadata:
         errors.append("Missing required field in frontmatter: name")
@@ -147,11 +155,14 @@ def validate_metadata(metadata: dict, skill_dir: Optional[Path] = None) -> list[
     return errors
 
 
-def validate(skill_dir: Path) -> list[str]:
+def validate(
+    skill_dir: Path, extra_allowed_fields: set[str] | None = None
+) -> list[str]:
     """Validate a skill directory.
 
     Args:
         skill_dir: Path to the skill directory
+        extra_allowed_fields: Additional field names to accept in frontmatter
 
     Returns:
         List of validation error messages. Empty list means valid.
@@ -174,4 +185,4 @@ def validate(skill_dir: Path) -> list[str]:
     except ParseError as e:
         return [str(e)]
 
-    return validate_metadata(metadata, skill_dir)
+    return validate_metadata(metadata, skill_dir, extra_allowed_fields)
