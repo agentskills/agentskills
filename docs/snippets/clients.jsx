@@ -393,4 +393,13 @@ export const clients = [
     darkSrc: "/images/logos/pulumi-neo/pulumi-neo-logo-dark.svg",
     instructionsUrl: "https://www.pulumi.com/docs/ai/skills/",
   },
+  {
+    name: "Deeplake Hivemind",
+    description: "Hivemind generates Agent Skills automatically from coding-agent session traces. It writes spec-conformant SKILL.md files into your project, which agents like Claude Code, Codex, and Cursor load natively.",
+    url: "https://deeplake.ai/hivemind",
+    lightSrc: "/images/logos/deeplake-hivemind/deeplake-logo-light.svg",
+    darkSrc: "/images/logos/deeplake-hivemind/deeplake-logo-dark.svg",
+    instructionsUrl: "https://github.com/activeloopai/hivemind",
+    sourceCodeUrl: "https://github.com/activeloopai/hivemind",
+  },
 ];
