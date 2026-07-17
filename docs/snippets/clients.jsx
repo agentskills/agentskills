@@ -123,6 +123,15 @@ export const clients = [
     sourceCodeUrl: "https://github.com/microsoft/vscode-copilot-chat",
   },
   {
+    name: "Gitmoot",
+    description: "Gitmoot is a local-first control layer for coordinating AI agents across repositories, goals, reviews, PR comments, daemon jobs, branch locks, and runtime workflows.",
+    url: "https://gitmoot.io/",
+    lightSrc: "/images/logos/gitmoot/gitmoot-logo-light.svg",
+    darkSrc: "/images/logos/gitmoot/gitmoot-logo-dark.svg",
+    instructionsUrl: "https://github.com/jerryfane/gitmoot/blob/main/docs/plugins.md",
+    sourceCodeUrl: "https://github.com/jerryfane/gitmoot",
+  },
+  {
     name: "VS Code",
     description: "Visual Studio Code combines the simplicity of a code editor with what developers need for their core edit-build-debug cycle.",
     url: "https://code.visualstudio.com/",
