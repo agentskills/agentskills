@@ -393,4 +393,14 @@ export const clients = [
     darkSrc: "/images/logos/pulumi-neo/pulumi-neo-logo-dark.svg",
     instructionsUrl: "https://www.pulumi.com/docs/ai/skills/",
   },
+  {
+    name: "iGrant.io",
+    description: "iGrant.io is a data exchange platform for European Digital Identity (EUDI) Wallet and European Business Wallet integrations. Its Organisation Wallet Suite and Consent Building Block cover credential issuance (OpenID4VCI), verification (OpenID4VP + DCQL), and consent management under eIDAS 2.0.",
+    url: "https://igrant.io/",
+    lightSrc: "/images/logos/igrantio/igrantio-logo-light.svg",
+    darkSrc: "/images/logos/igrantio/igrantio-logo-dark.svg",
+    scale: 1.33,
+    instructionsUrl: "https://docs.igrant.io/docs/agent-skills/",
+    sourceCodeUrl: "https://github.com/L3-iGrant/skills",
+  },
 ];
