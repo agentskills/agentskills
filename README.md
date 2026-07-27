@@ -1,59 +1,147 @@
-# Agent Skills
+# cpanel-navigator
 
-[![Discord](https://img.shields.io/badge/Discord-Join-5865F2?logo=discord&logoColor=white)](https://discord.gg/MKPE9g8aUy)
+> Agent Skill — automates cPanel and WHM tasks via browser automation
 
-A standardized way to give AI agents new capabilities and expertise.
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![Agent Skills](https://img.shields.io/badge/Agent_Skills-Compatible-blue)
+![Works with Claude Code](https://img.shields.io/badge/Claude_Code-Compatible-orange)
 
-## What are Agent Skills?
+Most developers hate clicking through cPanel. This skill teaches AI agents to do it instead — file uploads, database creation, PHP config, DNS, cron jobs, and more — using `browser-use` or Playwright Python.
 
-Agent Skills are a lightweight, open format for extending AI agent capabilities with specialized knowledge and workflows.
+---
 
-At its core, a skill is a folder containing a `SKILL.md` file. This file includes metadata (`name` and `description`, at minimum) and instructions that tell an agent how to perform a specific task. Skills can also bundle scripts, reference materials, templates, and other resources.
+## What it does
+
+| Task | Example prompt |
+|------|----------------|
+| Upload a file | `"Upload index.php to /public_html/active/myapp/"` |
+| Read a live file | `"Read /public_html/config.php and show me the DB credentials"` |
+| Overwrite a file | `"Replace index.php on the server with the local version"` |
+| Create a database | `"Create MySQL database myapp_db in cPanel"` |
+| Change PHP version | `"Switch the site to PHP 8.2 in MultiPHP Manager"` |
+| Add a cron job | `"Schedule checkamount.php to run every 5 minutes"` |
+| Add a DNS record | `"Add a CNAME record for mail.example.com"` |
+| WHM firewall | `"Whitelist IP 203.0.113.10 in CSF firewall"` |
+| Check services | `"Is Apache running? Check WHM service status"` |
+
+---
+
+## Highlights
+
+- **Headless-safe file I/O** — reads and writes files via cPanel's UAPI `Fileman` endpoints inside `page.evaluate()`. No clicking through File Manager UI, no WebSocket terminal issues.
+- **Two automation paths** — `browser-use` CLI for simple navigation tasks; Playwright Python for precise UAPI calls and large file operations.
+- **Login quirks handled** — email-format username fallback, self-signed cert acceptance, `cpsess` token timing, CSF lockout awareness.
+- **WHM support** — covers port 2087 server-admin tasks: firewall, EasyApache, account management, service restarts.
+- **Full URL reference** — 30+ cPanel sections mapped, both Jupiter and Paper Lantern themes.
+
+---
+
+## Requirements
+
+- [browser-use](https://github.com/browser-use/browser-use) CLI **or** Python 3 + `uvx` (for the Playwright fallback)
+- cPanel account credentials (username + password)
+- cPanel server reachable on port 2083
+
+---
+
+## Quick start
+
+### 1. Install
+
+```bash
+# From zip
+unzip cpanel-navigator.zip -d ~/.claude/skills/
+
+# From GitHub
+git clone https://github.com/antonynjagi/cpanel-navigator ~/.claude/skills/cpanel-navigator
+```
+
+### 2. Verify browser-use
+
+```bash
+browser-use doctor
+```
+
+If `browser-use` is unavailable, use the Playwright fallback (no extra install on most systems):
+
+```bash
+uvx --with playwright python3 --version
+python3 -m playwright install chromium
+```
+
+### 3. Use it
+
+The skill activates automatically. Just describe the task:
 
 ```
-my-skill/
-├── SKILL.md          # Required: metadata + instructions
-├── scripts/          # Optional: executable code
-├── references/       # Optional: documentation
-├── assets/           # Optional: templates, resources
-└── ...               # Any additional files or directories
+"Log into cPanel at 203.0.113.10 and upload /var/www/html/project/index.php
+to /public_html/active/myapp/"
 ```
 
-## Why Agent Skills?
+```
+"Read /public_html/active/myapp/config.php from cPanel"
+```
 
-Agents are increasingly capable, but often don't have the context they need to do real work reliably. Skills solve this by packaging procedural knowledge and company-, team-, and user-specific context into portable, version-controlled folders that agents load on demand. This gives agents:
+```
+"In WHM, whitelist IP 203.0.113.10 in CSF"
+```
 
-- **Domain expertise**: Capture specialized knowledge — from legal review processes to data analysis pipelines to presentation formatting — as reusable instructions and resources.
-- **Repeatable workflows**: Turn multi-step tasks into consistent, auditable procedures.
-- **Cross-product reuse**: Build a skill once and use it across any skills-compatible agent.
+---
 
-## How do Agent Skills work?
+## File structure
 
-Agents load skills through **progressive disclosure**, in three stages:
+```
+cpanel-navigator/
+├── SKILL.md                     # Agent instructions (auto-loaded)
+├── CPANEL.md                    # Human-readable overview
+├── README.md                    # This file
+└── references/
+    └── cpanel-reference.md      # Full URL map, quirks, UAPI reference
+```
 
-1. **Discovery**: At startup, agents load only the name and description of each available skill, just enough to know when it might be relevant.
+---
 
-2. **Activation**: When a task matches a skill's description, the agent reads the full `SKILL.md` instructions into context.
+## Agent compatibility
 
-3. **Execution**: The agent follows the instructions, optionally executing bundled code or loading referenced files as needed.
+This skill follows the open [Agent Skills specification](https://agentskills.io/specification).
 
-Full instructions load only when a task calls for them, so agents can keep many skills on hand with only a small context footprint.
+| Agent | Skills directory |
+|-------|-----------------|
+| Claude Code | `~/.claude/skills/` |
+| Gemini CLI | `~/.gemini/skills/` |
+| OpenCode | `~/.opencode/skills/` |
+| Cursor | `.cursor/skills/` (project-local) |
+| Codex | `~/.agents/skills/` |
 
-## Where can I use Agent Skills?
+---
 
-Agent Skills are supported by a large number of AI tools and agentic clients — see the [Client Showcase](https://agentskills.io/clients) to explore some of them!
+## Known limitations
 
-## Getting started
+| Issue | Details |
+|-------|---------|
+| Terminal input silently dropped in headless mode | cPanel's xterm.js WebSocket accepts the connection but drops all keyboard input in headless Chromium. Use the UAPI `save_file_content` approach for all file writes instead. |
+| `cpsess` token can lag | Wait 3–4 seconds after `networkidle` before parsing the URL for the session token. |
+| Username format varies | Some hosts require `username@domain.com`. If plain username fails, try the email format. |
+| CSF auto-blocks repeated failures | Multiple failed logins may get the dev machine IP blocked. Whitelist via WHM → CSF → Allow IP. |
 
-- **[Documentation](https://agentskills.io)** — Guides and tutorials
-- **[Specification](https://agentskills.io/specification)** — Format details
-- **[Example Skills](https://github.com/anthropics/skills)** — See what's possible
-- **[Discord](https://discord.gg/MKPE9g8aUy)** — Share what you're building!
+Full quirks list: [`references/cpanel-reference.md`](references/cpanel-reference.md)
 
-## Open development
+---
 
-The Agent Skills format was originally developed by [Anthropic](https://www.anthropic.com/), released as an open standard, and has been adopted by a growing number of agent products. The standard is open to contributions from the broader ecosystem — see [`CONTRIBUTING.md`](CONTRIBUTING.md) for how to get involved.
+## Security
+
+Never hardcode credentials in prompts you share publicly. Pass them at runtime or via environment variables. This skill contains no credentials.
+
+---
+
+## Contributing
+
+Found a cPanel section not covered? Open a PR or issue. Feature requests welcome.
+
+Discord: [Agent Skills community](https://discord.gg/MKPE9g8aUy)
+
+---
 
 ## License
 
-Code in this repository is licensed under [Apache 2.0](LICENSE). Documentation is licensed under [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/). See individual directories for details.
+MIT — free to use, fork, and adapt.
