@@ -1,5 +1,7 @@
 # Agent Skills
 
+[![MCP Toplist](https://mcptoplist.com/badge/ai.com.mcp%2Fskills-search.svg)](https://mcptoplist.com/server/ai.com.mcp%2Fskills-search)
+
 [![Discord](https://img.shields.io/badge/Discord-Join-5865F2?logo=discord&logoColor=white)](https://discord.gg/MKPE9g8aUy)
 
 A standardized way to give AI agents new capabilities and expertise.
