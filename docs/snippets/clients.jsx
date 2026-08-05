@@ -395,4 +395,13 @@ export const clients = [
     scale: 0.45,
     instructionsUrl: "https://www.pulumi.com/docs/ai/skills/",
   },
+  {
+    name: "AgentUse",
+    description: "AgentUse is an open-source runtime for autonomous agents defined in Markdown, running unattended from a schedule, webhook, CI job, or CLI, with Agent Skills support.",
+    url: "https://agentuse.io",
+    lightSrc: "/images/logos/agentuse/agentuse-logo-light.svg",
+    darkSrc: "/images/logos/agentuse/agentuse-logo-dark.svg",
+    instructionsUrl: "https://docs.agentuse.io/guides/skills",
+    sourceCodeUrl: "https://github.com/agentuse/agentuse",
+  },
 ];
