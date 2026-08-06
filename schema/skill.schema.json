@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentskills.io/skill.schema.json",
+  "title": "Agent Skill Frontmatter",
+  "description": "Schema for the YAML frontmatter in Agent Skills SKILL.md files. See https://agentskills.io/specification for the full specification.",
+  "type": "object",
+  "required": ["name", "description"],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^(?!.*--)[a-z0-9]([a-z0-9-]*[a-z0-9])?$",
+      "description": "Skill name in kebab-case. Must match the parent directory name. Only lowercase letters, digits, and hyphens are allowed. Cannot start or end with a hyphen, and consecutive hyphens are not permitted. Note: the specification also allows Unicode lowercase letters."
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "description": "Describes what the skill does and when the agent should use it. Include specific keywords that help agents identify relevant tasks."
+    },
+    "license": {
+      "type": "string",
+      "description": "License for the skill (e.g., \"MIT\", \"Apache-2.0\"). Can be a license name or reference to a bundled license file."
+    },
+    "compatibility": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "description": "Environment requirements such as intended product, system packages, or network access needs. Most skills do not need this field."
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Arbitrary key-value pairs for client-specific properties not defined by the spec (e.g., author, version)."
+    },
+    "allowed-tools": {
+      "type": "string",
+      "description": "Space-delimited list of pre-approved tools the skill may use (e.g., \"Bash(git:*) Read\"). Experimental: support may vary between implementations."
+    }
+  }
+}
