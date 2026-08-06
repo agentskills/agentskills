@@ -395,4 +395,14 @@ export const clients = [
     scale: 0.45,
     instructionsUrl: "https://www.pulumi.com/docs/ai/skills/",
   },
+  {
+    name: "BitFun",
+    description: "BitFun is a desktop and CLI agent with an open-source Rust runtime, Agent Skills discovery, and support for local and remote workspaces.",
+    url: "https://github.com/GCWing/BitFun",
+    lightSrc: "/images/logos/bitfun/bitfun-logo-light.png",
+    darkSrc: "/images/logos/bitfun/bitfun-logo-dark.png",
+    scale: 0.45,
+    instructionsUrl: "https://github.com/agentskills/agentskills/discussions/481",
+    sourceCodeUrl: "https://github.com/GCWing/BitFun",
+  },
 ];
