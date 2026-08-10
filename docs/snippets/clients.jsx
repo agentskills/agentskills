@@ -413,4 +413,13 @@ export const clients = [
     instructionsUrl: "https://docs.openclaw.ai/tools/skills",
     sourceCodeUrl: "https://github.com/openclaw/openclaw",
   },
+  {
+    name: "Heym",
+    description: "Heym is an open-source, self-hosted AI workflow automation platform. Agent nodes on its visual canvas carry Agent Skills and run their bundled Python in a hardened sandbox, so a skill can execute on a cron, webhook, or email trigger with no session open.",
+    url: "https://heym.run/",
+    lightSrc: "/images/logos/heym/heym-logo-light.png",
+    darkSrc: "/images/logos/heym/heym-logo-dark.png",
+    instructionsUrl: "https://github.com/heymrun/heym/blob/main/frontend/src/docs/content/nodes/agent-node.md#skills",
+    sourceCodeUrl: "https://github.com/heymrun/heym",
+  },
 ];
