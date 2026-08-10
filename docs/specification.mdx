@@ -24,7 +24,7 @@ The `SKILL.md` file must contain YAML frontmatter followed by Markdown content.
 
 | Field | Required | Constraints |
 |-------|----------|-------------|
-| `name` | Yes | Max 64 characters. Lowercase letters, numbers, and hyphens only. Must not start or end with a hyphen. |
+| `name` | Yes | Max 64 characters. Lowercase letters, numbers, and hyphens only. Must not start or end with a hyphen, or contain consecutive hyphens. Must match the parent directory name. |
 | `description` | Yes | Max 1024 characters. Non-empty. Describes what the skill does and when to use it. |
 | `license` | No | License name or reference to a bundled license file. |
 | `compatibility` | No | Max 500 characters. Indicates environment requirements (intended product, system packages, network access, etc.). |
