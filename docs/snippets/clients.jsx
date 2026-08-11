@@ -413,4 +413,14 @@ export const clients = [
     instructionsUrl: "https://docs.openclaw.ai/tools/skills",
     sourceCodeUrl: "https://github.com/openclaw/openclaw",
   },
+  {
+    name: "Hexis",
+    description: "Hexis is a Git-backed platform for managing, reviewing, and sharing skills, tools, and context across AI agents.",
+    url: "https://github.com/Bevel-Software/Hexis",
+    lightSrc: "/images/logos/hexis/hexis-logo-light.svg",
+    darkSrc: "/images/logos/hexis/hexis-logo-dark.svg",
+    scale: 0.8,
+    instructionsUrl: "https://github.com/Bevel-Software/Hexis#use-your-teams-skills-in-claude",
+    sourceCodeUrl: "https://github.com/Bevel-Software/Hexis",
+  },
 ];
