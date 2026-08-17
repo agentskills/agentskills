@@ -43,7 +43,7 @@ Store test cases in `evals/evals.json` inside your skill directory:
 - **Cover edge cases.** Include at least one prompt that tests a boundary condition — a malformed input, an unusual request, or a case where the skill's instructions might be ambiguous.
 - **Use realistic context.** Real users mention file paths, column names, and personal context. Prompts like "process this data" are too vague to test anything useful.
 
-Don't worry about defining specific pass/fail checks yet — just the prompts and expected outputs. You'll add detailed checks (called assertions) after you see what the first run produces.
+Don't worry about defining specific pass/fail checks yet — just the prompts and expected outputs. You'll add detailed checks (called expectations) after you see what the first run produces.
 
 ## Running evals
 
@@ -64,7 +64,7 @@ csv-analyzer-workspace/
     │   ├── with_skill/
     │   │   ├── outputs/       # Files produced by the run
     │   │   ├── timing.json    # Tokens and duration
-    │   │   └── grading.json   # Assertion results
+    │   │   └── grading.json   # Expectation results
     │   └── without_skill/
     │       ├── outputs/
     │       ├── timing.json
@@ -124,24 +124,24 @@ Timing data lets you compare how much time and tokens the skill costs relative t
 In Claude Code, when a subagent task finishes, the [task completion notification](https://platform.claude.com/docs/en/agent-sdk/typescript#sdk-task-notification-message) includes `total_tokens` and `duration_ms`. Save these values immediately — they aren't persisted anywhere else.
 </Tip>
 
-## Writing assertions
+## Writing expectations
 
-Assertions are verifiable statements about what the output should contain or achieve. Add them after you see your first round of outputs — you often don't know what "good" looks like until the skill has run.
+Expectations are verifiable statements about what the output should contain or achieve. Add them after you see your first round of outputs — you often don't know what "good" looks like until the skill has run.
 
-Good assertions:
+Good expectations:
 
 - `"The output file is valid JSON"` — programmatically verifiable.
 - `"The bar chart has labeled axes"` — specific and observable.
 - `"The report includes at least 3 recommendations"` — countable.
 
-Weak assertions:
+Weak expectations:
 
 - `"The output is good"` — too vague to grade.
 - `"The output uses exactly the phrase 'Total Revenue: $X'"` — too brittle; correct output with different wording would fail.
 
-Not everything needs an assertion. Some qualities — writing style, visual design, whether the output "feels right" — are hard to decompose into pass/fail checks. These are better caught during [human review](#reviewing-results-with-a-human). Reserve assertions for things that can be checked objectively.
+Not everything needs an expectation. Some qualities — writing style, visual design, whether the output "feels right" — are hard to decompose into pass/fail checks. These are better caught during [human review](#reviewing-results-with-a-human). Reserve expectations for things that can be checked objectively.
 
-Add assertions to each test case in `evals/evals.json`:
+Add expectations to each test case in `evals/evals.json`:
 
 ```json evals/evals.json highlight={9-14}
 {
@@ -152,7 +152,7 @@ Add assertions to each test case in `evals/evals.json`:
       "prompt": "I have a CSV of monthly sales data in data/sales_2025.csv. Can you find the top 3 months by revenue and make a bar chart?",
       "expected_output": "A bar chart image showing the top 3 months by revenue, with labeled axes and values.",
       "files": ["evals/files/sales_2025.csv"],
-      "assertions": [
+      "expectations": [
         "The output includes a bar chart image file",
         "The chart shows exactly 3 months",
         "Both axes are labeled",
@@ -165,13 +165,13 @@ Add assertions to each test case in `evals/evals.json`:
 
 ## Grading outputs
 
-Grading means evaluating each assertion against the actual outputs and recording **PASS** or **FAIL** with specific evidence. The evidence should quote or reference the output, not just state an opinion.
+Grading means evaluating each expectation against the actual outputs and recording **PASS** or **FAIL** with specific evidence. The evidence should quote or reference the output, not just state an opinion.
 
-The simplest approach is to give the outputs and assertions to an LLM and ask it to evaluate each one. For assertions that can be checked by code (valid JSON, correct row count, file exists with expected dimensions), use a verification script — scripts are more reliable than LLM judgment for mechanical checks and reusable across iterations.
+The simplest approach is to give the outputs and expectations to an LLM and ask it to evaluate each one. For expectations that can be checked by code (valid JSON, correct row count, file exists with expected dimensions), use a verification script — scripts are more reliable than LLM judgment for mechanical checks and reusable across iterations.
 
 ```json grading.json
 {
-  "assertion_results": [
+  "expectations": [
     {
       "text": "The output includes a bar chart image file",
       "passed": true,
@@ -204,11 +204,11 @@ The simplest approach is to give the outputs and assertions to an LLM and ask it
 
 ### Grading principles
 
-- **Require concrete evidence for a PASS.** Don't give the benefit of the doubt. If an assertion says "includes a summary" and the output has a section titled "Summary" with one vague sentence, that's a FAIL — the label is there but the substance isn't.
-- **Review the assertions themselves, not just the results.** While grading, notice when assertions are too easy (always pass regardless of skill quality), too hard (always fail even when the output is good), or unverifiable (can't be checked from the output alone). Fix these for the next iteration.
+- **Require concrete evidence for a PASS.** Don't give the benefit of the doubt. If an expectation says "includes a summary" and the output has a section titled "Summary" with one vague sentence, that's a FAIL — the label is there but the substance isn't.
+- **Review the expectations themselves, not just the results.** While grading, notice when expectations are too easy (always pass regardless of skill quality), too hard (always fail even when the output is good), or unverifiable (can't be checked from the output alone). Fix these for the next iteration.
 
 <Tip>
-For comparing two skill versions, try **blind comparison**: present both outputs to an LLM judge without revealing which came from which version. The judge scores holistic qualities — organization, formatting, usability, polish — on its own rubric, free from bias about which version "should" be better. This complements assertion grading: two outputs might both pass all assertions but differ significantly in overall quality.
+For comparing two skill versions, try **blind comparison**: present both outputs to an LLM judge without revealing which came from which version. The judge scores holistic qualities — organization, formatting, usability, polish — on its own rubric, free from bias about which version "should" be better. This complements expectation grading: two outputs might both pass all expectations but differ significantly in overall quality.
 </Tip>
 
 ## Aggregating results
@@ -247,15 +247,15 @@ Standard deviation (`stddev`) is only meaningful with multiple runs per eval. In
 
 Aggregate statistics can hide important patterns. After computing the benchmarks:
 
-- **Remove or replace assertions that always pass in both configurations.** These don't tell you anything useful — the model handles them fine without the skill. They inflate the with-skill pass rate without reflecting actual skill value.
-- **Investigate assertions that always fail in both configurations.** Either the assertion is broken (asking for something the model can't do), the test case is too hard, or the assertion is checking for the wrong thing. Fix these before the next iteration.
-- **Study assertions that pass with the skill but fail without.** This is where the skill is clearly adding value. Understand *why* — which instructions or scripts made the difference?
+- **Remove or replace expectations that always pass in both configurations.** These don't tell you anything useful — the model handles them fine without the skill. They inflate the with-skill pass rate without reflecting actual skill value.
+- **Investigate expectations that always fail in both configurations.** Either the expectation is broken (asking for something the model can't do), the test case is too hard, or the expectation is checking for the wrong thing. Fix these before the next iteration.
+- **Study expectations that pass with the skill but fail without.** This is where the skill is clearly adding value. Understand *why* — which instructions or scripts made the difference?
 - **Tighten instructions when results are inconsistent across runs.** If the same eval passes sometimes and fails others (reflected as high `stddev` in the benchmark), the eval may be flaky (sensitive to model randomness), or the skill's instructions may be ambiguous enough that the model interprets them differently each time. Add examples or more specific guidance to reduce ambiguity.
 - **Check time and token outliers.** If one eval takes 3x longer than the others, read its execution transcript (the full log of what the model did during the run) to find the bottleneck.
 
 ## Reviewing results with a human
 
-Assertion grading and pattern analysis catch a lot, but they only check what you thought to write assertions for. A human reviewer brings a fresh perspective — catching issues you didn't anticipate, noticing when the output is technically correct but misses the point, or spotting problems that are hard to express as pass/fail checks. For each test case, review the actual outputs alongside the grades.
+Expectation grading and pattern analysis catch a lot, but they only check what you thought to write expectations for. A human reviewer brings a fresh perspective — catching issues you didn't anticipate, noticing when the output is technically correct but misses the point, or spotting problems that are hard to express as pass/fail checks. For each test case, review the actual outputs alongside the grades.
 
 Record specific feedback for each test case and save it in the workspace (e.g., as a `feedback.json` alongside the eval directories):
 
@@ -272,11 +272,11 @@ Record specific feedback for each test case and save it in the workspace (e.g., 
 
 After grading and reviewing, you have three sources of signal:
 
-- **Failed assertions** point to specific gaps — a missing step, an unclear instruction, or a case the skill doesn't handle.
+- **Failed expectations** point to specific gaps — a missing step, an unclear instruction, or a case the skill doesn't handle.
 - **Human feedback** points to broader quality issues — the approach was wrong, the output was poorly structured, or the skill produced a technically correct but unhelpful result.
 - **Execution transcripts** reveal *why* things went wrong. If the agent ignored an instruction, the instruction may be ambiguous. If the agent spent time on unproductive steps, those instructions may need to be simplified or removed.
 
-The most effective way to turn these signals into skill improvements is to give all three — along with the current `SKILL.md` — to an LLM and ask it to propose changes. The LLM can synthesize patterns across failed assertions, reviewer complaints, and transcript behavior that would be tedious to connect manually. When prompting the LLM, include these guidelines:
+The most effective way to turn these signals into skill improvements is to give all three — along with the current `SKILL.md` — to an LLM and ask it to propose changes. The LLM can synthesize patterns across failed expectations, reviewer complaints, and transcript behavior that would be tedious to connect manually. When prompting the LLM, include these guidelines:
 
 - **Generalize from feedback.** The skill will be used across many different prompts, not just the test cases. Fixes should address underlying issues broadly rather than adding narrow patches for specific examples.
 - **Keep the skill lean.** Fewer, better instructions often outperform exhaustive rules. If transcripts show wasted work (unnecessary validation, unneeded intermediate outputs), remove those instructions. If pass rates plateau despite adding more rules, the skill may be over-constrained — try removing instructions and see if results hold or improve.
@@ -294,5 +294,5 @@ The most effective way to turn these signals into skill improvements is to give 
 Stop when you're satisfied with the results, feedback is consistently empty, or you're no longer seeing meaningful improvement between iterations.
 
 <Tip>
-The [`skill-creator`](https://github.com/anthropics/skills/tree/main/skills/skill-creator) Skill automates much of this workflow — running evals, grading assertions, aggregating benchmarks, and presenting results for human review.
+The [`skill-creator`](https://github.com/anthropics/skills/tree/main/skills/skill-creator) Skill automates much of this workflow — running evals, grading expectations, aggregating benchmarks, and presenting results for human review.
 </Tip>
