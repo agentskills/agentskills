@@ -413,4 +413,14 @@ export const clients = [
     instructionsUrl: "https://docs.openclaw.ai/tools/skills",
     sourceCodeUrl: "https://github.com/openclaw/openclaw",
   },
+  {
+    name: "UIZZE",
+    description: "UIZZE is a UI reference service for coding agents with 800,000+ real web and iOS screens, a free anti-ui-slop Agent Skill, and a hosted MCP preview.",
+    url: "https://uizze.com/",
+    lightSrc: "/images/logos/uizze/uizze-logo-light.png",
+    darkSrc: "/images/logos/uizze/uizze-logo-dark.png",
+    scale: 0.55,
+    instructionsUrl: "https://uizze.com/.well-known/agent-skills/anti-ui-slop/SKILL.md",
+    sourceCodeUrl: "https://github.com/uizze/uizze",
+  },
 ];
