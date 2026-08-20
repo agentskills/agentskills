@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 460" role="img" aria-labelledby="title">
+  <title id="title">SandBase Harness</title>
+  <path fill="#f4f4f5" d="M134 91h192c24 0 39 18 39 44v48l-123 85c-8 6-17 6-25 0L91 183v-48c0-26 17-44 43-44Z"/>
+  <rect width="274" height="92" x="91" y="273" fill="#f4f4f5" rx="43"/>
+  <rect width="22" height="45" x="171" y="137" fill="#0b0d12" rx="11"/>
+  <rect width="22" height="45" x="262" y="137" fill="#0b0d12" rx="11"/>
+  <rect width="45" height="23" x="128" y="308" fill="#12c993" rx="12"/>
+</svg>

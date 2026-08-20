@@ -25,6 +25,16 @@ export const clients = [
     sourceCodeUrl: "https://github.com/zeroclaw-labs/zeroclaw",
   },
   {
+    name: "SandBase Harness",
+    description: "SandBase Harness is an open-source, local-first AI agent runtime with package validation, API and dashboard discovery, and runtime injection for Agent Skills.",
+    url: "https://github.com/sandbaseai/sandbase-harness",
+    lightSrc: "/images/logos/sandbase-harness/sandbase-harness-logo-light.svg",
+    darkSrc: "/images/logos/sandbase-harness/sandbase-harness-logo-dark.svg",
+    scale: 0.55,
+    instructionsUrl: "https://github.com/sandbaseai/sandbase-harness/blob/main/docs/skills.md",
+    sourceCodeUrl: "https://github.com/sandbaseai/sandbase-harness",
+  },
+  {
     name: "Gemini CLI",
     description: "Gemini CLI is an open-source AI agent that brings the power of Gemini directly into your terminal.",
     url: "https://geminicli.com",
