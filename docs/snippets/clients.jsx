@@ -415,7 +415,7 @@ export const clients = [
   },
   {
     name: "UIZZE",
-    description: "UIZZE is a UI reference service for coding agents with 800,000+ real web and iOS screens, a free anti-ui-slop Agent Skill, and a hosted MCP preview.",
+    description: "UIZZE is a UI reference service for coding agents with 800,000+ real web and iOS screens, a free anti-ui-slop Agent Skill, and an optional authenticated MCP.",
     url: "https://uizze.com/",
     lightSrc: "/images/logos/uizze/uizze-logo-light.png",
     darkSrc: "/images/logos/uizze/uizze-logo-dark.png",
