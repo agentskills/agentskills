@@ -1,23 +1,32 @@
 ---
 title: "Quickstart"
-description: "Create your first Agent Skill and see it work in VS Code."
+description: "Create your first Agent Skill and try it in VS Code or Cursor."
 ---
 
 In this tutorial, you'll create a skill that gives an agent the capability to roll dice using a random number generator.
 
 ## Prerequisites
 
+Pick one compatible agent:
+
 - [VS Code](https://code.visualstudio.com/) with [GitHub Copilot](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot)
+- [Cursor](https://cursor.com/) (Agent chat)
 
 <Note>
-This tutorial uses VS Code, but Agent Skills are an open format. The same skill works in any compatible agent, including Claude Code and OpenAI Codex.
+Agent Skills are an open format. The same `SKILL.md` works across compatible agents, including VS Code, Cursor, Claude Code, and OpenAI Codex. Paths differ by client — this guide covers VS Code and Cursor.
 </Note>
 
 ## Create the skill
 
-A skill is a folder containing a `SKILL.md` file. VS Code looks for skills in `.agents/skills/` by default. Create `.agents/skills/roll-dice/SKILL.md` in your project:
+A skill is a folder containing a `SKILL.md` file.
 
-````markdown .agents/skills/roll-dice/SKILL.md
+**VS Code** looks for skills in `.agents/skills/` by default. Create `.agents/skills/roll-dice/SKILL.md` in your project.
+
+**Cursor** looks for project skills in `.cursor/skills/` (and also discovers `.agents/skills/`). Create either `.cursor/skills/roll-dice/SKILL.md` or `.agents/skills/roll-dice/SKILL.md`.
+
+Use the same file contents either way:
+
+````markdown
 ---
 name: roll-dice
 description: Roll dice using a random number generator. Use when asked to roll a die (d6, d20, etc.), roll dice, or generate a random dice roll.
@@ -46,11 +55,20 @@ That's it — one file, under 20 lines. Here's what each part does:
 
 ## Try it out
 
+### VS Code
+
 1. Open your project in VS Code.
 2. Open the Copilot Chat panel.
 3. Select **Agent** mode from the mode dropdown at the bottom of the chat panel.
 4. Type `/skills` to confirm that `roll-dice` appears in the list. If it doesn't, check that the file is at `.agents/skills/roll-dice/SKILL.md` relative to your project root.
 5. Ask: **"Roll a d20"**
+
+### Cursor
+
+1. Open your project in Cursor.
+2. Open **Agent** chat.
+3. Type `/` and confirm that `roll-dice` appears, or ask: **"Roll a d20"**
+4. If the skill doesn't show up, confirm the file is at `.cursor/skills/roll-dice/SKILL.md` or `.agents/skills/roll-dice/SKILL.md` relative to your project root. See [Cursor skills docs](https://cursor.com/docs/context/skills) for user-level and nested monorepo paths.
 
 The agent should activate the `roll-dice` skill. It may ask for permission to run a terminal command — allow it. It will run the command and return a random number between 1 and 20.
 

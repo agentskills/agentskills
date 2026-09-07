@@ -160,6 +160,10 @@ metadata:
 ```
 </Card>
 
+<Note>
+Some clients also accept **additional top-level frontmatter fields** that are not part of this specification (for example, Cursor's [`paths`](https://cursor.com/docs/context/skills) and `disable-model-invocation`). Those fields are client-specific extensions. Prefer the standard fields above when you want a skill to stay portable; add client-specific fields only when you intentionally target that client.
+</Note>
+
 #### `allowed-tools` field
 
 The optional `allowed-tools` field:
