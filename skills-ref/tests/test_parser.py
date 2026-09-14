@@ -80,6 +80,23 @@ license: MIT
     assert props.license == "MIT"
 
 
+def test_read_utf8_skill(tmp_path):
+    """SKILL.md is always decoded as UTF-8 regardless of the host locale."""
+    skill_dir = tmp_path / "unicode-skill"
+    skill_dir.mkdir()
+    content = """---
+name: unicode-skill
+description: Obsługa języka polskiego — 日本語
+---
+# Unicode
+"""
+    (skill_dir / "SKILL.md").write_bytes(content.encode("utf-8"))
+
+    props = read_properties(skill_dir)
+
+    assert props.description == "Obsługa języka polskiego — 日本語"
+
+
 def test_read_with_metadata(tmp_path):
     skill_dir = tmp_path / "my-skill"
     skill_dir.mkdir()

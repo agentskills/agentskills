@@ -16,6 +16,35 @@ description: A test skill
     assert errors == []
 
 
+def test_valid_utf8_skill(tmp_path):
+    """UTF-8 content validates on every platform."""
+    skill_dir = tmp_path / "unicode-skill"
+    skill_dir.mkdir()
+    content = """---
+name: unicode-skill
+description: Obsługa języka polskiego — 日本語
+---
+# Unicode
+"""
+    (skill_dir / "SKILL.md").write_bytes(content.encode("utf-8"))
+
+    assert validate(skill_dir) == []
+
+
+def test_invalid_utf8_skill_returns_validation_error(tmp_path):
+    """Invalid UTF-8 should be reported instead of leaking a traceback."""
+    skill_dir = tmp_path / "invalid-utf8"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_bytes(
+        b"---\nname: invalid-utf8\ndescription: \xff\n---\n"
+    )
+
+    errors = validate(skill_dir)
+
+    assert len(errors) == 1
+    assert errors[0].startswith("SKILL.md is not valid UTF-8:")
+
+
 def test_nonexistent_path(tmp_path):
     errors = validate(tmp_path / "nonexistent")
     assert len(errors) == 1
