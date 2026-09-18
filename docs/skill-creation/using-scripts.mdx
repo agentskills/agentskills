@@ -61,11 +61,11 @@ When an existing package already does what you need, you can reference it direct
 
     ```bash
     deno run npm:create-vite@6 my-app
-    deno run --allow-read npm:eslint@9 -- --fix .
+    deno run --allow-read --allow-write=. --allow-env npm:eslint@9 --fix .
     ```
 
     - Permission flags (`--allow-read`, etc.) are required for filesystem/network access.
-    - Use `--` to separate Deno flags from the tool's own flags.
+    - Put Deno flags before the package specifier and the tool's own flags after it. For ESLint, `--allow-env` permits environment access and `--allow-write=.` permits fixes in the current directory.
   </Tab>
   <Tab title="go run">
     [go run](https://pkg.go.dev/cmd/go#hdr-Compile_and_run_Go_program) compiles and runs Go packages directly. It is built into the `go` command.
