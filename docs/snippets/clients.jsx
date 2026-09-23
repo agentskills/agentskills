@@ -413,4 +413,13 @@ export const clients = [
     instructionsUrl: "https://docs.openclaw.ai/tools/skills",
     sourceCodeUrl: "https://github.com/openclaw/openclaw",
   },
+  {
+    name: "Agentastic.dev",
+    description: "Agentastic.dev is a native macOS app for running coding agents such as Claude Code and Codex in parallel, each in its own git worktree, with a built-in editor, terminal, browser, and diff review.",
+    url: "https://www.agentastic.dev/",
+    lightSrc: "/images/logos/agentastic-dev/light.svg",
+    darkSrc: "/images/logos/agentastic-dev/dark.svg",
+    scale: 1.2,
+    instructionsUrl: "https://www.agentastic.dev/docs/features/skills",
+  },
 ];
