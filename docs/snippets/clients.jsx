@@ -413,4 +413,13 @@ export const clients = [
     instructionsUrl: "https://docs.openclaw.ai/tools/skills",
     sourceCodeUrl: "https://github.com/openclaw/openclaw",
   },
+  {
+    name: "Reasonix",
+    description: "Reasonix is an open-source coding agent built around DeepSeek, with a terminal UI, a desktop app, and ACP support for editors. It loads skills from the .reasonix, .agents and .claude skill folders.",
+    url: "https://reasonix.io/",
+    lightSrc: "/images/logos/reasonix/reasonix-logo-light.svg",
+    darkSrc: "/images/logos/reasonix/reasonix-logo-dark.svg",
+    instructionsUrl: "https://github.com/esengine/DeepSeek-Reasonix/blob/studio/docs/SKILLS.md",
+    sourceCodeUrl: "https://github.com/esengine/DeepSeek-Reasonix",
+  },
 ];
