@@ -288,11 +288,30 @@ my-service    running   2025-01-15
 
 **Separate data from diagnostics:** send structured data to stdout and progress messages, warnings, and other diagnostics to stderr. This lets the agent capture clean, parseable output while still having access to diagnostic information when needed.
 
+### Bind confirmation to what was previewed
+
+A `--confirm` flag records that the user approved *something*, not *what* they approved. That gap matters when the script reads fresh state before it acts: a new quote, a current price, the latest build. Between the preview and the execution, that state can change. The script then carries out an action the user never saw.
+
+Have the preview print a short fingerprint of the fields that decide the outcome, and require it at execution. The script recomputes the fingerprint from the state it is about to act on, and refuses if the two differ:
+
+```
+# Preview: read-only, prints the terms and their fingerprint
+$ python scripts/transfer.py preview --to acct-42 --amount 250
+{"to": "acct-42", "amount": "250.00", "fee": "2.50", "approval_id": "a1f3c9e2"}
+
+# Execute: requires the fingerprint the user approved
+$ python scripts/transfer.py execute --to acct-42 --amount 250 --approved a1f3c9e2
+Error: terms changed since preview (fee 2.50 -> 9.00; approved a1f3c9e2, now 7be01d44).
+       Nothing was executed. Show the new terms to the user and re-run with the new approval_id.
+```
+
+The skill's instructions then tell the agent to show the preview, pass the `approval_id` of the option the user chose, and ask again when the script reports a change. This leaves the agent no way to satisfy the check without the user's approval of the actual terms.
+
 ### Further considerations
 
 - **Idempotency.** Agents may retry commands. "Create if not exists" is safer than "create and fail on duplicate."
 - **Input constraints.** Reject ambiguous input with a clear error rather than guessing. Use enums and closed sets where possible.
 - **Dry-run support.** For destructive or stateful operations, a `--dry-run` flag lets the agent preview what will happen.
 - **Meaningful exit codes.** Use distinct exit codes for different failure types (not found, invalid arguments, auth failure) and document them in your `--help` output so the agent knows what each code means.
-- **Safe defaults.** Consider whether destructive operations should require explicit confirmation flags (`--confirm`, `--force`) or other safeguards appropriate to the risk level.
+- **Safe defaults.** Consider whether destructive operations should require explicit confirmation flags (`--confirm`, `--force`) or other safeguards appropriate to the risk level. When an operation can't be undone, [bind the confirmation to what was previewed](#bind-confirmation-to-what-was-previewed).
 - **Predictable output size.** Many agent harnesses automatically truncate tool output beyond a threshold (e.g., 10-30K characters), potentially losing critical information. If your script might produce large output, default to a summary or a reasonable limit, and support flags like `--offset` so the agent can request more information when needed. Alternatively, if output is large and not amenable to pagination, require agents to pass an `--output` flag that specifies either an output file or `-` to explicitly opt in to stdout.
