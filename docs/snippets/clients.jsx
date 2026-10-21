@@ -413,4 +413,12 @@ export const clients = [
     instructionsUrl: "https://docs.openclaw.ai/tools/skills",
     sourceCodeUrl: "https://github.com/openclaw/openclaw",
   },
+  {
+    name: "Layerwise",
+    description: "Layerwise is a desktop workspace for building, previewing, and publishing full-stack web apps with AI. It supports discovering, importing, and using Agent Skills in personal and project workflows.",
+    url: "https://layerwise.app/",
+    lightSrc: "/images/logos/layerwise/layerwise-logo-light.svg",
+    darkSrc: "/images/logos/layerwise/layerwise-logo-dark.svg",
+    instructionsUrl: "https://layerwise.app/docs/build-your-app/skills-and-mcp",
+  },
 ];
