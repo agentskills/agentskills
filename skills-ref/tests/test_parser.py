@@ -186,3 +186,37 @@ Body
     # Verify to_dict outputs as "allowed-tools" (hyphenated)
     d = props.to_dict()
     assert d["allowed-tools"] == "Bash(jq:*) Bash(git:*)"
+
+
+def test_dashes_inside_quoted_value():
+    content = """---
+name: my-skill
+description: "Read --- separated receipts"
+---
+# My Skill
+"""
+    metadata, body = parse_frontmatter(content)
+    assert metadata["description"] == "Read --- separated receipts"
+    assert body == "# My Skill"
+
+
+def test_horizontal_rule_in_body():
+    content = """---
+name: my-skill
+description: A test skill
+---
+Intro
+
+---
+
+More
+"""
+    _, body = parse_frontmatter(content)
+    assert body == "Intro\n\n---\n\nMore"
+
+
+def test_crlf_frontmatter():
+    content = "---\r\nname: my-skill\r\ndescription: A test skill\r\n---\r\n# Body\r\n"
+    metadata, body = parse_frontmatter(content)
+    assert metadata["description"] == "A test skill"
+    assert body == "# Body"
