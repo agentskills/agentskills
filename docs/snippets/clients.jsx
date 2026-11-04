@@ -413,4 +413,14 @@ export const clients = [
     instructionsUrl: "https://docs.openclaw.ai/tools/skills",
     sourceCodeUrl: "https://github.com/openclaw/openclaw",
   },
+  {
+    name: "NanoClaw",
+    description: "NanoClaw is a lightweight, open-source personal AI agent that runs each agent in its own container and connects to WhatsApp, Telegram, Slack, Discord, and other messaging apps.",
+    url: "https://nanoclaw.dev/",
+    lightSrc: "/images/logos/nanoclaw/nanoclaw-logo-light.svg",
+    darkSrc: "/images/logos/nanoclaw/nanoclaw-logo-dark.svg",
+    scale: 1.2,
+    instructionsUrl: "https://docs.nanoclaw.dev/extend/writing-skills",
+    sourceCodeUrl: "https://github.com/nanocoai/nanoclaw",
+  },
 ];
