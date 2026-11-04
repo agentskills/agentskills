@@ -130,6 +130,32 @@ done | jq -s '.'
 If your agent client supports it, you can stop a run early once the outcome is clear — the agent either consulted the skill or started working without it. This can significantly reduce the time and cost of running the full eval set.
 </Tip>
 
+## Testing against neighboring skills
+
+The test above installs one skill and checks whether it loads. In practice your skill sits in a catalog next to others, and a query can fail in two ways: the agent picks no skill, or it picks a neighboring skill instead. A description can trigger reliably on its own and still lose queries once a sibling with overlapping scope is installed — for example, a theming skill losing "make my slides match our colors" to a presentation skill.
+
+To check this, test selection from the whole catalog the agent will see:
+
+1. **Collect the catalog.** Your skill plus the skills a user is likely to have alongside it: the rest of your repository or plugin, and any skill whose description covers similar tasks.
+2. **Write queries for each skill.** Give every skill in the catalog a few should-select queries, written from the user's task rather than from the skill's `SKILL.md`. Queries copied from a skill's own headings or examples make it look easier to select than it is.
+
+   ```json routing_queries.json
+   {
+     "csv-analysis": ["my boss wants a chart of revenue by month from data/q4.csv"],
+     "excel-editing": ["fix the broken SUM formulas in budget.xlsx"]
+   }
+   ```
+3. **Ask the model to pick.** For each query, show the model every skill's `name` and `description` and ask it to name the one skill it would load, or none. Shuffle the order of the skills for each query: a model that favors the first or last option will otherwise look better or worse depending on where your skill happens to be listed.
+4. **Count "none" as a miss** for a should-select query, and run each query more than once (with a different order) to see how much the result moves on its own.
+
+Report, for each model you test:
+
+- **Selection accuracy per skill**: the fraction of a skill's queries for which it was picked.
+- **Where the misses went**: "none" means the description does not claim the task; another skill means the two descriptions overlap. A skill that is picked for other skills' queries is too broad, even if its own accuracy is high.
+- **The model and the number of skills in the catalog.** Accuracy depends on both; a number without them cannot be compared.
+
+Selection from names and descriptions alone is a proxy: a real client may also consult rules files, available tools, or the conversation so far. It is cheap — one short model call per query — so use it to compare descriptions and models quickly, and the end-to-end test [above](#testing-whether-a-description-triggers) to confirm the result in your client.
+
 ## Avoiding overfitting with train/validation splits
 
 If you optimize the description against all your queries, you risk overfitting — crafting a description that works for these specific phrasings but fails on new ones.
@@ -151,6 +177,7 @@ If you're using a script like the one [above](#running-multiple-times), you can 
 3. **Revise the description.** Focus on generalizing:
    - If should-trigger queries are failing, the description may be too narrow. Broaden the scope or add context about when the skill is useful.
    - If should-not-trigger queries are false-triggering, the description may be too broad. Add specificity about what the skill does *not* do, or clarify the boundary between this skill and adjacent capabilities.
+   - If a neighboring skill takes your queries, sharpen the boundary in both descriptions: say what each one is for, and which one applies to the overlapping case.
    - Avoid adding specific keywords from failed queries — that's overfitting. Instead, find the general category or concept those queries represent and address that.
    - If you're stuck after several iterations, try a structurally different approach to the description rather than incremental tweaks. A different framing or sentence structure may break through where refinement can't.
    - Check that the description stays under the 1024-character limit — descriptions tend to grow during optimization.
