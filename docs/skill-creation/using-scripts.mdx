@@ -288,6 +288,20 @@ my-service    running   2025-01-15
 
 **Separate data from diagnostics:** send structured data to stdout and progress messages, warnings, and other diagnostics to stderr. This lets the agent capture clean, parseable output while still having access to diagnostic information when needed.
 
+### Handle sensitive inputs
+
+For scripts that process private documents or conversation exports, explain the
+information flow in the skill instructions: which files the script reads, where
+it writes results, and whether it makes network requests. A script can run
+locally while its stdout, stderr, or later file reads enter the agent's model
+context. Local execution alone does not establish that the workflow stays offline.
+
+Keep default diagnostics to the counts or status needed for the next step.
+Offer an explicit output path for results containing private text, and explain
+that opening those results through the agent's tools may expose them to the model.
+Use synthetic fixtures in examples and public bug reports so users can reproduce
+the workflow without sharing their private inputs.
+
 ### Further considerations
 
 - **Idempotency.** Agents may retry commands. "Create if not exists" is safer than "create and fail on duplicate."
