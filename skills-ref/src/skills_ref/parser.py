@@ -39,15 +39,20 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
     Raises:
         ParseError: If frontmatter is missing or invalid
     """
-    if not content.startswith("---"):
+    lines = content.split("\n")
+    if not lines or lines[0].rstrip() != "---":
         raise ParseError("SKILL.md must start with YAML frontmatter (---)")
 
-    parts = content.split("---", 2)
-    if len(parts) < 3:
+    # The closing delimiter is a line that is exactly "---"; a "---" inside a
+    # value (e.g. a quoted description) must not end the frontmatter.
+    for i, line in enumerate(lines[1:], start=1):
+        if line.rstrip() == "---":
+            break
+    else:
         raise ParseError("SKILL.md frontmatter not properly closed with ---")
 
-    frontmatter_str = parts[1]
-    body = parts[2].strip()
+    frontmatter_str = "\n".join(lines[1:i])
+    body = "\n".join(lines[i + 1 :]).strip()
 
     try:
         parsed = strictyaml.load(frontmatter_str)

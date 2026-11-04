@@ -288,3 +288,13 @@ Body
 """)
     errors = validate(skill_dir)
     assert errors == [], f"Expected no errors, got: {errors}"
+
+
+def test_dashes_inside_quoted_description(tmp_path):
+    skill_dir = tmp_path / "counterexample"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text(
+        '---\nname: counterexample\ndescription: "Read --- separated receipts"\n---\n# Receipts\n',
+        encoding="utf-8",
+    )
+    assert validate(skill_dir) == []
