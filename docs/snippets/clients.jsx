@@ -413,4 +413,12 @@ export const clients = [
     instructionsUrl: "https://docs.openclaw.ai/tools/skills",
     sourceCodeUrl: "https://github.com/openclaw/openclaw",
   },
+  {
+    name: "Uno",
+    description: "Uno is a small, fast coding agent for the terminal, written in Rust. It works with Anthropic, OpenAI and any OpenAI-compatible model, runs shell commands in a sandbox and can undo every file change.",
+    url: "https://unocode.motiontic.com/",
+    lightSrc: "/images/logos/uno/uno-logo-light.svg",
+    darkSrc: "/images/logos/uno/uno-logo-dark.svg",
+    instructionsUrl: "https://unocode.motiontic.com/#context",
+  },
 ];
