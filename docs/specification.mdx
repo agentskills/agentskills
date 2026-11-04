@@ -160,6 +160,14 @@ metadata:
 ```
 </Card>
 
+**Reserved key prefix.** Keys beginning with `io.modelcontextprotocol/` are reserved for properties defined by, or explicitly incubated through, the [Model Context Protocol](https://modelcontextprotocol.io) standards process.
+
+- Reserving the prefix does not standardize any key under it. Whether a given `io.modelcontextprotocol/…` key exists, and what it means, is defined by the MCP specification or an MCP extension, not by this specification.
+- Other vendors and ecosystems should not define keys under this prefix. Use a reverse-domain namespace you control, such as `com.example/my-key`.
+- Agents must not interpret or act on keys under this prefix that they do not recognize, and must not reject a skill because it carries one. Unrecognized keys should be preserved when frontmatter is copied, re-served, or compared against another copy of the same skill.
+- If a property under this prefix is later promoted to a top-level frontmatter field, the change that promotes it must define how the two forms relate: which takes precedence when both are present, and for how long the namespaced key remains accepted.
+- This reservation applies to `SKILL.md` frontmatter `metadata` only. It does not concern MCP's own `_meta` fields on protocol messages, which MCP governs separately.
+
 #### `allowed-tools` field
 
 The optional `allowed-tools` field:
