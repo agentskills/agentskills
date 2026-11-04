@@ -413,4 +413,13 @@ export const clients = [
     instructionsUrl: "https://docs.openclaw.ai/tools/skills",
     sourceCodeUrl: "https://github.com/openclaw/openclaw",
   },
+  {
+    name: "CoWork OS",
+    description: "CoWork OS is an open-source desktop agent for macOS and Windows where every action is visible and approvable before it runs, with bundled and importable Agent Skills.",
+    url: "https://coworkosapp.com/",
+    lightSrc: "/images/logos/cowork-os/cowork-os-logo-light.png",
+    darkSrc: "/images/logos/cowork-os/cowork-os-logo-dark.png",
+    instructionsUrl: "https://coworkosapp.com/docs/skill-store-and-external-skills/",
+    sourceCodeUrl: "https://github.com/CoWork-OS/CoWork-OS",
+  },
 ];
