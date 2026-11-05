@@ -89,6 +89,17 @@ The [specification](/specification#progressive-disclosure) recommends keeping `S
 
 The key is telling the agent *when* to load each file. "Read `references/api-errors.md` if the API returns a non-200 status code" is more useful than a generic "see references/ for details." This lets the agent load context on demand rather than up front, which is how [progressive disclosure](/specification#progressive-disclosure) is designed to work.
 
+## Depending on other skills
+
+The Agent Skills format has no mechanism for one skill to depend on another: there is no dependency field to declare, and installing a skill never installs anything else. Every skill available to the agent got there because the user (or their client) installed it separately. The [specification](/specification#referencing-other-skills) is explicit that skills reference each other only as plain prose, if at all.
+
+In practice:
+
+- **Prefer self-contained skills.** If two skills share a gotcha, a template, or a small procedure, duplicating it is usually better than coupling them — each skill then works on its own, and changes stay local.
+- **Share real logic as scripts, not instructions.** When several skills need the same non-trivial capability (parsing a format, calling an internal API), bundle a tested script in each skill's `scripts/` directory rather than relying on another skill's presence.
+- **Declare external requirements with `compatibility`.** A skill that needs a system tool should say so in its [`compatibility`](/specification#compatibility-field) field — that covers command-line dependencies without implying any installation step.
+- **Orchestrate through the agent, not the format.** An orchestrating skill may instruct the agent to also apply other installed skills, but whether that chaining happens is up to the client. Keep critical workflows working when only one of your skills is installed.
+
 ## Calibrating control
 
 Not every part of a skill needs the same level of prescriptiveness. Match the specificity of your instructions to the fragility of the task.
