@@ -7,6 +7,15 @@
 */
 export const clients = [
   {
+    name: "NullClaw",
+    description: "NullClaw is an open-source AI assistant runtime written in Zig, with support for multiple model providers, messaging channels, and Agent Skills.",
+    url: "https://github.com/nullclaw/nullclaw",
+    lightSrc: "/images/logos/nullclaw/nullclaw-logo-light.svg",
+    darkSrc: "/images/logos/nullclaw/nullclaw-logo-dark.svg",
+    instructionsUrl: "https://github.com/nullclaw/nullclaw/blob/main/docs/en/commands.md#skills",
+    sourceCodeUrl: "https://github.com/nullclaw/nullclaw",
+  },
+  {
     name: "Junie",
     description: "Junie is an LLM-agnostic coding agent built for real-world development. It is built on top of the IntelliJ Platform, so it understands your project the same way your editor does.",
     url: "https://junie.jetbrains.com/",
