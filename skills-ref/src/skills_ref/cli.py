@@ -1,6 +1,7 @@
 """CLI for skills-ref library."""
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -10,6 +11,8 @@ from .errors import SkillError
 from .parser import read_properties
 from .prompt import to_prompt
 from .validator import validate
+
+_FIELD_NAME_RE = re.compile(r"^[a-z]+(-[a-z]+)*$")
 
 
 def _is_skill_md_file(path: Path) -> bool:
@@ -26,7 +29,12 @@ def main():
 
 @main.command("validate")
 @click.argument("skill_path", type=click.Path(exists=True, path_type=Path))
-def validate_cmd(skill_path: Path):
+@click.option(
+    "--allow-field",
+    multiple=True,
+    help="Additional frontmatter field to allow (repeatable).",
+)
+def validate_cmd(skill_path: Path, allow_field: tuple[str, ...]):
     """Validate a skill directory.
 
     Checks that the skill has a valid SKILL.md with proper frontmatter,
@@ -39,7 +47,20 @@ def validate_cmd(skill_path: Path):
     if _is_skill_md_file(skill_path):
         skill_path = skill_path.parent
 
-    errors = validate(skill_path)
+    if allow_field:
+        invalid = [f for f in allow_field if not _FIELD_NAME_RE.match(f)]
+        if invalid:
+            click.echo(
+                f"Error: invalid --allow-field value: {', '.join(repr(f) for f in invalid)}. "
+                "Field names must be lowercase ASCII letters separated by single hyphens "
+                "(e.g. 'user-invocable').",
+                err=True,
+            )
+            sys.exit(1)
+        extra = set(allow_field)
+    else:
+        extra = None
+    errors = validate(skill_path, extra_allowed_fields=extra)
 
     if errors:
         click.echo(f"Validation failed for {skill_path}:", err=True)
