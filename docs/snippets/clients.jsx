@@ -413,4 +413,14 @@ export const clients = [
     instructionsUrl: "https://docs.openclaw.ai/tools/skills",
     sourceCodeUrl: "https://github.com/openclaw/openclaw",
   },
+  {
+    name: "Mercury CLI",
+    description: "Mercury CLI is an open-source terminal coding agent that loads skills from SKILL.md folders, runs parallel sessions, and delegates to crewmates in isolated Git worktrees.",
+    url: "https://mercury-cli.ai",
+    lightSrc: "/images/logos/mercury-cli/mercury-cli-light.svg",
+    darkSrc: "/images/logos/mercury-cli/mercury-cli-dark.svg",
+    scale: 1.4,
+    instructionsUrl: "https://github.com/Whq02/MercuryCLI/blob/main/docs/EXTENSIONS.md#what-an-extension-is",
+    sourceCodeUrl: "https://github.com/Whq02/MercuryCLI",
+  },
 ];
