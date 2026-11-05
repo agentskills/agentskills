@@ -413,4 +413,14 @@ export const clients = [
     instructionsUrl: "https://docs.openclaw.ai/tools/skills",
     sourceCodeUrl: "https://github.com/openclaw/openclaw",
   },
+  {
+    name: "Theia IDE",
+    description: "The Theia IDE is an open-source, vendor-neutral, AI-native IDE for desktop and browser. Bring your own key for any LLM, including local models. It is built on Theia AI, an open-source AI harness platform for building custom AI-native tools and IDEs.",
+    url: "https://theia-ide.org/",
+    lightSrc: "/images/logos/theia/theia-logo-light.svg",
+    darkSrc: "/images/logos/theia/theia-logo-dark.svg",
+    scale: 1.33,
+    instructionsUrl: "https://theia-ide.org/docs/user_ai/#agent-skills-alpha",
+    sourceCodeUrl: "https://github.com/eclipse-theia/theia",
+  },
 ];
