@@ -169,7 +169,7 @@ def validate(skill_dir: Path) -> list[str]:
         return ["Missing required file: SKILL.md"]
 
     try:
-        content = skill_md.read_text()
+        content = skill_md.read_text(encoding="utf-8")
         metadata, _ = parse_frontmatter(content)
     except ParseError as e:
         return [str(e)]

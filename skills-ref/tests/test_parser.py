@@ -26,6 +26,28 @@ Instructions here.
     assert "# My Skill" in body
 
 
+def test_read_properties_utf8(tmp_path):
+    """read_properties must read SKILL.md as UTF-8 regardless of platform default.
+
+    Regression: on Windows, Path.read_text() defaults to cp1252 and raises
+    UnicodeDecodeError on common UTF-8 punctuation (em-dash, smart quotes, etc.).
+    """
+    skill_dir = tmp_path / "my-skill"
+    skill_dir.mkdir()
+    (skill_dir / "SKILL.md").write_text(
+        """---
+name: my-skill
+description: Extracts text — handles UTF-8 punctuation
+---
+# My Skill — café, naïve, résumé
+""",
+        encoding="utf-8",
+    )
+    props = read_properties(skill_dir)
+    assert props.name == "my-skill"
+    assert "—" in props.description  # em-dash survived the read
+
+
 def test_missing_frontmatter():
     content = "# No frontmatter here"
     with pytest.raises(ParseError, match="must start with YAML frontmatter"):
