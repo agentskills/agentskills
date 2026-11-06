@@ -222,6 +222,16 @@ Several languages support inline dependency declarations:
   </Tab>
 </Tabs>
 
+## Testing bundled scripts
+
+A broken bundled script costs an agent turn after turn of debugging in the middle of a user's task. Test scripts like any other code before shipping the skill:
+
+- **Keep tests alongside the script**, for example in `scripts/tests/`. Tests should follow the same rules as the scripts themselves: self-contained, non-interactive, runnable with a single command.
+- **Prefer fast, dependency-free tests** that exercise the script's CLI surface — feed it a small fixture and assert on stdout and the exit code. That is exactly how the agent will invoke it.
+- **Tell the agent when to run the tests.** A line in `SKILL.md` such as "If `scripts/extract.py` fails unexpectedly, run `python3 scripts/tests/test_extract.py` and use its output to diagnose" turns your test suite into a debugging tool the agent can use on its own.
+
+Script behavior is also worth covering in your [evals](/skill-creation/evaluating-skills): add a test case whose assertions check that the script exits successfully with valid output on a representative input.
+
 ## Designing scripts for agentic use
 
 When an agent runs your script, it reads stdout and stderr to decide what to do next. A few design choices make scripts dramatically easier for agents to use.
