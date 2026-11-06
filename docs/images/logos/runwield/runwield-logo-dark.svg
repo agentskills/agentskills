@@ -1,0 +1,22 @@
+<svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 140 110"
+    width="100%"
+    height="100%"
+>
+    <g
+        transform="translate(10,10)"
+        fill="#85CBBF"
+    >
+        <path
+            d="M -5,-5 H 13 L 25.550023,52 37,20 H 55 L 66.457386,52 79,-5 H 97 L 75,95 H 55 L 46,71 37,95 H 17 Z"
+        />
+        <rect
+            x="105"
+            y="75"
+            width="20"
+            height="20"
+        >
+        </rect>
+    </g>
+</svg>

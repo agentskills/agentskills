@@ -413,4 +413,14 @@ export const clients = [
     instructionsUrl: "https://docs.openclaw.ai/tools/skills",
     sourceCodeUrl: "https://github.com/openclaw/openclaw",
   },
+  {
+    name: "RunWield",
+    description: "RunWield is an open-source coding agent harness that plans each change for your review, builds it with specialized agents, and checks the result against the plan before it calls the work done. It runs locally and works with any model.",
+    url: "https://runwield.dev/",
+    lightSrc: "/images/logos/runwield/runwield-logo-light.svg",
+    darkSrc: "/images/logos/runwield/runwield-logo-dark.svg",
+    scale: 0.6,
+    instructionsUrl: "https://docs.runwield.dev/customization/#skills",
+    sourceCodeUrl: "https://github.com/RunWield/runwield",
+  },
 ];
