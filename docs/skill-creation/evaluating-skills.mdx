@@ -47,7 +47,7 @@ Don't worry about defining specific pass/fail checks yet — just the prompts an
 
 ## Running evals
 
-The core pattern is to run each test case twice: once **with the skill** and once **without it** (or with a previous version). This gives you a baseline to compare against.
+The core pattern is to run each test case in two configurations: **with the skill** and **without it** (or with a previous version). The second configuration gives you a baseline to compare against. Run each configuration more than once — three runs is a practical minimum — and store every run in its own `run-N/` subdirectory, so you can report a mean and a standard deviation instead of a single number.
 
 ### Workspace structure
 
@@ -57,31 +57,30 @@ Organize eval results in a workspace directory alongside your skill directory. E
 csv-analyzer/
 ├── SKILL.md
 └── evals/
-    └── evals.json
+    ├── evals.json
+    └── files/             # Input files referenced by the "files" field
 csv-analyzer-workspace/
 └── iteration-1/
     ├── eval-top-months-chart/
     │   ├── with_skill/
-    │   │   ├── outputs/       # Files produced by the run
-    │   │   ├── timing.json    # Tokens and duration
-    │   │   └── grading.json   # Assertion results
+    │   │   ├── run-1/
+    │   │   │   ├── outputs/       # Files produced by the run
+    │   │   │   ├── timing.json    # Tokens and duration
+    │   │   │   └── grading.json   # Assertion results
+    │   │   ├── run-2/
+    │   │   └── run-3/
     │   └── without_skill/
-    │       ├── outputs/
-    │       ├── timing.json
-    │       └── grading.json
-    ├── eval-clean-missing-emails/
-    │   ├── with_skill/
-    │   │   ├── outputs/
-    │   │   ├── timing.json
-    │   │   └── grading.json
-    │   └── without_skill/
-    │       ├── outputs/
-    │       ├── timing.json
-    │       └── grading.json
-    └── benchmark.json         # Aggregated statistics
+    │       ├── run-1/
+    │       │   ├── outputs/
+    │       │   ├── timing.json
+    │       │   └── grading.json
+    │       ├── run-2/
+    │       └── run-3/
+    ├── eval-clean-missing-emails/   # Same structure as eval-top-months-chart
+    └── benchmark.json         # Aggregated statistics across all runs
 ```
 
-The main file you author by hand is `evals/evals.json`. The other JSON files (`grading.json`, `timing.json`, `benchmark.json`) are produced during the eval process — by the agent, by scripts, or by you.
+The main file you author by hand is `evals/evals.json`. The other JSON files (`grading.json`, `timing.json`, `benchmark.json`) are produced during the eval process — by the agent, by scripts, or by you. Each `run-N/` directory holds the artifacts for a single execution.
 
 ### Spawning runs
 
@@ -102,12 +101,12 @@ Execute this task:
 - Task: I have a CSV of monthly sales data in data/sales_2025.csv.
   Can you find the top 3 months by revenue and make a bar chart?
 - Input files: evals/files/sales_2025.csv
-- Save outputs to: csv-analyzer-workspace/iteration-1/eval-top-months-chart/with_skill/outputs/
+- Save outputs to: csv-analyzer-workspace/iteration-1/eval-top-months-chart/with_skill/run-1/outputs/
 ```
 
-For the baseline, use the same prompt but without the skill path, saving to `without_skill/outputs/`.
+For the baseline, use the same prompt but without the skill path, saving to `without_skill/run-1/outputs/`. Repeat the same instructions for `run-2/` and `run-3/`.
 
-When improving an existing skill, use the previous version as your baseline. Snapshot it before editing (`cp -r <skill-path> <workspace>/skill-snapshot/`), point the baseline run at the snapshot, and save to `old_skill/outputs/` instead of `without_skill/`.
+When improving an existing skill, use the previous version as your baseline. Snapshot it before editing (`cp -r <skill-path> <workspace>/skill-snapshot/`), point the baseline run at the snapshot, and save to `old_skill/run-1/outputs/` instead of `without_skill/`.
 
 ### Capturing timing data
 
@@ -116,7 +115,7 @@ Timing data lets you compare how much time and tokens the skill costs relative t
 ```json timing.json
 {
   "total_tokens": 84852,
-  "duration_ms": 23332
+  "duration_ms": 45012
 }
 ```
 
@@ -213,25 +212,25 @@ For comparing two skill versions, try **blind comparison**: present both outputs
 
 ## Aggregating results
 
-Once every run in the iteration is graded, compute summary statistics per configuration and save them to `benchmark.json` alongside the eval directories (e.g., `csv-analyzer-workspace/iteration-1/benchmark.json`):
+Once every run in the iteration is graded, compute summary statistics per configuration and save them to `benchmark.json` alongside the eval directories (e.g., `csv-analyzer-workspace/iteration-1/benchmark.json`). Each `mean` covers every run of every eval in that configuration, `tokens` is the mean of each run's `total_tokens`, `time_seconds` is the mean of each run's `duration_ms`, and `stddev` is the population standard deviation of those same values:
 
 ```json benchmark.json
 {
   "run_summary": {
     "with_skill": {
-      "pass_rate": { "mean": 0.83, "stddev": 0.06 },
-      "time_seconds": { "mean": 45.0, "stddev": 12.0 },
-      "tokens": { "mean": 3800, "stddev": 400 }
+      "pass_rate": { "mean": 0.88, "stddev": 0.13 },
+      "time_seconds": { "mean": 45.0, "stddev": 9.8 },
+      "tokens": { "mean": 86000, "stddev": 800 }
     },
     "without_skill": {
-      "pass_rate": { "mean": 0.33, "stddev": 0.10 },
-      "time_seconds": { "mean": 32.0, "stddev": 8.0 },
-      "tokens": { "mean": 2100, "stddev": 300 }
+      "pass_rate": { "mean": 0.38, "stddev": 0.13 },
+      "time_seconds": { "mean": 32.0, "stddev": 4.9 },
+      "tokens": { "mean": 24000, "stddev": 800 }
     },
     "delta": {
       "pass_rate": 0.50,
       "time_seconds": 13.0,
-      "tokens": 1700
+      "tokens": 62000
     }
   }
 }
@@ -240,7 +239,7 @@ Once every run in the iteration is graded, compute summary statistics per config
 The `delta` tells you what the skill costs (more time, more tokens) and what it buys (higher pass rate). A skill that adds 13 seconds but improves pass rate by 50 percentage points is probably worth it. A skill that doubles token usage for a 2-point improvement might not be.
 
 <Note>
-Standard deviation (`stddev`) is only meaningful with multiple runs per eval. In early iterations with just 2-3 test cases and single runs, focus on the raw pass counts and the delta — the statistical measures become useful as you expand the test set and run each eval multiple times.
+Standard deviation (`stddev`) is only meaningful with multiple runs per configuration. If an early iteration gives you a single run per configuration, leave `stddev` out and focus on the raw pass counts and the delta — the spread becomes useful once you run each configuration repeatedly.
 </Note>
 
 ## Analyzing patterns
