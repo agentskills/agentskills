@@ -1,0 +1,7 @@
+# WordPress Manager app
+apps/wordpress-manager/.dart_tool/
+apps/wordpress-manager/build/
+apps/wordpress-manager/android/key.properties
+*.jks
+*.keystore
+.env

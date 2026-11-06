@@ -1,0 +1,17 @@
+name: wordpress_manager
+ description: A Flutter app for managing a WordPress.com site.
+publish_to: "none"
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_appauth: ^8.0.0
+  flutter_secure_storage: ^9.2.2
+  http: ^1.2.2
+
+flutter:
+  uses-material-design: true
