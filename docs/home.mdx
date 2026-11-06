@@ -22,6 +22,8 @@ my-skill/
 └── ...               # Any additional files or directories
 ```
 
+The format defines what a skill *is* — where agents look for skills is up to each client. Most agents scan one or more conventional directories, such as `.claude/skills/` in Claude Code, `.codex/skills/` in Codex, or `.agents/skills/` in VS Code, typically at both the project and user level. Check your agent's documentation for its exact discovery locations, or follow the [Quickstart](/skill-creation/quickstart) for a working setup.
+
 ## Why Agent Skills?
 
 Agents are increasingly capable, but often don't have the context they need to do real work reliably. Skills solve this by packaging procedural knowledge and company-, team-, and user-specific context into portable, version-controlled folders that agents load on demand. This gives agents:
