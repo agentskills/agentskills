@@ -70,6 +70,37 @@ Here's what happened behind the scenes:
 
 This process uses **progressive disclosure** to let the agent access many skills without loading all their instructions up front.
 
+## Troubleshooting
+
+### The skill doesn't appear in the list
+
+The agent only finds skills in specific directories. Confirm the file is at the right path:
+
+- **VS Code**: `.agents/skills/roll-dice/SKILL.md` (project root)
+- **Claude Code**: `.claude/skills/roll-dice/SKILL.md`
+- **Codex**: `.codex/skills/roll-dice/SKILL.md`
+
+Check that:
+1. The file is saved (not just open in the editor).
+2. The **folder name** matches the `name` field exactly — `roll-dice` must be the directory name.
+3. You are running the latest chat session — restart the session after adding or moving skill files.
+
+### The agent doesn't activate the skill
+
+If `/skills` shows the skill but the agent ignores it when you ask to roll dice:
+
+- **Try a different model.** Some models are better at skill activation than others.
+- **Check the description.** The `description` field is what the agent matches against. Make sure it includes a clear trigger phrase like "Use when asked to roll a die, roll dice, or generate a random dice roll."
+- **Be explicit in your prompt.** Try "Roll a d20 using the roll-dice skill" rather than just "Roll a d20" while testing.
+
+### The agent activates the skill but doesn't run commands
+
+The skill's body tells the agent to run a terminal command. Some models or configurations may respond without actually executing the command:
+
+- **Check your agent is in Agent mode** (not Chat mode) — Chat mode may answer without tool use.
+- **Check the agent's tool permissions.** If terminal access is restricted, the agent may skip command execution.
+- **Try rephrasing the prompt** to include "run the command" explicitly.
+
 ## Next steps
 
 You've created a working Agent Skill. From here:
