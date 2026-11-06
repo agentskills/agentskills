@@ -413,4 +413,12 @@ export const clients = [
     instructionsUrl: "https://docs.openclaw.ai/tools/skills",
     sourceCodeUrl: "https://github.com/openclaw/openclaw",
   },
+  {
+    name: "TypingMind",
+    description: "TypingMind is a professional AI chat workspace for ChatGPT, Claude, Gemini, and more. Connect your own API keys and use powerful features like MCP, Skills, multi-model chat, Artifacts, Projects, AI Agents, prompt library, and more",
+    url: "https://www.typingmind.com/",
+    lightSrc: "/images/logos/typingmind/typingmind-logo-light.svg",
+    darkSrc: "/images/logos/typingmind/typingmind-logo-dark.svg",
+    instructionsUrl: "https://docs.typingmind.com/skills",
+  },
 ];
