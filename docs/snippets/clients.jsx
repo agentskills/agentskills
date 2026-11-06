@@ -413,4 +413,13 @@ export const clients = [
     instructionsUrl: "https://docs.openclaw.ai/tools/skills",
     sourceCodeUrl: "https://github.com/openclaw/openclaw",
   },
+  {
+    name: "Woven",
+    description: "Woven is a video editor for Mac with an AI agent built in. Describe an edit in chat and the agent makes it on a real timeline that you can fine-tune by hand.",
+    url: "https://www.woven.video/?ref=agentskills",
+    lightSrc: "/images/logos/woven/woven-logo-light.png",
+    darkSrc: "/images/logos/woven/woven-logo-dark.png",
+    scale: 0.45,
+    instructionsUrl: "https://www.woven.video/use-claude-code-skills-in-woven",
+  },
 ];
