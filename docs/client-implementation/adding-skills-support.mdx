@@ -78,6 +78,14 @@ Practical scanning rules:
 - Optionally respect `.gitignore` to avoid scanning build artifacts
 - Set reasonable bounds (e.g., max depth of 4-6 levels, max 2000 directories) to prevent runaway scanning in large directory trees
 
+### Nested, namespaced, and symlinked layouts
+
+Real-world skills directories rarely stay flat. Decide how to handle these common cases:
+
+- **Namespaced layouts** like `.agents/skills/team-a/pdf-tools/SKILL.md` put one or more organizational segments between the skills root and the skill directory. If you scan recursively, simply treat every directory containing a `SKILL.md` as a skill; the intermediate segments carry no format meaning. The `name` field must still match the skill's immediate parent directory.
+- **Don't descend into discovered skills.** Once a directory qualifies as a skill, skip it during further scanning instead of looking for more skills inside it — this avoids double-registering nested or vendored content.
+- **Symlinks.** Users commonly link personal skill collections into project-level directories. Following symlinks makes these setups work; if you do, resolve each link to its real path first so the same skill is never registered twice through different routes, and cap resolution to avoid symlink cycles.
+
 ### Handling name collisions
 
 When two skills share the same `name`, apply a deterministic precedence rule.
