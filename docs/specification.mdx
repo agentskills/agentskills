@@ -29,7 +29,7 @@ The `SKILL.md` file must contain YAML frontmatter followed by Markdown content.
 | `license` | No | License name or reference to a bundled license file. |
 | `compatibility` | No | Max 500 characters. Indicates environment requirements (intended product, system packages, network access, etc.). |
 | `metadata` | No | Arbitrary key-value mapping for additional metadata (a map from string keys to string values). |
-| `allowed-tools` | No | Space-separated string of pre-approved tools the skill may use. (Experimental) |
+| `allowed-tools` | No | Single space-separated string (not a YAML sequence) of pre-approved tools the skill may use. (Experimental) |
 
 <Card>
 **Minimal example:**
@@ -163,13 +163,22 @@ metadata:
 #### `allowed-tools` field
 
 The optional `allowed-tools` field:
-- A space-separated string of tools that are pre-approved to run
+- A single YAML scalar string of space-separated tool names that are pre-approved to run
+- Not a YAML sequence. Do not use list syntax (`[...]` or `- item`); a parser expecting a string will reject it
 - Experimental. Support for this field may vary between agent implementations
 
 <Card>
-**Example:**
+**Valid example:**
 ```yaml
 allowed-tools: Bash(git:*) Bash(jq:*) Read
+```
+
+**Invalid example:**
+```yaml
+# YAML sequence syntax is not valid for this field
+allowed-tools:
+  - Bash(git:*)
+  - Read
 ```
 </Card>
 
