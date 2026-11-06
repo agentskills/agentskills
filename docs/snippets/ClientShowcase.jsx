@@ -3,6 +3,28 @@
   2-column grid cards with logo on top, links stacked below description.
   Defaults to shuffled order for fairness; toggle to switch to alphabetical.
 */}
+
+const Logo = ({ client }) => (
+  <a href={client.url} className="block no-underline border-none w-full h-full">
+    <img className="block dark:hidden object-contain w-full h-full !my-0" src={client.lightSrc} alt={client.name} noZoom />
+    <img className="hidden dark:block object-contain w-full h-full !my-0" src={client.darkSrc} alt={client.name} noZoom />
+  </a>
+);
+
+const ToggleButton = ({ active, onClick, icon, title }) => (
+  <button
+    onClick={onClick}
+    title={title}
+    className={`px-3 py-1 cursor-pointer border-none ${
+      active
+        ? 'bg-gray-200 dark:bg-gray-600'
+        : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+    }`}
+  >
+    <Icon icon={icon} size={16} />
+  </button>
+);
+
 export const ClientShowcase = ({clients}) => {
   const shuffle = (arr) => {
     const copy = arr.slice();
@@ -22,27 +44,6 @@ export const ClientShowcase = ({clients}) => {
       default:        return state;
     }
   }, { mode: "shuffle", clients: shuffle(clients) });
-
-  const Logo = ({ client }) => (
-    <a href={client.url} className="block no-underline border-none w-full h-full">
-      <img className="block dark:hidden object-contain w-full h-full !my-0" src={client.lightSrc} alt={client.name} noZoom />
-      <img className="hidden dark:block object-contain w-full h-full !my-0" src={client.darkSrc} alt={client.name} noZoom />
-    </a>
-  );
-
-  const ToggleButton = ({ active, onClick, icon, title }) => (
-    <button
-      onClick={onClick}
-      title={title}
-      className={`px-3 py-1 cursor-pointer border-none ${
-        active
-          ? 'bg-gray-200 dark:bg-gray-600'
-          : 'hover:bg-gray-100 dark:hover:bg-gray-800'
-      }`}
-    >
-      <Icon icon={icon} size={16} />
-    </button>
-  );
 
   return (
     <div>
