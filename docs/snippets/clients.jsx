@@ -413,4 +413,13 @@ export const clients = [
     instructionsUrl: "https://docs.openclaw.ai/tools/skills",
     sourceCodeUrl: "https://github.com/openclaw/openclaw",
   },
+  {
+    name: "Wavefunction",
+    description: "Wavefunction is an open-source desktop coding agent for macOS. It works with local models, your own API keys or a ChatGPT sign-in, and loads SKILL.md skills from your projects and home folder.",
+    url: "https://www.wavefunction.si/",
+    lightSrc: "/images/logos/wavefunction/wavefunction-logo-light.svg",
+    darkSrc: "/images/logos/wavefunction/wavefunction-logo-dark.svg",
+    instructionsUrl: "https://github.com/stoyan-stoyanov/wavefunction#connectors-and-skills",
+    sourceCodeUrl: "https://github.com/stoyan-stoyanov/wavefunction",
+  },
 ];
