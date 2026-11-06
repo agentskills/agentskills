@@ -236,6 +236,14 @@ scripts/extract.py
 
 Keep file references one level deep from `SKILL.md`. Avoid deeply nested reference chains.
 
+## Referencing other skills
+
+The format defines a skill as a single directory containing a `SKILL.md` file. It has no concept of nested skills and reserves no syntax for invoking one skill from another.
+
+Because `SKILL.md` bodies are unrestricted Markdown, a skill may include instructions that ask the agent to use another skill available to it — for example, "then apply the code-review skill". Whether an agent resolves such a reference, and how it does so, is up to the client and may vary between implementations. Do not depend on cross-skill chaining for critical workflows.
+
+Keep each skill self-contained. If two skills share substantial instructions or resources, prefer duplicating that content in each skill (or bundling shared scripts) over relying on one skill calling another.
+
 ## Validation
 
 Use the [skills-ref](https://github.com/agentskills/agentskills/tree/main/skills-ref) reference library to validate your skills:
