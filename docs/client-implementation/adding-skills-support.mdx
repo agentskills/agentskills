@@ -261,6 +261,17 @@ Users should also be able to activate skills directly, without waiting for the m
 
 An autocomplete widget (listing available skills as the user types) can also make this discoverable.
 
+### Skill-to-skill references
+
+A skill's instructions may ask the model to activate another skill — for example, "then apply the `code-review` skill". The [specification](/specification#referencing-other-skills) reserves no syntax for this, so how you handle it is a client decision. Decide deliberately and document your behavior: skills written against clients that allow chaining can silently break in ones that don't.
+
+Recommendations:
+
+- **Treat skill-to-skill references as ordinary instructions.** The model activates the referenced skill through the same mechanism as any other activation (file read or dedicated tool call) — no special resolution layer needed.
+- **Apply the same checks as any activation.** Permission gates, disabled-skill filtering, and trust rules should apply when a skill triggers another skill, not just when the user or model initiates activation directly.
+- **Guard against runaway chains.** Cap activations per turn or per session, or deduplicate already-loaded skills, so two skills referencing each other can't loop indefinitely.
+- **Decide whether chaining works in subagents.** If you support [subagent delegation](#subagent-delegation-optional), state explicitly whether a subagent may activate further skills inside its isolated session.
+
 ### What the model receives
 
 When a skill is activated, the model receives the skill's instructions. Two options for what exactly that content looks like:
