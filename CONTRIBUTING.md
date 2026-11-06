@@ -29,9 +29,14 @@ If your product or platform has implemented Agent Skills compatibility, you can 
 
 Submit a pull request with:
 
-1. **Logo files** — SVG preferred; PNG acceptable (min 200×200px). Provide light and dark variants and follow the existing format in `docs/images/logos/`.
-2. **A client entry** — Add your product to the array in [`docs/snippets/clients.jsx`](docs/snippets/clients.jsx).
-3. **Product information** — In your PR description, include your product name, a link to your product, and a link to documentation showing your Skills implementation.
+1. **Logo files** — SVG preferred; PNG acceptable (min 200×200px). Provide light and dark variants and follow the existing format in `docs/images/logos/`. Square or visually dense logos often need a `scale` value on the entry to sit correctly in the carousel and grid; see the sizing guidance in [`AGENTS.md`](AGENTS.md) and the existing examples in `docs/snippets/clients.jsx`.
+2. **A client entry** — Add your product to the array in [`docs/snippets/clients.jsx`](docs/snippets/clients.jsx). The showcase renders these fields:
+   - `name`, `url`, `description`, `lightSrc`, `darkSrc` — required
+   - `instructionsUrl`, `sourceCodeUrl` — optional, but a card's "Setup instructions" and "Source code" links are only rendered when they are set, so include both whenever they exist
+   - `scale` — optional; multiplies the logo width
+3. **Product information** — In your PR description, include your product name, a link to your product, and a link to documentation showing its Skills implementation.
+
+Before submitting, check that every URL in your entry loads, and that each `lightSrc` and `darkSrc` path matches the case of the file you added. A dead documentation link or a path that only differs by case is invisible on a case-insensitive filesystem and becomes a 404 for readers.
 
 We may ask for a demo or screenshot to verify the implementation. Logo requests are reviewed by the Anthropic team.
 
