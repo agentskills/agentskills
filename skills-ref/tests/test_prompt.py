@@ -11,12 +11,15 @@ def test_empty_list():
 def test_single_skill(tmp_path):
     skill_dir = tmp_path / "my-skill"
     skill_dir.mkdir()
-    (skill_dir / "SKILL.md").write_text("""---
+    (skill_dir / "SKILL.md").write_text(
+        """---
 name: my-skill
 description: A test skill
 ---
 Body
-""")
+""",
+        encoding="utf-8",
+    )
     result = to_prompt([skill_dir])
     assert "<available_skills>" in result
     assert "</available_skills>" in result
@@ -29,21 +32,27 @@ Body
 def test_multiple_skills(tmp_path):
     skill_a = tmp_path / "skill-a"
     skill_a.mkdir()
-    (skill_a / "SKILL.md").write_text("""---
+    (skill_a / "SKILL.md").write_text(
+        """---
 name: skill-a
 description: First skill
 ---
 Body
-""")
+""",
+        encoding="utf-8",
+    )
 
     skill_b = tmp_path / "skill-b"
     skill_b.mkdir()
-    (skill_b / "SKILL.md").write_text("""---
+    (skill_b / "SKILL.md").write_text(
+        """---
 name: skill-b
 description: Second skill
 ---
 Body
-""")
+""",
+        encoding="utf-8",
+    )
 
     result = to_prompt([skill_a, skill_b])
     assert result.count("<skill>") == 2
@@ -56,12 +65,15 @@ def test_special_characters_escaped(tmp_path):
     """XML special characters in description are escaped."""
     skill_dir = tmp_path / "special-skill"
     skill_dir.mkdir()
-    (skill_dir / "SKILL.md").write_text("""---
+    (skill_dir / "SKILL.md").write_text(
+        """---
 name: special-skill
 description: Use <foo> & <bar> tags
 ---
 Body
-""")
+""",
+        encoding="utf-8",
+    )
     result = to_prompt([skill_dir])
     assert "&lt;foo&gt;" in result
     assert "&amp;" in result
