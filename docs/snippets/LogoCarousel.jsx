@@ -20,7 +20,7 @@ export const LogoCarousel = ({clients}) => {
 
   const doubled = [...shuffled, ...shuffled];
 
-  const GAP_PX = 48; // 3rem at the default 16px base
+  const GAP_PX = 48; // keep in sync with --logo-gap in docs/style.css
   const PX_PER_SECOND = 40;
   const cycleWidth = shuffled.reduce(
     (sum, client) => sum + 150 * (client.scale || 1) + GAP_PX,
