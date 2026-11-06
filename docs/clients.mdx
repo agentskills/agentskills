@@ -5,5 +5,12 @@ description: "Agent products that support the Agent Skills format."
 
 import { clients } from '/snippets/clients.jsx';
 import { ClientShowcase } from '/snippets/ClientShowcase.jsx';
+import { ClientTextList } from '/snippets/ClientTextList.jsx';
 
 <ClientShowcase clients={clients} />
+
+## Adoption list
+
+The same list in plain text, for easy reference by tools and LLM-based consumers:
+
+<ClientTextList clients={clients} />
