@@ -55,6 +55,55 @@ metadata:
 ```
 </Card>
 
+**Complete example.** This `SKILL.md` demonstrates every frontmatter field alongside a realistic instruction body. A skill named `log-summarizer` reads application logs, groups errors by category, and produces a summary the agent can act on:
+
+````markdown SKILL.md
+---
+name: log-summarizer
+description: Parse application log files, group errors by category, and produce a summary with counts and recent examples. Use when the user asks to analyze logs, investigate errors, or get a health overview from a log file.
+license: MIT
+compatibility: Requires Python 3.10+ and uv
+metadata:
+  author: example-org
+  version: "2.1"
+allowed-tools: Bash(python:*) Read
+---
+
+## Goal
+
+Given a log file, produce a structured error summary with counts and examples.
+
+## Steps
+
+1. Count lines to confirm the file is non-empty:
+   ```bash
+   wc -l < "$LOG_FILE"
+   ```
+2. Extract and group errors by category:
+   ```bash
+   python3 scripts/summarize.py "$LOG_FILE" --format json
+   ```
+3. Present the results as a markdown table, sorted by frequency.
+
+## Gotchas
+
+- The `log4j` JSON format wraps messages in a `"message"` field; the script handles this automatically.
+- Files over 500 MB should be summarized in chunks — pass `--chunk-size 100000`.
+
+## References
+
+See [references/error-codes.md](references/error-codes.md) for known error categories
+and their typical causes.
+````
+
+A few design choices illustrated here:
+
+- **Description lists both what and when.** An agent matching the user's prompt to the skill's purpose needs that trigger phrase.
+- **`compatibility` names runtime constraints** so the agent can surface missing prerequisites before running scripts.
+- **`allowed-tools` pre-approves the specific commands** the skill will run — no surprise permission prompts.
+- **The body focuses on steps the agent would not know on its own.** It skips explaining what a log file is and jumps straight to the project-specific pipeline.
+- **`references/` provides supporting material** loaded only when the agent needs it, following [progressive disclosure](#progressive-disclosure).
+
 #### `name` field
 
 The required `name` field:
