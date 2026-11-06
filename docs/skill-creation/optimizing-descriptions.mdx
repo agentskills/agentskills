@@ -188,6 +188,22 @@ description: >
 
 The improved description is more specific about what the skill does (summary stats, derived columns, charts, cleaning) and broader about when it applies (CSV, TSV, Excel; even without explicit keywords).
 
+Here is a second pattern — a description that is too narrow, triggering only on exact phrasing rather than the task behind it:
+
+```yaml
+# Before — only triggers when users say "pull request"
+description: Reviews a pull request for code quality and correctness.
+
+# After — triggers on the underlying task, not one phrase
+description: >
+  Review code for quality, correctness, and potential bugs. Use this
+  skill when the user asks for a code review, feedback on changes,
+  or wants to check their code before shipping — including but not
+  limited to pull requests.
+```
+
+The original description works only when the user says "pull request." Many reviewers ask for the same thing in different words: "review my changes," "look at this before I ship," or "find bugs in this file." The revised description targets the task itself.
+
 ## Next steps
 
 Once your skill triggers reliably, you'll want to evaluate whether it produces good outputs. See [Evaluating skill output quality](/skill-creation/evaluating-skills) for how to set up test cases, grade results, and iterate.
