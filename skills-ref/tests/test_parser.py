@@ -1,5 +1,10 @@
 """Tests for parser module."""
 
+import json
+import os
+import subprocess
+import sys
+
 import pytest
 
 from skills_ref.parser import (
@@ -78,6 +83,63 @@ license: MIT
     assert props.name == "my-skill"
     assert props.description == "A test skill"
     assert props.license == "MIT"
+
+
+def test_read_utf8_skill(tmp_path):
+    """SKILL.md is always decoded as UTF-8 regardless of the host locale."""
+    skill_dir = tmp_path / "unicode-skill"
+    skill_dir.mkdir()
+    content = """---
+name: unicode-skill
+description: Obsługa języka polskiego — 日本語
+---
+# Unicode
+"""
+    (skill_dir / "SKILL.md").write_bytes(content.encode("utf-8"))
+
+    props = read_properties(skill_dir)
+
+    assert props.description == "Obsługa języka polskiego — 日本語"
+
+
+@pytest.mark.parametrize("operation", ["read_properties", "validate"])
+def test_read_utf8_regardless_of_locale(tmp_path, operation):
+    """Parser and validator use UTF-8 even when the locale encoding does not."""
+    skill_dir = tmp_path / "unicode-skill"
+    skill_dir.mkdir()
+    description = "Use for “receipts” — Übersicht, 日本語"
+    (skill_dir / "SKILL.md").write_bytes(
+        f"---\nname: unicode-skill\ndescription: {description}\n---\n".encode("utf-8")
+    )
+    env = {
+        key: value
+        for key, value in os.environ.items()
+        if not key.startswith(("PYTHONUTF8", "LC_", "LANG"))
+    }
+    env.update(LC_ALL="C", PYTHONCOERCECLOCALE="0", PYTHONIOENCODING="utf-8")
+    expression = (
+        "read_properties(skill_dir).description"
+        if operation == "read_properties"
+        else "validate(skill_dir)"
+    )
+    code = (
+        "import json, sys; from pathlib import Path; "
+        "from skills_ref.parser import read_properties; "
+        "from skills_ref.validator import validate; "
+        "skill_dir = Path(sys.argv[1]); "
+        f"print(json.dumps({expression}))"
+    )
+    result = subprocess.run(
+        [sys.executable, "-X", "utf8=0", "-c", code, str(skill_dir)],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        env=env,
+    )
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout) == (
+        description if operation == "read_properties" else []
+    )
 
 
 def test_read_with_metadata(tmp_path):
