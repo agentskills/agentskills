@@ -348,7 +348,7 @@ export const clients = [
     lightSrc: "/images/logos/bub/bub-light.svg",
     darkSrc: "/images/logos/bub/bub-dark.svg",
     scale: 0.5,
-    instructionsUrl: "https://bub.build/docs/build/skills/",
+    instructionsUrl: "https://bub.build/docs/app/skills/",
     sourceCodeUrl: "https://github.com/bubbuild/bub",
   },
   {
