@@ -413,4 +413,12 @@ export const clients = [
     instructionsUrl: "https://docs.openclaw.ai/tools/skills",
     sourceCodeUrl: "https://github.com/openclaw/openclaw",
   },
+  {
+    name: "Primed Harness",
+    description: "Primed Harness (Bounded Agent Harness) is a governed workspace for AI work. It imports SKILL.md skills verbatim into the user's library, exports work back as specification-valid SKILL.md, and lets an approved skill ride inside a pipeline run — with the price approved before the run and a public proof record of what the work did.",
+    url: "https://boundedagentharness.com/",
+    lightSrc: "/images/logos/primed-harness/primed-harness-logo-light.svg",
+    darkSrc: "/images/logos/primed-harness/primed-harness-logo-dark.svg",
+    instructionsUrl: "https://boundedagentharness.com/library",
+  },
 ];

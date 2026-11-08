@@ -1,0 +1,6 @@
+<svg width="300" height="64" viewBox="0 0 300 64" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Primed Harness">
+  <rect x="4" y="10" width="40" height="7" rx="3.5" fill="#eef1f4"/>
+  <rect x="4" y="28.5" width="26" height="7" rx="3.5" fill="#9fb6c9"/>
+  <rect x="4" y="47" width="40" height="7" rx="3.5" fill="#eef1f4"/>
+  <text x="60" y="42" font-family="Arial, Helvetica, sans-serif" font-size="27" font-weight="600" fill="#eef1f4">Primed Harness</text>
+</svg>
