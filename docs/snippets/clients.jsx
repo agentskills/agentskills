@@ -413,4 +413,14 @@ export const clients = [
     instructionsUrl: "https://docs.openclaw.ai/tools/skills",
     sourceCodeUrl: "https://github.com/openclaw/openclaw",
   },
+  {
+    name: "DeepSeek Harness",
+    description: "DeepSeek Harness is an open-source agent harness from DeepSeek AI, built on an everything-is-a-plugin architecture. It discovers Agent Skills in project, user, and cross-client .agents/skills directories, validates them against the Agent Skills specification, and lets both the model and the user invoke a skill by name.",
+    url: "https://deepseek.com/harness/",
+    lightSrc: "/images/logos/deepseek-harness/deepseek-harness-logo-light.png",
+    darkSrc: "/images/logos/deepseek-harness/deepseek-harness-logo-dark.png",
+    scale: 1.5,
+    instructionsUrl: "https://deepseek-harness.github.io/deepseek-harness/en/reference/subsystems/skills",
+    sourceCodeUrl: "https://github.com/deepseek-ai/deepseek-harness",
+  },
 ];
