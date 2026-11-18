@@ -413,4 +413,13 @@ export const clients = [
     instructionsUrl: "https://docs.openclaw.ai/tools/skills",
     sourceCodeUrl: "https://github.com/openclaw/openclaw",
   },
+  {
+    name: "OpenAgentd",
+    description: "OpenAgentd is an open-source desktop app and CLI for running a coding agent on your own machine. It shows every tool call, diff, and terminal command, and works with your own model keys or local models.",
+    url: "https://openagentd.dev/",
+    lightSrc: "/images/logos/openagentd/openagentd-wordmark-light.svg",
+    darkSrc: "/images/logos/openagentd/openagentd-wordmark-dark.svg",
+    instructionsUrl: "https://openagentd.dev/features/mcp-and-skills/",
+    sourceCodeUrl: "https://github.com/lthoangg/openagentd",
+  },
 ];
