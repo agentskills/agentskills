@@ -92,19 +92,23 @@ With 20 queries at 3 runs each, that's 60 invocations. You'll want to script thi
 
 ```bash
 #!/bin/bash
+set -o pipefail
+
 QUERIES_FILE="${1:?Usage: $0 <queries.json>}"
 SKILL_NAME="my-skill"
 RUNS=3
 
-# This example uses Claude Code's JSON output to check for Skill tool calls.
+# Read Skill tool calls from assistant messages in Claude Code's JSON stream.
 # Replace this function with detection logic for your agent client.
-# Should return 0 (success) if the skill was invoked, 1 otherwise.
+# Return 0 for a matching call, 1 for no match, or a higher status for errors.
 check_triggered() {
   local query="$1"
-  claude -p "$query" --output-format json 2>/dev/null \
-    | jq -e --arg skill "$SKILL_NAME" \
-      'any(.messages[].content[]; .type == "tool_use" and .name == "Skill" and .input.skill == $skill)' \
-      > /dev/null 2>&1
+  local output
+  output=$(claude -p "$query" --output-format stream-json --verbose) || return 2
+  jq -se --arg skill "$SKILL_NAME" '
+    any(.[] | select(.type == "assistant") | .message.content[]?;
+        .type == "tool_use" and .name == "Skill" and .input.skill == $skill)
+  ' <<< "$output" > /dev/null
 }
 
 count=$(jq length "$QUERIES_FILE")
@@ -114,7 +118,12 @@ for i in $(seq 0 $((count - 1))); do
   triggers=0
 
   for run in $(seq 1 $RUNS); do
-    check_triggered "$query" && triggers=$((triggers + 1))
+    if check_triggered "$query"; then
+      triggers=$((triggers + 1))
+    elif [[ $? -ne 1 ]]; then
+      printf 'Could not evaluate query %s (run %s).\n' "$i" "$run" >&2
+      exit 1
+    fi
   done
 
   jq -n \
