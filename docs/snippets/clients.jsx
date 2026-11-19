@@ -26,7 +26,7 @@ export const clients = [
   },
   {
     name: "Google Antigravity",
-    description: "Google Antigravity is an agentic development platform for orchestrating autonomous subagents, scheduled tasks, and interactive code verification. Available across the Antigravity desktop and web app, Antigravity CLI, IDE extensions, and Python SDK.",
+    description: "Google Antigravity is an advanced agentic coding platform and CLI designed for orchestrating autonomous subagents, scheduled tasks, and interactive code verification.",
     url: "https://antigravity.google/",
     lightSrc: "/images/logos/google-antigravity/google-antigravity-light.svg",
     darkSrc: "/images/logos/google-antigravity/google-antigravity-dark.svg",
