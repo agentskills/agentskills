@@ -4,6 +4,8 @@
   To add a new client:
   1. Add logo files to /images/logos/[logo-name]/
   2. Add entry to the clients array below
+  3. Run node scripts/sync-client-markdown.mjs from the repository root
+     and commit the resulting docs/clients.mdx change.
 */
 export const clients = [
   {
