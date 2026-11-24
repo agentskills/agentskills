@@ -53,6 +53,16 @@ export const clients = [
     sourceCodeUrl: "https://github.com/sst/opencode",
   },
   {
+    name: "Open Agent API",
+    description: "Open Agent API is an open-source, self-hosted gateway that runs configured agents over HTTP. Its built-in runtime loads skills from explicitly published agent bundles.",
+    url: "https://openagentapi.pages.dev/",
+    lightSrc: "/images/logos/open-agent-api/open-agent-api-light.svg",
+    darkSrc: "/images/logos/open-agent-api/open-agent-api-dark.svg",
+    scale: 0.85,
+    instructionsUrl: "https://github.com/jiangxingfan1-coder/Open-Agent-API/blob/v0.0.71/docs/operations.md",
+    sourceCodeUrl: "https://github.com/jiangxingfan1-coder/Open-Agent-API",
+  },
+  {
     name: "OpenHands",
     description: "OpenHands is the open platform for cloud coding agents. Scale from one to thousands of agents — open source, model-agnostic, and enterprise-ready.",
     url: "https://openhands.dev/",
