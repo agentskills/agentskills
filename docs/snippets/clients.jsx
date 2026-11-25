@@ -413,4 +413,12 @@ export const clients = [
     instructionsUrl: "https://docs.openclaw.ai/tools/skills",
     sourceCodeUrl: "https://github.com/openclaw/openclaw",
   },
+  {
+    name: "YesNoMystery",
+    description: "YesNoMystery is an AI-hosted lateral thinking puzzle game with 1,000+ black stories and mind benders in 12 languages; its remote MCP endpoint lets an agent start a puzzle, ask yes/no questions, take hints and read the solution.",
+    url: "https://lateralthinkingpuzzles.org",
+    lightSrc: "/images/logos/yesnomystery/yesnomystery-logo-light.png",
+    darkSrc: "/images/logos/yesnomystery/yesnomystery-logo-dark.png",
+    instructionsUrl: "https://lateralthinkingpuzzles.org/api/mcp",
+  },
 ];
